@@ -1,0 +1,480 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); }
+  .screen { display: none; flex-direction: column; align-items: center; min-height: 580px; padding: 32px 24px; }
+  .screen.active { display: flex; }
+  .screen-dark { background: #111; border-radius: var(--border-radius-lg); }
+
+  h1.title { font-size: 22px; font-weight: 500; color: var(--color-text-primary); text-align: center; margin-bottom: 8px; }
+  .subtitle { font-size: 13px; color: var(--color-text-secondary); text-align: center; margin-bottom: 24px; line-height: 1.6; max-width: 460px; }
+  .badge { display: inline-block; background: #1a9e75; color: #fff; font-size: 11px; padding: 2px 10px; border-radius: 12px; margin-bottom: 12px; }
+
+  .step-flow { display: flex; align-items: center; gap: 8px; margin: 24px 0 32px; }
+  .step-circle { width: 56px; height: 56px; border-radius: 50%; border: 2px solid #1a9e75; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 15px; font-weight: 500; color: #1a9e75; }
+  .step-label { font-size: 11px; color: var(--color-text-secondary); margin-top: 4px; text-align: center; }
+  .step-wrap { display: flex; flex-direction: column; align-items: center; }
+  .step-arrow { font-size: 18px; color: var(--color-text-secondary); margin-bottom: 14px; }
+
+  .btn-primary { background: #1a9e75; color: #fff; border: none; border-radius: 8px; padding: 14px 40px; font-size: 16px; font-weight: 500; cursor: pointer; margin-top: auto; width: 100%; max-width: 340px; }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-secondary { background: transparent; border: 1.5px solid #1a9e75; color: #1a9e75; border-radius: 8px; padding: 10px 28px; font-size: 14px; cursor: pointer; margin-top: 16px; }
+
+  /* 준비사항 */
+  .prep-num { width: 28px; height: 28px; border-radius: 50%; background: #1a9e75; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; flex-shrink: 0; }
+  .prep-item { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; font-size: 14px; color: var(--color-text-primary); width: 100%; max-width: 340px; }
+
+  /* 단순선택 - 시각 */
+  .test-area { width: 100%; max-width: 500px; background: #000; border-radius: 10px; height: 220px; display: flex; align-items: center; justify-content: center; position: relative; margin-bottom: 24px; }
+  .stim-circle { width: 80px; height: 80px; border-radius: 50%; background: #1a9e75; display: none; }
+  .stim-circle.visible { display: block; }
+  .keyboard-row { display: flex; align-items: center; gap: 6px; }
+  .key { background: #fff; border: 1.5px solid #ccc; border-radius: 6px; padding: 10px 18px; font-size: 13px; color: #333; }
+  .key.target { border: 2.5px solid #e06c4a; position: relative; }
+  .key.target::after { content: ''; display: block; width: 16px; height: 16px; background: #e06c4a; border-radius: 50%; position: absolute; bottom: -28px; left: 50%; transform: translateX(-50%); }
+  .timer-bar-wrap { width: 100%; max-width: 500px; height: 6px; background: var(--color-border-tertiary); border-radius: 3px; margin-bottom: 8px; }
+  .timer-bar { height: 6px; background: #1a9e75; border-radius: 3px; transition: width 0.1s linear; }
+  .score-box { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 6px; }
+  .instruction-box { background: var(--color-background-secondary); border-radius: 8px; padding: 12px 16px; font-size: 13px; color: var(--color-text-secondary); text-align: center; max-width: 500px; width: 100%; margin-bottom: 16px; line-height: 1.6; }
+
+  /* 청각 */
+  .ear-icon { width: 100px; height: 100px; border-radius: 50%; background: #1a9e75; display: flex; align-items: center; justify-content: center; }
+  .ear-icon i { font-size: 48px; color: #fff; }
+  .sound-wave { display: flex; gap: 4px; align-items: flex-end; height: 40px; margin-top: 12px; }
+  .wave-bar { width: 5px; background: #1a9e75; border-radius: 3px; opacity: 0.3; transition: height 0.1s; }
+  .wave-bar.active { opacity: 1; }
+
+  /* 간섭선택 */
+  .arrow-grid { display: grid; grid-template-columns: repeat(5, 48px); gap: 8px; justify-content: center; margin-bottom: 24px; }
+  .arrow-cell { width: 48px; height: 48px; border: 2px solid #555; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #fff; }
+  .arrow-cell.center { border: 2.5px solid #1a9e75; }
+  .dir-keys { display: grid; grid-template-columns: repeat(3, 44px); grid-template-rows: repeat(2, 44px); gap: 4px; justify-content: center; margin-top: 8px; }
+  .dir-key { width: 44px; height: 44px; background: #fff; border: 1.5px solid #ccc; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #333; cursor: pointer; }
+  .dir-key:hover { background: #eee; }
+  .dir-key.pressed { background: #1a9e75; color: #fff; }
+
+  /* 작업기억 */
+  .mem-grid { display: grid; grid-template-columns: repeat(4, 64px); grid-template-rows: repeat(3, 64px); gap: 10px; justify-content: center; margin-bottom: 20px; }
+  .mem-cell { width: 64px; height: 64px; border: 2px solid #555; border-radius: 6px; background: transparent; cursor: pointer; transition: background 0.15s; }
+  .mem-cell.lit { background: #fff; }
+  .mem-cell.selected { background: #1a9e75; }
+  .mem-cell.wrong { background: #e24b4a; }
+
+  /* 결과 */
+  .result-name { font-size: 15px; color: var(--color-text-secondary); margin-bottom: 4px; }
+  .result-verdict { font-size: 18px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 24px; line-height: 1.5; }
+  .venn-wrap { position: relative; width: 200px; height: 160px; margin: 0 auto 24px; }
+  .venn-circle { position: absolute; width: 110px; height: 110px; border-radius: 50%; }
+  .venn-a { background: rgba(26,158,117,0.7); top: 20px; left: 10px; }
+  .venn-b { background: rgba(226,75,74,0.7); top: 20px; left: 80px; }
+  .venn-label { position: absolute; font-size: 13px; font-weight: 500; color: #fff; }
+  .venn-label.la { top: 68px; left: 24px; }
+  .venn-label.lb { top: 68px; left: 95px; }
+  .venn-tag { position: absolute; font-size: 10px; color: var(--color-text-secondary); }
+  .venn-tag.ta { top: 10px; left: 0; }
+  .venn-tag.tb { top: 10px; right: 0; }
+  .result-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 0.5px solid var(--color-border-tertiary); width: 100%; max-width: 360px; font-size: 13px; }
+  .result-row .label { color: var(--color-text-secondary); }
+  .result-row .val { font-weight: 500; color: var(--color-text-primary); }
+  .tag-normal { color: #1a9e75; }
+  .tag-warn { color: #e06c4a; }
+  .progress-wrap { width: 100%; max-width: 360px; margin: 4px 0 16px; }
+  .progress-track { background: var(--color-border-tertiary); border-radius: 4px; height: 6px; }
+  .progress-fill { height: 6px; border-radius: 4px; }
+</style>
+
+<!-- 화면 0: 인트로 -->
+<div class="screen active" id="s0">
+  <span class="badge">대한소아청소년정신의학회 공식인증</span>
+  <h1 class="title">ADHD 인증검사<br>S-CAT</h1>
+  <p class="subtitle">아동과 청소년의 주의집중력을 종합적으로 평가하기 위한 약식 검사입니다.<br>모바일에서 약 13분이면 결과를 확인할 수 있습니다.</p>
+  <div class="step-flow">
+    <div class="step-wrap">
+      <div class="step-circle">3분</div>
+      <div class="step-label">자녀관찰<br>(부모 대상)</div>
+    </div>
+    <div class="step-wrap"><div class="step-arrow">›</div></div>
+    <div class="step-wrap">
+      <div class="step-circle">5분</div>
+      <div class="step-label">억제지속<br>(자녀 대상)</div>
+    </div>
+    <div class="step-wrap"><div class="step-arrow">›</div></div>
+    <div class="step-wrap">
+      <div class="step-circle">5분</div>
+      <div class="step-label">간섭선택<br>(자녀 대상)</div>
+    </div>
+  </div>
+  <button class="btn-primary" onclick="go(1)">검사 시작하기 ›</button>
+</div>
+
+<!-- 화면 1: 준비사항 -->
+<div class="screen" id="s1">
+  <h1 class="title">검사 전 준비사항</h1>
+  <p class="subtitle">정확한 결과를 위해 아래 환경을 확인해 주세요</p>
+  <div style="margin: 8px 0 24px; width: 100%;">
+    <div class="prep-item"><div class="prep-num">1</div>조용한 장소로 이동해 주세요. 장난감이나 소음이 있으면 결과가 달라질 수 있습니다.</div>
+    <div class="prep-item"><div class="prep-num">2</div>화면 밝기를 최대로 설정해 주세요.</div>
+    <div class="prep-item"><div class="prep-num">3</div>검사 중 다른 앱을 사용하지 마세요.</div>
+    <div class="prep-item"><div class="prep-num">4</div>헤드폰을 착용해 주세요. (청각 검사 포함)</div>
+  </div>
+  <button class="btn-primary" onclick="go(2)">다음</button>
+</div>
+
+<!-- 화면 2: 자녀관찰 설문 -->
+<div class="screen" id="s2">
+  <h1 class="title">자녀관찰 설문</h1>
+  <p class="subtitle">부모님이 응답하세요. 최근 6개월간 자녀의 행동을 기준으로 선택해 주세요.</p>
+  <div style="width: 100%; max-width: 440px;">
+    <div id="survey-q"></div>
+    <div id="survey-opts" style="display: flex; flex-direction: column; gap: 10px; margin-top: 16px;"></div>
+  </div>
+  <div class="timer-bar-wrap" style="margin-top: 24px;"><div class="timer-bar" id="survey-prog" style="width: 0%"></div></div>
+  <p class="score-box" id="survey-label">1 / 5</p>
+</div>
+
+<!-- 화면 3: 억제지속 - 시각 -->
+<div class="screen screen-dark" id="s3">
+  <p style="color:#aaa; font-size:13px; margin-bottom:8px;">단순선택주의력 검사 (시각)</p>
+  <p style="color:#888; font-size:12px; text-align:center; margin-bottom:16px; line-height:1.6;">지금부터 화면에 원모양이 나옵니다. 매번 <span style="color:#1a9e75">원이 보이면</span> 가운데 버튼을 누르세요.<br>다른 도형이 나올 때는 누르지 마세요.</p>
+  <div class="test-area">
+    <div class="stim-circle" id="vis-stim"></div>
+    <div id="vis-foil" style="display:none; width:80px; height:80px; background:#e06c4a; border-radius:8px;"></div>
+  </div>
+  <div class="timer-bar-wrap"><div class="timer-bar" id="vis-bar" style="width:100%"></div></div>
+  <p class="score-box" id="vis-score">반응: 0 | 정확: 0</p>
+  <div class="keyboard-row">
+    <div class="key">Alt</div>
+    <div class="key">한자</div>
+    <div class="key target" id="vis-btn" onclick="pressVis()">한/영</div>
+    <div class="key">Alt</div>
+  </div>
+  <button class="btn-primary" id="vis-start" onclick="startVis()" style="margin-top: 24px; max-width: 220px;">시작버튼을 눌러 검사 시작</button>
+</div>
+
+<!-- 화면 4: 억제지속 - 청각 -->
+<div class="screen screen-dark" id="s4">
+  <p style="color:#aaa; font-size:13px; margin-bottom:8px;">단순선택주의력 검사 (청각)</p>
+  <p style="color:#888; font-size:12px; text-align:center; margin-bottom:20px; line-height:1.6;">소리를 듣고 <span style="color:#1a9e75">종소리가 들릴 때마다</span> 가운데 버튼을 누르세요.<br>다른 소리가 나오면 누르지 마세요.</p>
+  <div class="test-area" style="flex-direction: column; gap: 16px;">
+    <div class="ear-icon"><i class="ti ti-headphones"></i></div>
+    <div class="sound-wave" id="sound-wave">
+      <div class="wave-bar" style="height:10px"></div>
+      <div class="wave-bar" style="height:24px"></div>
+      <div class="wave-bar" style="height:16px"></div>
+      <div class="wave-bar" style="height:32px"></div>
+      <div class="wave-bar" style="height:12px"></div>
+      <div class="wave-bar" style="height:28px"></div>
+      <div class="wave-bar" style="height:18px"></div>
+    </div>
+  </div>
+  <div class="timer-bar-wrap"><div class="timer-bar" id="aud-bar" style="width:100%"></div></div>
+  <p class="score-box" id="aud-score">반응: 0 | 정확: 0</p>
+  <div class="keyboard-row">
+    <div class="key">Alt</div>
+    <div class="key">한자</div>
+    <div class="key target" id="aud-btn" onclick="pressAud()">한/영</div>
+    <div class="key">Alt</div>
+  </div>
+  <button class="btn-primary" id="aud-start" onclick="startAud()" style="margin-top:24px; max-width: 220px;">시작버튼을 눌러 검사 시작</button>
+</div>
+
+<!-- 화면 5: 간섭선택 -->
+<div class="screen screen-dark" id="s5">
+  <p style="color:#aaa; font-size:13px; margin-bottom:8px;">간섭선택주의력 검사</p>
+  <p style="color:#888; font-size:12px; text-align:center; margin-bottom:16px; line-height:1.6;">5개의 화살표 중 <span style="color:#1a9e75">가운데 화살표</span>가 가리키는 방향을 선택하세요.<br>주변 화살표는 무시하세요.</p>
+  <div class="test-area" style="flex-direction: column; justify-content: center; gap: 0; height: 180px;">
+    <div class="arrow-grid" id="arr-grid"></div>
+  </div>
+  <div class="timer-bar-wrap" style="margin-top:16px;"><div class="timer-bar" id="arr-bar" style="width:100%"></div></div>
+  <p class="score-box" id="arr-score">정답: 0 / 0</p>
+  <div class="dir-keys">
+    <div></div>
+    <div class="dir-key" id="dk-up" onclick="pressArr('up')">↑</div>
+    <div></div>
+    <div class="dir-key" id="dk-left" onclick="pressArr('left')">←</div>
+    <div class="dir-key" id="dk-down" onclick="pressArr('down')">↓</div>
+    <div class="dir-key" id="dk-right" onclick="pressArr('right')">→</div>
+  </div>
+  <button class="btn-primary" id="arr-start" onclick="startArr()" style="margin-top:20px; max-width:220px;">시작버튼을 눌러 검사 시작</button>
+</div>
+
+<!-- 화면 6: 작업기억력 -->
+<div class="screen screen-dark" id="s6">
+  <p style="color:#aaa; font-size:13px; margin-bottom:8px;">작업기억력 검사</p>
+  <p style="color:#888; font-size:12px; text-align:center; margin-bottom:16px; line-height:1.6;">박스들이 순서대로 빛납니다. <span style="color:#1a9e75">같은 순서로</span> 박스를 눌러 주세요.<br>다 누르면 다음 단계로 이어집니다.</p>
+  <div class="test-area" style="height:240px;">
+    <div class="mem-grid" id="mem-grid"></div>
+  </div>
+  <p class="score-box" id="mem-score">레벨: 2 | 정답: 0</p>
+  <button class="btn-primary" id="mem-start" onclick="startMem()" style="margin-top:16px; max-width:220px;">시작버튼을 눌러 검사 시작</button>
+</div>
+
+<!-- 화면 7: 결과 -->
+<div class="screen" id="s7">
+  <h1 class="title" style="margin-bottom:4px;">종합 검사 결과</h1>
+  <p class="result-name">김지현 · 만 10세 · 여</p>
+  <p class="result-verdict">주의력이 부족할<br>가능성이 낮습니다.</p>
+  <div class="venn-wrap">
+    <div class="venn-circle venn-a"></div>
+    <div class="venn-circle venn-b"></div>
+    <div class="venn-label la">정상</div>
+    <div class="venn-label lb">경계</div>
+    <div class="venn-tag ta">간섭선택<br>주의력</div>
+    <div class="venn-tag tb">억제지속<br>주의력</div>
+  </div>
+
+  <div class="progress-wrap">
+    <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--color-text-secondary); margin-bottom:4px;"><span>억제지속 주의력</span><span class="tag-normal">정상</span></div>
+    <div class="progress-track"><div class="progress-fill" style="width:72%; background:#1a9e75;"></div></div>
+  </div>
+  <div class="progress-wrap">
+    <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--color-text-secondary); margin-bottom:4px;"><span>간섭선택 주의력</span><span class="tag-warn">경계</span></div>
+    <div class="progress-track"><div class="progress-fill" style="width:44%; background:#e06c4a;"></div></div>
+  </div>
+  <div class="progress-wrap">
+    <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--color-text-secondary); margin-bottom:4px;"><span>작업기억력</span><span class="tag-normal">정상</span></div>
+    <div class="progress-track"><div class="progress-fill" style="width:68%; background:#1a9e75;"></div></div>
+  </div>
+
+  <div style="width:100%; max-width:360px; margin-top:8px;">
+    <div class="result-row"><span class="label">자녀관찰 설문</span><span class="val tag-normal">정상 범주</span></div>
+    <div class="result-row"><span class="label">시각 단순선택</span><span class="val tag-normal">상위 20%</span></div>
+    <div class="result-row"><span class="label">청각 단순선택</span><span class="val tag-normal">정상 범주</span></div>
+    <div class="result-row"><span class="label">간섭선택 주의력</span><span class="val tag-warn">경계 수준</span></div>
+    <div class="result-row"><span class="label">작업기억력</span><span class="val tag-normal">정상 범주</span></div>
+  </div>
+
+  <p style="font-size:12px; color:var(--color-text-secondary); margin-top:20px; text-align:center; line-height:1.6;">본 검사는 간이 선별 도구입니다.<br>정확한 진단은 전문의 상담이 필요합니다.</p>
+  <button class="btn-primary" onclick="go(0)" style="margin-top:16px; background: transparent; border: 1.5px solid #1a9e75; color: #1a9e75;">처음으로 돌아가기</button>
+</div>
+
+<script>
+let currentScreen = 0;
+function go(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('s'+n).classList.add('active');
+  currentScreen = n;
+  if (n === 3) initVis();
+  if (n === 4) initAud();
+  if (n === 5) initArr();
+  if (n === 6) initMem();
+}
+
+// 자녀관찰 설문
+const questions = [
+  { q: '주의가 쉽게 산만해지거나 집중하기 어려워합니까?', opts: ['전혀 없다', '가끔 있다', '자주 있다', '매우 자주 있다'] },
+  { q: '끝까지 집중해서 과제를 마치기 어려워합니까?', opts: ['전혀 없다', '가끔 있다', '자주 있다', '매우 자주 있다'] },
+  { q: '차례를 기다리거나 충동을 억제하는 데 어려움이 있습니까?', opts: ['전혀 없다', '가끔 있다', '자주 있다', '매우 자주 있다'] },
+  { q: '지시를 따르는 데 어려움을 보입니까?', opts: ['전혀 없다', '가끔 있다', '자주 있다', '매우 자주 있다'] },
+  { q: '필요한 물건을 자주 잃어버립니까?', opts: ['전혀 없다', '가끔 있다', '자주 있다', '매우 자주 있다'] }
+];
+let sqIdx = 0;
+function renderSurvey() {
+  const q = questions[sqIdx];
+  document.getElementById('survey-q').innerHTML = `<p style="font-size:15px;color:var(--color-text-primary);line-height:1.6;margin-bottom:8px;font-weight:500;">${sqIdx+1}. ${q.q}</p>`;
+  const opts = document.getElementById('survey-opts');
+  opts.innerHTML = '';
+  q.opts.forEach((o, i) => {
+    const btn = document.createElement('button');
+    btn.style = 'background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:8px;padding:12px 16px;text-align:left;font-size:14px;color:var(--color-text-primary);cursor:pointer;';
+    btn.textContent = o;
+    btn.onclick = () => {
+      sqIdx++;
+      document.getElementById('survey-prog').style.width = (sqIdx/questions.length*100)+'%';
+      document.getElementById('survey-label').textContent = Math.min(sqIdx+1,questions.length)+' / '+questions.length;
+      if (sqIdx >= questions.length) go(3);
+      else renderSurvey();
+    };
+    opts.appendChild(btn);
+  });
+}
+document.getElementById('s2').addEventListener('click', () => {});
+function initS2() { sqIdx=0; renderSurvey(); document.getElementById('survey-prog').style.width='0%'; document.getElementById('survey-label').textContent='1 / 5'; }
+
+// 원본 go 수정
+const _go = go;
+go = function(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('s'+n).classList.add('active');
+  currentScreen = n;
+  if (n === 2) initS2();
+  if (n === 3) initVis();
+  if (n === 4) initAud();
+  if (n === 5) initArr();
+  if (n === 6) initMem();
+}
+
+// 시각 단순선택
+let visRunning=false, visTimer=null, visTotal=0, visHits=0, visFoils=0, visSeq=[];
+function initVis() { visRunning=false; document.getElementById('vis-start').style.display='block'; document.getElementById('vis-stim').classList.remove('visible'); document.getElementById('vis-foil').style.display='none'; document.getElementById('vis-score').textContent='반응: 0 | 정확: 0'; document.getElementById('vis-bar').style.width='100%'; }
+function startVis() {
+  document.getElementById('vis-start').style.display='none';
+  visRunning=true; visHits=0; visFoils=0; visTotal=0;
+  let dur=20, elapsed=0;
+  const bar = document.getElementById('vis-bar');
+  const barTimer = setInterval(()=>{ elapsed+=0.1; bar.style.width=(100-elapsed/dur*100)+'%'; if(elapsed>=dur){clearInterval(barTimer);} },100);
+  runVisSeq(dur*1000);
+}
+function runVisSeq(totalMs) {
+  let elapsed=0;
+  function next() {
+    if(elapsed>=totalMs){endVis();return;}
+    const isTarget=Math.random()<0.7;
+    document.getElementById('vis-stim').classList.toggle('visible',isTarget);
+    document.getElementById('vis-foil').style.display=isTarget?'none':'block';
+    if(isTarget){visSeq.push('target');}else{visSeq.push('foil');}
+    visTotal++;
+    const d=600+Math.random()*400;
+    setTimeout(()=>{
+      document.getElementById('vis-stim').classList.remove('visible');
+      document.getElementById('vis-foil').style.display='none';
+      elapsed+=d+500;
+      setTimeout(next,500);
+    },d);
+  }
+  next();
+}
+let lastVisSeqLen=0;
+function pressVis() {
+  if(!visRunning) return;
+  const btn=document.getElementById('vis-btn');
+  btn.style.background='#1a9e75'; btn.style.color='#fff';
+  setTimeout(()=>{btn.style.background='';btn.style.color='';},150);
+  if(document.getElementById('vis-stim').classList.contains('visible')){visHits++;}else{visFoils++;}
+  document.getElementById('vis-score').textContent=`반응: ${visHits+visFoils} | 정확: ${visHits}`;
+}
+function endVis() { visRunning=false; setTimeout(()=>go(4),800); }
+
+// 청각 단순선택
+let audRunning=false, audHits=0;
+function initAud() { audRunning=false; document.getElementById('aud-start').style.display='block'; document.getElementById('aud-score').textContent='반응: 0 | 정확: 0'; document.getElementById('aud-bar').style.width='100%'; }
+function startAud() {
+  document.getElementById('aud-start').style.display='none';
+  audRunning=true; audHits=0;
+  let dur=15, elapsed=0;
+  const bar=document.getElementById('aud-bar');
+  const bt=setInterval(()=>{ elapsed+=0.1; bar.style.width=(100-elapsed/dur*100)+'%'; if(elapsed>=dur){clearInterval(bt);} },100);
+  animateWaves();
+  setTimeout(()=>{ audRunning=false; setTimeout(()=>go(5),800); },dur*1000);
+}
+let waveAnim=null;
+function animateWaves() {
+  const bars=document.querySelectorAll('#sound-wave .wave-bar');
+  let t=0;
+  waveAnim=setInterval(()=>{
+    if(!audRunning){clearInterval(waveAnim);return;}
+    const idx=Math.floor(Math.random()*bars.length);
+    bars.forEach((b,i)=>{ b.classList.toggle('active',i===idx); });
+    t++;
+  },120);
+}
+function pressAud() {
+  if(!audRunning) return;
+  const btn=document.getElementById('aud-btn');
+  btn.style.background='#1a9e75'; btn.style.color='#fff';
+  setTimeout(()=>{btn.style.background='';btn.style.color='';},150);
+  audHits++;
+  document.getElementById('aud-score').textContent=`반응: ${audHits} | 정확: ${audHits}`;
+}
+
+// 간섭선택
+let arrRunning=false, arrCorrect=0, arrTotal=0, arrAns='';
+const dirs=['up','down','left','right'];
+const dArrows={'up':'↑','down':'↓','left':'←','right':'→'};
+function initArr() { arrRunning=false; document.getElementById('arr-start').style.display='block'; document.getElementById('arr-score').textContent='정답: 0 / 0'; document.getElementById('arr-bar').style.width='100%'; renderArrStim(); }
+function renderArrStim() {
+  const center=dirs[Math.floor(Math.random()*dirs.length)];
+  arrAns=center;
+  const flanker=dirs[Math.floor(Math.random()*dirs.length)];
+  const cells=[];
+  for(let i=0;i<5;i++) cells.push(i===2?center:flanker);
+  const grid=document.getElementById('arr-grid');
+  grid.innerHTML='';
+  cells.forEach((d,i)=>{
+    const c=document.createElement('div');
+    c.className='arrow-cell'+(i===2?' center':'');
+    c.style.color='#fff';
+    c.textContent=dArrows[d];
+    grid.appendChild(c);
+  });
+}
+function startArr() {
+  document.getElementById('arr-start').style.display='none';
+  arrRunning=true; arrCorrect=0; arrTotal=0;
+  let dur=20,elapsed=0;
+  const bar=document.getElementById('arr-bar');
+  const bt=setInterval(()=>{ elapsed+=0.1; bar.style.width=(100-elapsed/dur*100)+'%'; if(elapsed>=dur){clearInterval(bt);} },100);
+  setTimeout(()=>{ arrRunning=false; setTimeout(()=>go(6),800); },dur*1000);
+}
+function pressArr(dir) {
+  if(!arrRunning) return;
+  const isRight=dir===arrAns;
+  arrTotal++;
+  if(isRight) arrCorrect++;
+  ['up','down','left','right'].forEach(d=>{
+    const el=document.getElementById('dk-'+d);
+    el.classList.remove('pressed');
+  });
+  const el=document.getElementById('dk-'+dir);
+  el.classList.add('pressed');
+  setTimeout(()=>el.classList.remove('pressed'),200);
+  document.getElementById('arr-score').textContent=`정답: ${arrCorrect} / ${arrTotal}`;
+  setTimeout(renderArrStim, 300);
+}
+
+// 작업기억
+let memRunning=false, memLevel=2, memSeq=[], memInput=[], memCorrect=0;
+function initMem() {
+  memRunning=false;
+  document.getElementById('mem-start').style.display='block';
+  document.getElementById('mem-score').textContent='레벨: 2 | 정답: 0';
+  renderMemGrid();
+}
+function renderMemGrid() {
+  const grid=document.getElementById('mem-grid');
+  grid.innerHTML='';
+  for(let i=0;i<12;i++){
+    const c=document.createElement('div');
+    c.className='mem-cell';
+    c.id='mc'+i;
+    c.onclick=()=>pressMemCell(i);
+    grid.appendChild(c);
+  }
+}
+function startMem() {
+  document.getElementById('mem-start').style.display='none';
+  memRunning=true; memLevel=2; memCorrect=0;
+  runMemRound();
+}
+function runMemRound() {
+  memSeq=[]; memInput=[];
+  for(let i=0;i<memLevel;i++) memSeq.push(Math.floor(Math.random()*12));
+  document.getElementById('mem-score').textContent=`레벨: ${memLevel} | 정답: ${memCorrect}`;
+  flashSeq(0);
+}
+function flashSeq(idx) {
+  if(idx>=memSeq.length){ setTimeout(()=>{ memInput=[]; },400); return; }
+  const cell=document.getElementById('mc'+memSeq[idx]);
+  setTimeout(()=>{
+    cell.classList.add('lit');
+    setTimeout(()=>{ cell.classList.remove('lit'); flashSeq(idx+1); },400);
+  },600);
+}
+function pressMemCell(i) {
+  if(!memRunning||memInput.length>=memSeq.length) return;
+  const cell=document.getElementById('mc'+i);
+  memInput.push(i);
+  const correct=memInput[memInput.length-1]===memSeq[memInput.length-1];
+  cell.classList.add(correct?'selected':'wrong');
+  setTimeout(()=>cell.classList.remove('selected','wrong'),300);
+  if(!correct){ setTimeout(()=>endMem(),500); return; }
+  if(memInput.length===memSeq.length){
+    memCorrect++;
+    memLevel++;
+    document.getElementById('mem-score').textContent=`레벨: ${memLevel} | 정답: ${memCorrect}`;
+    if(memLevel>6){ setTimeout(()=>endMem(),500); return; }
+    setTimeout(runMemRound,800);
+  }
+}
+function endMem() { memRunning=false; setTimeout(()=>go(7),600); }
+</script>
