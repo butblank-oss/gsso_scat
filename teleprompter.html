@@ -515,15 +515,15 @@
         const tr = tw / th;
         let dx, dy, dw, dh;
         if (sr > tr) {
-          dw = tw;
-          dh = tw / sr;
-          dx = 0;
-          dy = (th - dh) / 2;
-        } else {
           dh = th;
           dw = th * sr;
           dx = (tw - dw) / 2;
           dy = 0;
+        } else {
+          dw = tw;
+          dh = tw / sr;
+          dx = 0;
+          dy = (th - dh) / 2;
         }
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, tw, th);
