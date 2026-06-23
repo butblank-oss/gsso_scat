@@ -111,8 +111,8 @@
     margin-bottom: 16px;
     box-shadow: 0 6px 22px rgba(0,0,0,0.35);
   }
-  .tp-video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block; }
-  .tp-video.no-mirror { transform: none; }
+  .tp-video { position: absolute; left: -9999px; top: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  .tp-canvas { width: 100%; height: 100%; display: block; background: #000; }
 
   /* Prompter overlay */
   .tp-prompter {
@@ -335,6 +335,7 @@
   <!-- Record -->
   <div class="tp-screen" id="tp-record">
     <div class="tp-stage" id="tp-stage">
+      <canvas class="tp-canvas" id="tp-canvas" width="720" height="1280"></canvas>
       <video class="tp-video" id="tp-cam" autoplay playsinline muted></video>
 
       <div class="tp-rec-dot" id="tp-rec-dot">대기 00:00</div>
@@ -391,6 +392,10 @@
   let recordedBlob = null;
   let recordedMime = "video/webm";
   let facingMode = "user";
+
+  const RECORD_W = 720;
+  const RECORD_H = 1280;
+  let drawAF = null;
 
   let scrollPos = 0;
   let scrollRunning = false;
@@ -470,7 +475,8 @@
   async function startCamera() {
     stopStream();
     const tryConstraints = [
-      { audio: true, video: { facingMode: { ideal: facingMode }, width: { ideal: 1080 }, height: { ideal: 1920 } } },
+      { audio: true, video: { facingMode: { ideal: facingMode }, width: { ideal: 1080 }, height: { ideal: 1920 }, aspectRatio: { ideal: 9 / 16 } } },
+      { audio: true, video: { facingMode: { ideal: facingMode }, width: { ideal: 720 }, height: { ideal: 1280 } } },
       { audio: true, video: { facingMode: facingMode } },
       { audio: true, video: true }
     ];
@@ -488,8 +494,59 @@
 
     const video = $("tp-cam");
     video.srcObject = stream;
-    video.classList.toggle("no-mirror", facingMode !== "user");
     try { await video.play(); } catch (_) {}
+    startDrawing();
+  }
+
+  function startDrawing() {
+    cancelAnimationFrame(drawAF);
+    const canvas = $("tp-canvas");
+    canvas.width = RECORD_W;
+    canvas.height = RECORD_H;
+    const ctx = canvas.getContext("2d");
+    const video = $("tp-cam");
+    const draw = () => {
+      if (video.readyState >= 2 && video.videoWidth > 0) {
+        const vw = video.videoWidth;
+        const vh = video.videoHeight;
+        const tw = canvas.width;
+        const th = canvas.height;
+        const sr = vw / vh;
+        const tr = tw / th;
+        let dx, dy, dw, dh;
+        if (sr > tr) {
+          dw = tw;
+          dh = tw / sr;
+          dx = 0;
+          dy = (th - dh) / 2;
+        } else {
+          dh = th;
+          dw = th * sr;
+          dx = (tw - dw) / 2;
+          dy = 0;
+        }
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, tw, th);
+        if (facingMode === "user") {
+          ctx.save();
+          ctx.translate(tw, 0);
+          ctx.scale(-1, 1);
+          ctx.drawImage(video, dx, dy, dw, dh);
+          ctx.restore();
+        } else {
+          ctx.drawImage(video, dx, dy, dw, dh);
+        }
+      }
+      drawAF = requestAnimationFrame(draw);
+    };
+    draw();
+  }
+
+  function stopDrawing() {
+    if (drawAF) {
+      cancelAnimationFrame(drawAF);
+      drawAF = null;
+    }
   }
 
   function stopStream() {
@@ -592,10 +649,21 @@
     recordedChunks = [];
     const mime = pickMime();
     recordedMime = mime || "video/webm";
+
+    let recordStream;
     try {
-      mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      const canvasStream = $("tp-canvas").captureStream(30);
+      recordStream = new MediaStream();
+      canvasStream.getVideoTracks().forEach((t) => recordStream.addTrack(t));
+      if (stream) stream.getAudioTracks().forEach((t) => recordStream.addTrack(t));
     } catch (e) {
-      try { mediaRecorder = new MediaRecorder(stream); } catch (e2) {
+      recordStream = stream;
+    }
+
+    try {
+      mediaRecorder = new MediaRecorder(recordStream, mime ? { mimeType: mime } : undefined);
+    } catch (e) {
+      try { mediaRecorder = new MediaRecorder(recordStream); } catch (e2) {
         showError("녹화기를 시작할 수 없어요: " + (e2.message || e2));
         return;
       }
@@ -642,6 +710,7 @@
   $("tp-back-btn").addEventListener("click", () => {
     if (recording) stopRecording();
     cancelAnimationFrame(scrollAF);
+    stopDrawing();
     stopStream();
     showScreen("tp-setup");
   });
@@ -682,6 +751,7 @@
   window.addEventListener("pagehide", () => {
     if (recording) stopRecording();
     cancelAnimationFrame(scrollAF);
+    stopDrawing();
     stopStream();
   });
 })();
