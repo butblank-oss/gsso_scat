@@ -470,11 +470,7 @@
   async function startCamera() {
     stopStream();
     const tryConstraints = [
-  try { await video.play(); } catch (_) {}
-  }
-      
-      
-      { audio: true, video: { facingMode: facingMode } },
+      { audio: true, video: { facingMode: { ideal: facingMode } } },
       { audio: true, video: true }
     ];
     let lastErr = null;
