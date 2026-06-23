@@ -103,12 +103,12 @@
   /* Stage: 9:16 preview */
   .tp-stage {
     position: relative;
-    width: 100%;
+    width: 70%;
+    margin: 0 auto 16px;
     aspect-ratio: 9/16;
     background: #000;
     border-radius: 16px;
     overflow: hidden;
-    margin-bottom: 16px;
     box-shadow: 0 6px 22px rgba(0,0,0,0.35);
   }
   .tp-video { position: absolute; left: -9999px; top: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
@@ -393,16 +393,7 @@
   let recordedMime = "video/webm";
   let facingMode = "user";
 
-  const RECORD_W = 720;
-  const RECORD_H = 1280;
   let drawAF = null;
-  const supportsBlur = (() => {
-    try {
-      const c = document.createElement("canvas").getContext("2d");
-      c.filter = "blur(1px)";
-      return c.filter === "blur(1px)";
-    } catch (_) { return false; }
-  })();
 
   let scrollPos = 0;
   let scrollRunning = false;
@@ -508,71 +499,29 @@
   function startDrawing() {
     cancelAnimationFrame(drawAF);
     const canvas = $("tp-canvas");
-    canvas.width = RECORD_W;
-    canvas.height = RECORD_H;
     const ctx = canvas.getContext("2d");
     const video = $("tp-cam");
-    const drawSource = (dx, dy, dw, dh) => {
-      const tw = canvas.width;
-      if (facingMode === "user") {
-        ctx.save();
-        ctx.translate(tw, 0);
-        ctx.scale(-1, 1);
-        ctx.drawImage(video, dx, dy, dw, dh);
-        ctx.restore();
-      } else {
-        ctx.drawImage(video, dx, dy, dw, dh);
-      }
-    };
+    const stage = $("tp-stage");
     const draw = () => {
       if (video.readyState >= 2 && video.videoWidth > 0) {
         const vw = video.videoWidth;
         const vh = video.videoHeight;
-        const tw = canvas.width;
-        const th = canvas.height;
-        const sr = vw / vh;
-        const tr = tw / th;
-
-        let fgX, fgY, fgW, fgH;
-        if (sr > tr) {
-          fgW = tw;
-          fgH = tw / sr;
-          fgX = 0;
-          fgY = (th - fgH) / 2;
-        } else {
-          fgH = th;
-          fgW = th * sr;
-          fgX = (tw - fgW) / 2;
-          fgY = 0;
+        if (canvas.width !== vw || canvas.height !== vh) {
+          canvas.width = vw;
+          canvas.height = vh;
+          stage.style.aspectRatio = vw + " / " + vh;
         }
-
-        let bgX, bgY, bgW, bgH;
-        if (sr > tr) {
-          bgH = th;
-          bgW = th * sr;
-          bgX = (tw - bgW) / 2;
-          bgY = 0;
-        } else {
-          bgW = tw;
-          bgH = tw / sr;
-          bgX = 0;
-          bgY = (th - bgH) / 2;
-        }
-
         ctx.fillStyle = "#000";
-        ctx.fillRect(0, 0, tw, th);
-
-        if (supportsBlur) {
-          ctx.filter = "blur(24px) brightness(0.55) saturate(1.15)";
-          drawSource(bgX, bgY, bgW, bgH);
-          ctx.filter = "none";
+        ctx.fillRect(0, 0, vw, vh);
+        if (facingMode === "user") {
+          ctx.save();
+          ctx.translate(vw, 0);
+          ctx.scale(-1, 1);
+          ctx.drawImage(video, 0, 0, vw, vh);
+          ctx.restore();
         } else {
-          ctx.globalAlpha = 0.35;
-          drawSource(bgX, bgY, bgW, bgH);
-          ctx.globalAlpha = 1.0;
+          ctx.drawImage(video, 0, 0, vw, vh);
         }
-
-        drawSource(fgX, fgY, fgW, fgH);
       }
       drawAF = requestAnimationFrame(draw);
     };
