@@ -203,28 +203,17 @@
   /* === RECORDING SCREEN === */
 
   .stage-area {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 0;
     margin-bottom: 14px;
   }
 
   .stage {
     position: relative;
     width: 100%;
-    max-width: min(360px, calc((100vh - 240px) * 9 / 16));
     aspect-ratio: 9/16;
     background: #000;
     border-radius: 22px;
     overflow: hidden;
     box-shadow: 0 12px 28px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04);
-  }
-  @supports (height: 100dvh) {
-    .stage {
-      max-width: min(360px, calc((100dvh - 240px) * 9 / 16));
-    }
   }
 
   .cam-video {
@@ -525,17 +514,11 @@
   /* === REVIEW === */
   .review-video {
     width: 100%;
-    max-width: min(360px, calc((100vh - 240px) * 9 / 16));
     aspect-ratio: 9/16;
     background: #000;
     border-radius: 22px;
     margin: 0 auto 18px;
     display: block;
-  }
-  @supports (height: 100dvh) {
-    .review-video {
-      max-width: min(360px, calc((100dvh - 240px) * 9 / 16));
-    }
   }
   .action-row {
     display: flex;
