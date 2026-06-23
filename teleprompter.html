@@ -489,7 +489,7 @@
     video.srcObject = stream;
     video.classList.toggle("no-mirror", facingMode !== "user");
     try { await video.play(); } catch (_) {}
-
+  }
 
   function stopStream() {
     if (stream) {
