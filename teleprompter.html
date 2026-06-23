@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0a0a0a">
+<title>프롬프터 카메라</title>
+<style>
+  :root {
+    --tp-bg: #0a0a0a;
+    --tp-bg-secondary: #1a1a1a;
+    --tp-text: #ffffff;
+    --tp-text-muted: #8a8a8a;
+    --tp-primary: #1a9e75;
+    --tp-border: #262626;
+    --tp-danger: #e24b4a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    background: var(--tp-bg);
+    color: var(--tp-text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    min-height: 100vh;
+    overscroll-behavior: none;
+  }
+
+  .tp-container {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 24px 18px calc(24px + env(safe-area-inset-bottom));
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .tp-screen { display: none; flex: 1; flex-direction: column; }
+  .tp-screen.active { display: flex; }
+
+  .tp-title { font-size: 22px; font-weight: 700; text-align: center; margin-bottom: 6px; }
+  .tp-subtitle { font-size: 13px; color: var(--tp-text-muted); text-align: center; margin-bottom: 24px; line-height: 1.6; }
+  .tp-section-label { font-size: 12px; color: var(--tp-text-muted); margin-bottom: 8px; font-weight: 500; letter-spacing: 0.2px; }
+
+  .tp-textarea {
+    width: 100%;
+    min-height: 160px;
+    background: var(--tp-bg-secondary);
+    border: 1px solid var(--tp-border);
+    border-radius: 12px;
+    padding: 14px;
+    color: var(--tp-text);
+    font-size: 15px;
+    line-height: 1.6;
+    resize: vertical;
+    font-family: inherit;
+  }
+  .tp-textarea:focus { outline: none; border-color: var(--tp-primary); }
+
+  .tp-control-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .tp-slider-wrap { flex: 1; }
+  input[type=range] { width: 100%; accent-color: var(--tp-primary); }
+  .tp-val { min-width: 42px; text-align: right; font-size: 13px; color: var(--tp-text-muted); }
+
+  .tp-tab-row { display: flex; gap: 8px; margin-bottom: 20px; }
+  .tp-tab {
+    flex: 1;
+    padding: 11px;
+    background: var(--tp-bg-secondary);
+    border: 1px solid var(--tp-border);
+    border-radius: 10px;
+    color: var(--tp-text-muted);
+    font-size: 13px;
+    cursor: pointer;
+    text-align: center;
+    user-select: none;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .tp-tab.active { background: var(--tp-primary); border-color: var(--tp-primary); color: #fff; }
+
+  .tp-btn {
+    background: var(--tp-primary);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 15px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 16px;
+    transition: opacity 0.15s, transform 0.05s;
+  }
+  .tp-btn:active { transform: scale(0.985); }
+  .tp-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .tp-btn-ghost { background: transparent; border: 1.5px solid var(--tp-primary); color: var(--tp-primary); }
+
+  /* Stage: 9:16 preview */
+  .tp-stage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 9/16;
+    background: #000;
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 16px;
+    box-shadow: 0 6px 22px rgba(0,0,0,0.35);
+  }
+  .tp-video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block; }
+  .tp-video.no-mirror { transform: none; }
+
+  /* Prompter overlay */
+  .tp-prompter {
+    position: absolute;
+    top: 14%;
+    left: 0;
+    right: 0;
+    bottom: 24%;
+    overflow: hidden;
+    pointer-events: none;
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 14%, rgba(0,0,0,1) 86%, rgba(0,0,0,0) 100%);
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 14%, rgba(0,0,0,1) 86%, rgba(0,0,0,0) 100%);
+  }
+  .tp-prompter-inner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 0 22px;
+    color: #fff;
+    text-align: center;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 12px rgba(0,0,0,0.6);
+    font-weight: 700;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    will-change: transform;
+  }
+
+  /* REC badge */
+  .tp-rec-dot {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0,0,0,0.55);
+    padding: 5px 10px 5px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+    z-index: 2;
+  }
+  .tp-rec-dot::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    background: var(--tp-danger);
+    border-radius: 50%;
+  }
+  .tp-rec-dot.recording::before { animation: blink 1s infinite; }
+  @keyframes blink { 50% { opacity: 0.25; } }
+
+  /* Top right icon buttons inside stage */
+  .tp-top-controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 3;
+  }
+  .tp-top-btn {
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tp-top-btn:active { background: rgba(0,0,0,0.8); }
+
+  /* Speed slider inside stage at bottom */
+  .tp-bottom-controls {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0,0,0,0.55);
+    padding: 8px 14px;
+    border-radius: 999px;
+    z-index: 3;
+  }
+  .tp-bottom-controls label { font-size: 11px; color: rgba(255,255,255,0.9); }
+
+  /* Record button row */
+  .tp-recbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    margin-top: 6px;
+    margin-bottom: 12px;
+  }
+  .tp-rec-btn-wrap {
+    width: 78px;
+    height: 78px;
+    border-radius: 50%;
+    border: 3px solid rgba(255,255,255,0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tp-rec-btn {
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    background: var(--tp-danger);
+    border: none;
+    cursor: pointer;
+    transition: width 0.2s, height 0.2s, border-radius 0.2s;
+  }
+  .tp-rec-btn.recording {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+  }
+
+  .tp-icon-btn {
+    background: var(--tp-bg-secondary);
+    border: 1px solid var(--tp-border);
+    color: var(--tp-text);
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+  .tp-icon-btn:active { background: #2a2a2a; }
+
+  /* Review screen */
+  .tp-review-video {
+    width: 100%;
+    aspect-ratio: 9/16;
+    background: #000;
+    border-radius: 16px;
+    margin-bottom: 16px;
+  }
+  .tp-action-row { display: flex; gap: 10px; margin-top: auto; }
+  .tp-action-row .tp-btn { margin-top: 0; }
+
+  .tp-error {
+    background: rgba(226,75,74,0.12);
+    border: 1px solid var(--tp-danger);
+    color: #ffb4b4;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+
+  /* Status hint above record button */
+  .tp-hint {
+    text-align: center;
+    font-size: 12px;
+    color: var(--tp-text-muted);
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+<div class="tp-container">
+
+  <!-- Setup -->
+  <div class="tp-screen active" id="tp-setup">
+    <h1 class="tp-title">프롬프터 카메라</h1>
+    <p class="tp-subtitle">대본을 보면서 인스타용 영상을<br>9:16 세로로 촬영해보세요.</p>
+
+    <p class="tp-section-label">대본</p>
+    <textarea class="tp-textarea" id="tp-script" placeholder="여기에 대본을 입력하세요…">안녕하세요!
+오늘은 멋진 영상을 함께 찍어볼게요.
+
+천천히 말하면서 자연스럽게
+카메라를 바라보세요.
+
+스크롤 속도는 우측 슬라이더로
+실시간 조절할 수 있습니다.</textarea>
+
+    <div style="height:18px"></div>
+
+    <p class="tp-section-label">카메라</p>
+    <div class="tp-tab-row">
+      <div class="tp-tab active" data-cam="user" id="tp-tab-user">전면 (셀카)</div>
+      <div class="tp-tab" data-cam="environment" id="tp-tab-env">후면</div>
+    </div>
+
+    <p class="tp-section-label">스크롤 속도 (px/s)</p>
+    <div class="tp-control-row">
+      <div class="tp-slider-wrap">
+        <input type="range" id="tp-speed" min="20" max="220" value="70" step="5">
+      </div>
+      <span class="tp-val" id="tp-speed-val">70</span>
+    </div>
+
+    <p class="tp-section-label">글자 크기</p>
+    <div class="tp-control-row">
+      <div class="tp-slider-wrap">
+        <input type="range" id="tp-fontsize" min="14" max="42" value="24" step="1">
+      </div>
+      <span class="tp-val" id="tp-fontsize-val">24</span>
+    </div>
+
+    <button class="tp-btn" id="tp-start-btn">촬영 시작 ›</button>
+  </div>
+
+  <!-- Record -->
+  <div class="tp-screen" id="tp-record">
+    <div class="tp-stage" id="tp-stage">
+      <video class="tp-video" id="tp-cam" autoplay playsinline muted></video>
+
+      <div class="tp-rec-dot" id="tp-rec-dot">대기 00:00</div>
+
+      <div class="tp-top-controls">
+        <button class="tp-top-btn" id="tp-flip-btn" title="카메라 전환">⇄</button>
+        <button class="tp-top-btn" id="tp-scroll-btn" title="스크롤 일시정지">⏸</button>
+        <button class="tp-top-btn" id="tp-reset-btn" title="대본 처음으로">↺</button>
+      </div>
+
+      <div class="tp-prompter" id="tp-prompter">
+        <div class="tp-prompter-inner" id="tp-prompter-inner"></div>
+      </div>
+
+      <div class="tp-bottom-controls">
+        <label>속도</label>
+        <input type="range" id="tp-speed-live" min="20" max="220" value="70" step="5">
+      </div>
+    </div>
+
+    <div id="tp-err" style="display:none" class="tp-error"></div>
+
+    <div class="tp-recbar">
+      <button class="tp-icon-btn" id="tp-back-btn" title="설정으로">←</button>
+      <div class="tp-rec-btn-wrap">
+        <button class="tp-rec-btn" id="tp-rec-toggle" aria-label="녹화"></button>
+      </div>
+      <button class="tp-icon-btn" id="tp-reset-btn-2" title="대본 처음으로">↺</button>
+    </div>
+    <p class="tp-hint" id="tp-hint">버튼을 눌러 녹화를 시작하세요</p>
+  </div>
+
+  <!-- Review -->
+  <div class="tp-screen" id="tp-review">
+    <h1 class="tp-title">미리보기</h1>
+    <p class="tp-subtitle">촬영된 영상을 확인하고<br>저장하거나 다시 찍을 수 있어요.</p>
+    <video class="tp-review-video" id="tp-review-video" controls playsinline></video>
+    <div class="tp-action-row">
+      <button class="tp-btn tp-btn-ghost" id="tp-retake-btn">다시 촬영</button>
+      <button class="tp-btn" id="tp-download-btn">다운로드</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+
+  let stream = null;
+  let mediaRecorder = null;
+  let recordedChunks = [];
+  let recording = false;
+  let recordedBlob = null;
+  let recordedMime = "video/webm";
+  let facingMode = "user";
+
+  let scrollPos = 0;
+  let scrollRunning = false;
+  let scrollAF = null;
+  let scrollSpeed = 70;
+  let lastFrameTime = 0;
+
+  let recStartTime = 0;
+  let recTimerInterval = null;
+
+  function showScreen(id) {
+    document.querySelectorAll(".tp-screen").forEach((s) => s.classList.remove("active"));
+    $(id).classList.add("active");
+  }
+
+  function showError(msg) {
+    const el = $("tp-err");
+    el.textContent = msg;
+    el.style.display = "block";
+  }
+  function clearError() {
+    $("tp-err").style.display = "none";
+    $("tp-err").textContent = "";
+  }
+
+  // Setup events
+  $("tp-speed").addEventListener("input", (e) => {
+    $("tp-speed-val").textContent = e.target.value;
+    scrollSpeed = parseInt(e.target.value, 10);
+    $("tp-speed-live").value = e.target.value;
+  });
+  $("tp-fontsize").addEventListener("input", (e) => {
+    $("tp-fontsize-val").textContent = e.target.value;
+  });
+  $("tp-speed-live").addEventListener("input", (e) => {
+    scrollSpeed = parseInt(e.target.value, 10);
+    $("tp-speed").value = e.target.value;
+    $("tp-speed-val").textContent = e.target.value;
+  });
+
+  function selectCam(mode) {
+    facingMode = mode;
+    $("tp-tab-user").classList.toggle("active", mode === "user");
+    $("tp-tab-env").classList.toggle("active", mode === "environment");
+  }
+  $("tp-tab-user").addEventListener("click", () => selectCam("user"));
+  $("tp-tab-env").addEventListener("click", () => selectCam("environment"));
+
+  $("tp-start-btn").addEventListener("click", async () => {
+    const script = $("tp-script").value.trim();
+    if (!script) {
+      alert("대본을 입력해 주세요.");
+      return;
+    }
+    const fontSize = $("tp-fontsize").value;
+    const inner = $("tp-prompter-inner");
+    inner.textContent = script;
+    inner.style.fontSize = fontSize + "px";
+
+    scrollSpeed = parseInt($("tp-speed").value, 10);
+    $("tp-speed-live").value = scrollSpeed;
+
+    showScreen("tp-record");
+    clearError();
+
+    try {
+      await startCamera();
+      resetPrompter();
+      scrollRunning = true;
+      $("tp-scroll-btn").textContent = "⏸";
+      runScroll();
+    } catch (e) {
+      showError("카메라 접근에 실패했어요: " + (e && e.message ? e.message : e) + " — 브라우저 권한을 확인해 주세요.");
+    }
+  });
+
+  async function startCamera() {
+    stopStream();
+    const tryConstraints = [
+      { audio: true, video: { facingMode: { ideal: facingMode }, width: { ideal: 1080 }, height: { ideal: 1920 } } },
+      { audio: true, video: { facingMode: facingMode } },
+      { audio: true, video: true }
+    ];
+    let lastErr = null;
+    for (const c of tryConstraints) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(c);
+        break;
+      } catch (e) {
+        lastErr = e;
+        stream = null;
+      }
+    }
+    if (!stream) throw lastErr || new Error("미디어를 가져올 수 없습니다.");
+
+    const video = $("tp-cam");
+    video.srcObject = stream;
+    video.classList.toggle("no-mirror", facingMode !== "user");
+    try { await video.play(); } catch (_) {}
+  }
+
+  function stopStream() {
+    if (stream) {
+      stream.getTracks().forEach((t) => t.stop());
+      stream = null;
+    }
+  }
+
+  $("tp-flip-btn").addEventListener("click", async () => {
+    if (recording) return;
+    facingMode = facingMode === "user" ? "environment" : "user";
+    try {
+      await startCamera();
+    } catch (e) {
+      showError("카메라 전환 실패: " + (e && e.message ? e.message : e));
+    }
+  });
+
+  function toggleScroll() {
+    scrollRunning = !scrollRunning;
+    $("tp-scroll-btn").textContent = scrollRunning ? "⏸" : "▶";
+    if (scrollRunning) runScroll();
+    else cancelAnimationFrame(scrollAF);
+  }
+  $("tp-scroll-btn").addEventListener("click", toggleScroll);
+
+  function resetPrompter() {
+    scrollPos = 0;
+    $("tp-prompter-inner").style.transform = "translateY(0)";
+  }
+  $("tp-reset-btn").addEventListener("click", () => {
+    resetPrompter();
+    if (!scrollRunning) {
+      scrollRunning = true;
+      $("tp-scroll-btn").textContent = "⏸";
+      runScroll();
+    }
+  });
+  $("tp-reset-btn-2").addEventListener("click", () => {
+    resetPrompter();
+    if (!scrollRunning) {
+      scrollRunning = true;
+      $("tp-scroll-btn").textContent = "⏸";
+      runScroll();
+    }
+  });
+
+  function runScroll() {
+    cancelAnimationFrame(scrollAF);
+    lastFrameTime = performance.now();
+    const inner = $("tp-prompter-inner");
+    const frame = (t) => {
+      if (!scrollRunning) return;
+      const dt = (t - lastFrameTime) / 1000;
+      lastFrameTime = t;
+      scrollPos += scrollSpeed * dt;
+      const maxScroll = inner.offsetHeight;
+      if (scrollPos >= maxScroll) {
+        scrollPos = maxScroll;
+        inner.style.transform = "translateY(-" + scrollPos + "px)";
+        scrollRunning = false;
+        $("tp-scroll-btn").textContent = "▶";
+        return;
+      }
+      inner.style.transform = "translateY(-" + scrollPos + "px)";
+      scrollAF = requestAnimationFrame(frame);
+    };
+    scrollAF = requestAnimationFrame(frame);
+  }
+
+  // Recording
+  $("tp-rec-toggle").addEventListener("click", () => {
+    if (!stream) return;
+    if (!recording) startRecording();
+    else stopRecording();
+  });
+
+  function pickMime() {
+    const candidates = [
+      "video/mp4;codecs=h264,aac",
+      "video/mp4",
+      "video/webm;codecs=vp9,opus",
+      "video/webm;codecs=vp8,opus",
+      "video/webm"
+    ];
+    for (const m of candidates) {
+      try {
+        if (window.MediaRecorder && MediaRecorder.isTypeSupported(m)) return m;
+      } catch (_) {}
+    }
+    return "";
+  }
+
+  function startRecording() {
+    if (!window.MediaRecorder) {
+      showError("이 브라우저는 녹화를 지원하지 않아요. 최신 Chrome/Safari를 사용해 주세요.");
+      return;
+    }
+    recordedChunks = [];
+    const mime = pickMime();
+    recordedMime = mime || "video/webm";
+    try {
+      mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+    } catch (e) {
+      try { mediaRecorder = new MediaRecorder(stream); } catch (e2) {
+        showError("녹화기를 시작할 수 없어요: " + (e2.message || e2));
+        return;
+      }
+    }
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) recordedChunks.push(e.data);
+    };
+    mediaRecorder.onstop = () => {
+      const type = recordedMime.split(";")[0] || "video/webm";
+      recordedBlob = new Blob(recordedChunks, { type });
+      const old = $("tp-review-video").src;
+      if (old && old.startsWith("blob:")) URL.revokeObjectURL(old);
+      $("tp-review-video").src = URL.createObjectURL(recordedBlob);
+      showScreen("tp-review");
+    };
+    mediaRecorder.start(250);
+    recording = true;
+    $("tp-rec-toggle").classList.add("recording");
+    $("tp-rec-dot").classList.add("recording");
+    $("tp-hint").textContent = "녹화 중… 다시 누르면 정지";
+    recStartTime = Date.now();
+    recTimerInterval = setInterval(updateRecTimer, 250);
+    updateRecTimer();
+  }
+
+  function stopRecording() {
+    if (!mediaRecorder || mediaRecorder.state === "inactive") return;
+    mediaRecorder.stop();
+    recording = false;
+    $("tp-rec-toggle").classList.remove("recording");
+    $("tp-rec-dot").classList.remove("recording");
+    $("tp-rec-dot").textContent = "대기 00:00";
+    $("tp-hint").textContent = "버튼을 눌러 녹화를 시작하세요";
+    clearInterval(recTimerInterval);
+  }
+
+  function updateRecTimer() {
+    const sec = Math.floor((Date.now() - recStartTime) / 1000);
+    const mm = String(Math.floor(sec / 60)).padStart(2, "0");
+    const ss = String(sec % 60).padStart(2, "0");
+    $("tp-rec-dot").textContent = "REC " + mm + ":" + ss;
+  }
+
+  $("tp-back-btn").addEventListener("click", () => {
+    if (recording) stopRecording();
+    cancelAnimationFrame(scrollAF);
+    stopStream();
+    showScreen("tp-setup");
+  });
+
+  $("tp-retake-btn").addEventListener("click", async () => {
+    const old = $("tp-review-video").src;
+    if (old && old.startsWith("blob:")) URL.revokeObjectURL(old);
+    $("tp-review-video").src = "";
+    recordedBlob = null;
+    showScreen("tp-record");
+    clearError();
+    try {
+      await startCamera();
+      resetPrompter();
+      scrollRunning = true;
+      $("tp-scroll-btn").textContent = "⏸";
+      runScroll();
+    } catch (e) {
+      showError("카메라 접근 실패: " + (e && e.message ? e.message : e));
+    }
+  });
+
+  $("tp-download-btn").addEventListener("click", () => {
+    if (!recordedBlob) return;
+    const ext = recordedMime.includes("mp4") ? "mp4" : "webm";
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(recordedBlob);
+    a.download = "prompter-video-" + Date.now() + "." + ext;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(a.href);
+      document.body.removeChild(a);
+    }, 0);
+  });
+
+  // Cleanup on page hide
+  window.addEventListener("pagehide", () => {
+    if (recording) stopRecording();
+    cancelAnimationFrame(scrollAF);
+    stopStream();
+  });
+})();
+</script>
+</body>
+</html>
