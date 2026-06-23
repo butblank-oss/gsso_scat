@@ -675,7 +675,7 @@
     <video class="review-video" id="review-video" controls playsinline></video>
     <div class="action-row">
       <button class="btn btn-ghost" id="retake-btn">다시 촬영</button>
-      <button class="btn" id="download-btn">다운로드</button>
+      <button class="btn" id="download-btn">사진첩에 저장</button>
     </div>
   </div>
 
@@ -1095,16 +1095,40 @@
       showError("카메라 접근 실패: " + ((e && e.message) || e));
     }
   });
-  $("download-btn").addEventListener("click", () => {
-    if (!recordedBlob) return;
-    const ext = recordedMime.indexOf("mp4") >= 0 ? "mp4" : "webm";
+  function fallbackDownload(blob, filename) {
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(recordedBlob);
-    a.download = "prompter-video-" + Date.now() + "." + ext;
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     setTimeout(() => { URL.revokeObjectURL(a.href); document.body.removeChild(a); }, 0);
+  }
+  $("download-btn").addEventListener("click", async () => {
+    if (!recordedBlob) return;
+    const ext = recordedMime.indexOf("mp4") >= 0 ? "mp4" : "webm";
+    const filename = "prompter-video-" + Date.now() + "." + ext;
+    const file = new File([recordedBlob], filename, { type: recordedBlob.type || recordedMime });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: "프롬프터 영상" });
+        return;
+      } catch (e) {
+        if (e && e.name === "AbortError") return;
+      }
+    }
+    fallbackDownload(recordedBlob, filename);
   });
+
+  (function adjustSaveLabel() {
+    try {
+      const probe = new File([new Blob(["x"], { type: "video/mp4" })], "p.mp4", { type: "video/mp4" });
+      if (!(navigator.canShare && navigator.canShare({ files: [probe] }))) {
+        $("download-btn").textContent = "다운로드";
+      }
+    } catch (_) {
+      $("download-btn").textContent = "다운로드";
+    }
+  })();
 
   window.addEventListener("pagehide", () => {
     if (recording) stopRecording();
