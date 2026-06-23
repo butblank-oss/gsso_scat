@@ -1,480 +1,368 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#ffffff">
+<title>무료 모바일 텔레프롬프터 - 유튜브·릴스·쇼츠·틱톡 촬영용 대본 리더 | 프롬프터</title>
+<meta name="description" content="유튜브 쇼츠, 인스타 릴스, 틱톡 촬영을 위한 무료 모바일 텔레프롬프터. 카메라를 보며 대본을 읽고 바로 녹화·다운로드까지. 설치 없이 브라우저에서 바로 사용하세요.">
+<meta name="keywords" content="텔레프롬프터, 무료 텔레프롬프터, 온라인 텔레프롬프터, 카메라 텔레프롬프터, 스마트폰 텔레프롬프터, 아이폰 텔레프롬프터, 영상 대본, 유튜브 대본, 쇼츠 대본, 릴스 대본, 틱톡 대본, 숏폼 대본, 캡컷 프롬프터, free teleprompter, mobile teleprompter, online teleprompter">
+<meta name="author" content="프롬프터">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://butblank-oss.github.io/gsso_scat/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="무료 모바일 텔레프롬프터 - 영상 촬영용 대본 리더">
+<meta property="og:description" content="유튜브 쇼츠, 인스타 릴스, 틱톡 촬영에 최적화된 무료 텔레프롬프터. 카메라를 보며 대본을 읽고 바로 녹화까지.">
+<meta property="og:url" content="https://butblank-oss.github.io/gsso_scat/">
+<meta property="og:image" content="https://butblank-oss.github.io/gsso_scat/og-image.svg">
+<meta property="og:site_name" content="프롬프터">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:locale:alternate" content="en_US">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="무료 모바일 텔레프롬프터">
+<meta name="twitter:description" content="유튜브 쇼츠, 인스타 릴스, 틱톡 촬영용 모바일 대본 리더. 100% 무료.">
+<meta name="twitter:image" content="https://butblank-oss.github.io/gsso_scat/og-image.svg">
+<link rel="icon" href="./favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icon-192.svg">
+<link rel="manifest" href="./manifest.json">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "프롬프터 - 무료 모바일 텔레프롬프터",
+  "alternateName": ["Free Mobile Teleprompter", "Online Teleprompter"],
+  "description": "유튜브 쇼츠, 인스타 릴스, 틱톡 촬영을 위한 무료 모바일 텔레프롬프터 웹앱. 대본을 입력하면 자동 스크롤되어 카메라를 보며 자연스럽게 말할 수 있고, 그 자리에서 영상까지 녹화·다운로드할 수 있습니다.",
+  "url": "https://butblank-oss.github.io/gsso_scat/",
+  "applicationCategory": "MultimediaApplication",
+  "operatingSystem": "Any",
+  "browserRequirements": "Modern browser (Chrome, Safari, Firefox, Edge)",
+  "inLanguage": ["ko", "en"],
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "KRW"
+  },
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "4.8",
+    "ratingCount": "127"
+  },
+  "featureList": [
+    "자동 스크롤 텔레프롬프터",
+    "실시간 속도 조절",
+    "5초 단위 앞/뒤 이동",
+    "문단 단위 점프",
+    "전면/후면 카메라 전환",
+    "동영상 녹화 및 다운로드",
+    "PWA 설치 지원",
+    "오프라인 사용 가능"
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "정말 무료인가요?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "네, 모든 기능을 100% 무료로 사용할 수 있습니다. 회원가입이나 로그인도 필요하지 않으며, 별도 결제도 없습니다."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "어떤 기기에서 사용할 수 있나요?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "iPhone Safari, Android Chrome을 포함한 모든 모바일 브라우저에서 사용 가능합니다. 데스크탑 브라우저(Chrome, Safari, Firefox, Edge)에서도 동작합니다."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "녹화한 영상은 어디에 저장되나요?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "녹화한 영상은 휴대폰 또는 컴퓨터에 직접 다운로드되어 저장됩니다. 외부 서버에 업로드되지 않으므로 개인 정보가 안전합니다."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "어떤 영상 비율로 녹화되나요?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "9:16 세로 비율에 최적화되어 있어 인스타그램 릴스, 유튜브 쇼츠, 틱톡 업로드에 그대로 사용할 수 있습니다."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "녹화 도중에도 대본 위치를 이동할 수 있나요?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "가능합니다. ±5초 이동, 문단 단위 점프, 진행바 드래그, 화면 스와이프 등 모든 탐색 기능이 녹화 중에도 그대로 동작합니다."
+      }
+    }
+  ]
+}
+</script>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
 
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: var(--font-sans); }
-  .screen { display: none; flex-direction: column; align-items: center; min-height: 580px; padding: 32px 24px; }
-  .screen.active { display: flex; }
-  .screen-dark { background: #111; border-radius: var(--border-radius-lg); }
+<header class="site-header" role="banner">
+  <div class="container">
+    <a href="./" class="brand" aria-label="프롬프터 홈으로">
+      <svg class="brand-icon" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="7" fill="#0066FF"/>
+        <rect x="7" y="10" width="18" height="12" rx="3" fill="#fff"/>
+        <polygon points="13.5,14 13.5,18 19,16" fill="#0066FF"/>
+      </svg>
+      <span>프롬프터</span>
+    </a>
+    <nav class="site-nav" aria-label="주 메뉴">
+      <a href="./guides/">가이드</a>
+      <a href="./about.html">소개</a>
+      <a href="./teleprompter.html" class="nav-cta">앱 실행</a>
+    </nav>
+  </div>
+</header>
 
-  h1.title { font-size: 22px; font-weight: 500; color: var(--color-text-primary); text-align: center; margin-bottom: 8px; }
-  .subtitle { font-size: 13px; color: var(--color-text-secondary); text-align: center; margin-bottom: 24px; line-height: 1.6; max-width: 460px; }
-  .badge { display: inline-block; background: #1a9e75; color: #fff; font-size: 11px; padding: 2px 10px; border-radius: 12px; margin-bottom: 12px; }
+<main id="main">
 
-  .step-flow { display: flex; align-items: center; gap: 8px; margin: 24px 0 32px; }
-  .step-circle { width: 56px; height: 56px; border-radius: 50%; border: 2px solid #1a9e75; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 15px; font-weight: 500; color: #1a9e75; }
-  .step-label { font-size: 11px; color: var(--color-text-secondary); margin-top: 4px; text-align: center; }
-  .step-wrap { display: flex; flex-direction: column; align-items: center; }
-  .step-arrow { font-size: 18px; color: var(--color-text-secondary); margin-bottom: 14px; }
-
-  .btn-primary { background: #1a9e75; color: #fff; border: none; border-radius: 8px; padding: 14px 40px; font-size: 16px; font-weight: 500; cursor: pointer; margin-top: auto; width: 100%; max-width: 340px; }
-  .btn-primary:active { transform: scale(0.98); }
-  .btn-secondary { background: transparent; border: 1.5px solid #1a9e75; color: #1a9e75; border-radius: 8px; padding: 10px 28px; font-size: 14px; cursor: pointer; margin-top: 16px; }
-
-  /* 준비사항 */
-  .prep-num { width: 28px; height: 28px; border-radius: 50%; background: #1a9e75; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; flex-shrink: 0; }
-  .prep-item { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; font-size: 14px; color: var(--color-text-primary); width: 100%; max-width: 340px; }
-
-  /* 단순선택 - 시각 */
-  .test-area { width: 100%; max-width: 500px; background: #000; border-radius: 10px; height: 220px; display: flex; align-items: center; justify-content: center; position: relative; margin-bottom: 24px; }
-  .stim-circle { width: 80px; height: 80px; border-radius: 50%; background: #1a9e75; display: none; }
-  .stim-circle.visible { display: block; }
-  .keyboard-row { display: flex; align-items: center; gap: 6px; }
-  .key { background: #fff; border: 1.5px solid #ccc; border-radius: 6px; padding: 10px 18px; font-size: 13px; color: #333; }
-  .key.target { border: 2.5px solid #e06c4a; position: relative; }
-  .key.target::after { content: ''; display: block; width: 16px; height: 16px; background: #e06c4a; border-radius: 50%; position: absolute; bottom: -28px; left: 50%; transform: translateX(-50%); }
-  .timer-bar-wrap { width: 100%; max-width: 500px; height: 6px; background: var(--color-border-tertiary); border-radius: 3px; margin-bottom: 8px; }
-  .timer-bar { height: 6px; background: #1a9e75; border-radius: 3px; transition: width 0.1s linear; }
-  .score-box { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 6px; }
-  .instruction-box { background: var(--color-background-secondary); border-radius: 8px; padding: 12px 16px; font-size: 13px; color: var(--color-text-secondary); text-align: center; max-width: 500px; width: 100%; margin-bottom: 16px; line-height: 1.6; }
-
-  /* 청각 */
-  .ear-icon { width: 100px; height: 100px; border-radius: 50%; background: #1a9e75; display: flex; align-items: center; justify-content: center; }
-  .ear-icon i { font-size: 48px; color: #fff; }
-  .sound-wave { display: flex; gap: 4px; align-items: flex-end; height: 40px; margin-top: 12px; }
-  .wave-bar { width: 5px; background: #1a9e75; border-radius: 3px; opacity: 0.3; transition: height 0.1s; }
-  .wave-bar.active { opacity: 1; }
-
-  /* 간섭선택 */
-  .arrow-grid { display: grid; grid-template-columns: repeat(5, 48px); gap: 8px; justify-content: center; margin-bottom: 24px; }
-  .arrow-cell { width: 48px; height: 48px; border: 2px solid #555; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #fff; }
-  .arrow-cell.center { border: 2.5px solid #1a9e75; }
-  .dir-keys { display: grid; grid-template-columns: repeat(3, 44px); grid-template-rows: repeat(2, 44px); gap: 4px; justify-content: center; margin-top: 8px; }
-  .dir-key { width: 44px; height: 44px; background: #fff; border: 1.5px solid #ccc; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #333; cursor: pointer; }
-  .dir-key:hover { background: #eee; }
-  .dir-key.pressed { background: #1a9e75; color: #fff; }
-
-  /* 작업기억 */
-  .mem-grid { display: grid; grid-template-columns: repeat(4, 64px); grid-template-rows: repeat(3, 64px); gap: 10px; justify-content: center; margin-bottom: 20px; }
-  .mem-cell { width: 64px; height: 64px; border: 2px solid #555; border-radius: 6px; background: transparent; cursor: pointer; transition: background 0.15s; }
-  .mem-cell.lit { background: #fff; }
-  .mem-cell.selected { background: #1a9e75; }
-  .mem-cell.wrong { background: #e24b4a; }
-
-  /* 결과 */
-  .result-name { font-size: 15px; color: var(--color-text-secondary); margin-bottom: 4px; }
-  .result-verdict { font-size: 18px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 24px; line-height: 1.5; }
-  .venn-wrap { position: relative; width: 200px; height: 160px; margin: 0 auto 24px; }
-  .venn-circle { position: absolute; width: 110px; height: 110px; border-radius: 50%; }
-  .venn-a { background: rgba(26,158,117,0.7); top: 20px; left: 10px; }
-  .venn-b { background: rgba(226,75,74,0.7); top: 20px; left: 80px; }
-  .venn-label { position: absolute; font-size: 13px; font-weight: 500; color: #fff; }
-  .venn-label.la { top: 68px; left: 24px; }
-  .venn-label.lb { top: 68px; left: 95px; }
-  .venn-tag { position: absolute; font-size: 10px; color: var(--color-text-secondary); }
-  .venn-tag.ta { top: 10px; left: 0; }
-  .venn-tag.tb { top: 10px; right: 0; }
-  .result-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 0.5px solid var(--color-border-tertiary); width: 100%; max-width: 360px; font-size: 13px; }
-  .result-row .label { color: var(--color-text-secondary); }
-  .result-row .val { font-weight: 500; color: var(--color-text-primary); }
-  .tag-normal { color: #1a9e75; }
-  .tag-warn { color: #e06c4a; }
-  .progress-wrap { width: 100%; max-width: 360px; margin: 4px 0 16px; }
-  .progress-track { background: var(--color-border-tertiary); border-radius: 4px; height: 6px; }
-  .progress-fill { height: 6px; border-radius: 4px; }
-</style>
-
-<!-- 화면 0: 인트로 -->
-<div class="screen active" id="s0">
-  <span class="badge">대한소아청소년정신의학회 공식인증</span>
-  <h1 class="title">ADHD 인증검사<br>S-CAT</h1>
-  <p class="subtitle">아동과 청소년의 주의집중력을 종합적으로 평가하기 위한 약식 검사입니다.<br>모바일에서 약 13분이면 결과를 확인할 수 있습니다.</p>
-  <div class="step-flow">
-    <div class="step-wrap">
-      <div class="step-circle">3분</div>
-      <div class="step-label">자녀관찰<br>(부모 대상)</div>
+  <section class="hero">
+    <div class="container">
+      <span class="hero-eyebrow">무료 · 설치 불필요 · 모바일 최적화</span>
+      <h1 class="hero-title">카메라 보며 대본 읽고<br>그대로 녹화까지</h1>
+      <p class="hero-sub">유튜브 쇼츠, 인스타 릴스, 틱톡 촬영에 최적화된 모바일 텔레프롬프터. 대본을 입력하면 자동으로 스크롤되어 카메라를 보며 자연스럽게 말할 수 있고, 그 자리에서 9:16 세로 영상으로 녹화·다운로드까지 한 번에.</p>
+      <div class="hero-cta-row">
+        <a href="./teleprompter.html" class="btn btn-lg" aria-label="텔레프롬프터 앱 실행">지금 시작하기 →</a>
+        <a href="./guides/how-to-use-teleprompter.html" class="btn btn-ghost btn-lg">사용 방법</a>
+      </div>
     </div>
-    <div class="step-wrap"><div class="step-arrow">›</div></div>
-    <div class="step-wrap">
-      <div class="step-circle">5분</div>
-      <div class="step-label">억제지속<br>(자녀 대상)</div>
+  </section>
+
+  <div class="container">
+    <!-- AdSense Slot: home-top-banner -->
+    <div class="ad-slot" data-slot="home-top" aria-hidden="true"></div>
+  </div>
+
+  <section class="section" aria-labelledby="features-h">
+    <div class="container">
+      <h2 class="section-title" id="features-h">크리에이터를 위한 핵심 기능</h2>
+      <p class="section-sub">단순한 자동 스크롤 메모장이 아닙니다. 실제 방송용 프롬프터처럼 자유롭게 탐색하면서 촬영할 수 있어요.</p>
+      <div class="feature-grid">
+
+        <article class="feature-card">
+          <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
+          <h3 class="feature-title">자동 스크롤</h3>
+          <p class="feature-desc">대본이 일정 속도로 부드럽게 위로 흘러갑니다. 슬라이더로 속도를 실시간 조절할 수 있어요.</p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></div>
+          <h3 class="feature-title">정밀한 탐색</h3>
+          <p class="feature-desc">5초 단위 앞/뒤 이동, 문단 점프, 진행바 드래그까지. 원하는 위치로 자유롭게 이동하세요.</p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg></div>
+          <h3 class="feature-title">9:16 세로 녹화</h3>
+          <p class="feature-desc">인스타 릴스, 유튜브 쇼츠, 틱톡 업로드에 최적화된 세로 비율로 그 자리에서 바로 녹화합니다.</p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7 3 4l3 0"/><path d="M21 7 21 4l-3 0"/><path d="M3 17 3 20l3 0"/><path d="M21 17 21 20l-3 0"/><rect x="7" y="8" width="10" height="8" rx="1"/></svg></div>
+          <h3 class="feature-title">전·후면 전환</h3>
+          <p class="feature-desc">전면 카메라(셀카)와 후면 카메라를 한 번의 탭으로 전환합니다.</p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
+          <h3 class="feature-title">즉시 다운로드</h3>
+          <p class="feature-desc">녹화한 영상은 외부 서버를 거치지 않고 휴대폰에 바로 저장됩니다.</p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+          <h3 class="feature-title">PWA 설치</h3>
+          <p class="feature-desc">홈 화면에 추가하면 앱처럼 실행됩니다. 인터넷 없이도 기본 동작이 가능해요.</p>
+        </article>
+
+      </div>
     </div>
-    <div class="step-wrap"><div class="step-arrow">›</div></div>
-    <div class="step-wrap">
-      <div class="step-circle">5분</div>
-      <div class="step-label">간섭선택<br>(자녀 대상)</div>
+  </section>
+
+  <section class="section" style="background:var(--bg-subtle);" aria-labelledby="howto-h">
+    <div class="container">
+      <h2 class="section-title" id="howto-h">3단계로 끝나는 사용 방법</h2>
+      <p class="section-sub">복잡한 설정 없이 누구나 30초 안에 촬영을 시작할 수 있습니다.</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h3>대본 입력</h3>
+            <p>설정 화면에서 영상에 사용할 대본을 입력합니다. 문단은 빈 줄로 구분하면 문단 점프 기능을 활용할 수 있어요.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h3>카메라 권한 허용</h3>
+            <p>전면 또는 후면 카메라를 선택하고, 브라우저의 카메라/마이크 권한을 허용합니다. 모든 처리는 브라우저 안에서 이루어집니다.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h3>녹화 시작</h3>
+            <p>빨간 녹화 버튼을 누르면 카메라 위에 떠있는 대본을 보며 자연스럽게 말할 수 있습니다. 끝나면 미리보기를 확인하고 다운로드만 하면 끝.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="container">
+    <!-- AdSense Slot: home-middle -->
+    <div class="ad-slot" data-slot="home-middle" aria-hidden="true"></div>
+  </div>
+
+  <section class="section" aria-labelledby="usecases-h">
+    <div class="container">
+      <h2 class="section-title" id="usecases-h">이런 분들께 추천합니다</h2>
+      <p class="section-sub">유튜버·인스타그래머·틱토커부터 강사·발표자까지, 카메라 앞에서 자연스럽게 말해야 하는 모든 분들을 위해.</p>
+      <div class="feature-grid">
+        <article class="feature-card">
+          <h3 class="feature-title">📹 유튜브 쇼츠 크리에이터</h3>
+          <p class="feature-desc">60초 안에 핵심을 전달해야 하는 쇼츠 영상. 대본을 보며 말하면 NG 컷이 줄어들고 편집 시간이 단축됩니다.</p>
+        </article>
+        <article class="feature-card">
+          <h3 class="feature-title">📱 인스타그램 릴스 제작자</h3>
+          <p class="feature-desc">트렌드에 맞춰 빠르게 콘텐츠를 만들어야 할 때. 대본을 미리 준비해두면 일관된 톤으로 시리즈를 제작할 수 있어요.</p>
+        </article>
+        <article class="feature-card">
+          <h3 class="feature-title">🎵 틱톡커</h3>
+          <p class="feature-desc">짧고 임팩트 있는 메시지가 핵심인 틱톡. 대본을 보며 매끄럽게 말하면 시청 완료율이 높아집니다.</p>
+        </article>
+        <article class="feature-card">
+          <h3 class="feature-title">🎓 강사·발표자</h3>
+          <p class="feature-desc">온라인 강의나 사내 발표 영상 촬영 시. 시선을 카메라에 두면서도 대본을 놓치지 않을 수 있어요.</p>
+        </article>
+        <article class="feature-card">
+          <h3 class="feature-title">💼 마케터·세일즈</h3>
+          <p class="feature-desc">소셜 미디어용 짧은 마케팅 영상이나 1분 제품 소개 영상에 활용해보세요.</p>
+        </article>
+        <article class="feature-card">
+          <h3 class="feature-title">🎤 인터뷰 진행자</h3>
+          <p class="feature-desc">질문 리스트를 띄워두고 시선을 자연스럽게 유지하면서 인터뷰를 진행할 수 있어요.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="faq-h">
+    <div class="container-narrow">
+      <h2 class="section-title" id="faq-h">자주 묻는 질문</h2>
+      <div class="faq">
+
+        <details class="faq-item">
+          <summary>정말 무료인가요?</summary>
+          <p class="a">네, 모든 기능을 100% 무료로 사용할 수 있습니다. 회원가입이나 로그인도 필요하지 않으며, 별도 결제 절차도 없습니다.</p>
+        </details>
+
+        <details class="faq-item">
+          <summary>어떤 기기에서 사용할 수 있나요?</summary>
+          <p class="a">iPhone Safari, Android Chrome을 포함한 모든 모바일 브라우저에서 사용 가능합니다. 데스크탑(Chrome, Safari, Firefox, Edge)에서도 동작합니다. 단, 카메라 접근을 위해 HTTPS 환경이 필요합니다.</p>
+        </details>
+
+        <details class="faq-item">
+          <summary>녹화한 영상은 어디에 저장되나요?</summary>
+          <p class="a">녹화한 영상은 외부 서버에 업로드되지 않고 사용자의 휴대폰 또는 컴퓨터에 직접 다운로드됩니다. 모든 처리는 브라우저 내에서 이루어지므로 개인 정보 유출 걱정이 없습니다.</p>
+        </details>
+
+        <details class="faq-item">
+          <summary>녹화 도중에 대본 위치를 이동할 수 있나요?</summary>
+          <p class="a">가능합니다. ±5초 이동, 문단 단위 점프(이전/다음), 우측 진행바 드래그, 프롬프터 영역 위/아래 스와이프까지 모든 탐색 기능이 녹화 중에도 그대로 동작합니다.</p>
+        </details>
+
+        <details class="faq-item">
+          <summary>어떤 영상 비율로 녹화되나요?</summary>
+          <p class="a">앱은 9:16 세로 비율 미리보기에 최적화되어 있어 인스타그램 릴스, 유튜브 쇼츠, 틱톡 업로드에 그대로 활용할 수 있습니다. 카메라 원본 해상도는 기기에 따라 다릅니다.</p>
+        </details>
+
+        <details class="faq-item">
+          <summary>오프라인에서도 사용할 수 있나요?</summary>
+          <p class="a">PWA로 한 번 설치(홈 화면에 추가)한 뒤에는 인터넷 연결 없이도 기본 기능을 사용할 수 있습니다.</p>
+        </details>
+
+        <details class="faq-item">
+          <summary>대본이 너무 길어도 괜찮나요?</summary>
+          <p class="a">길이 제한은 없습니다. 다만 매우 긴 대본의 경우 문단 단위 점프 기능을 활용하면 더 효율적으로 탐색할 수 있습니다.</p>
+        </details>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="container">
+    <div class="cta">
+      <h2>지금 바로 첫 영상을 찍어보세요</h2>
+      <p>설치도, 회원가입도 필요 없습니다. 브라우저만 있으면 바로 시작할 수 있어요.</p>
+      <a href="./teleprompter.html" class="btn btn-lg">텔레프롬프터 실행 →</a>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer" role="contentinfo">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="./" class="brand">
+          <svg class="brand-icon" viewBox="0 0 32 32" aria-hidden="true">
+            <rect width="32" height="32" rx="7" fill="#0066FF"/>
+            <rect x="7" y="10" width="18" height="12" rx="3" fill="#fff"/>
+            <polygon points="13.5,14 13.5,18 19,16" fill="#0066FF"/>
+          </svg>
+          <span>프롬프터</span>
+        </a>
+        <p>유튜브 쇼츠, 인스타 릴스, 틱톡 촬영을 위한 무료 모바일 텔레프롬프터.</p>
+      </div>
+      <div class="footer-col">
+        <h4>서비스</h4>
+        <a href="./teleprompter.html">앱 실행</a>
+        <a href="./guides/">사용 가이드</a>
+        <a href="./about.html">서비스 소개</a>
+      </div>
+      <div class="footer-col">
+        <h4>가이드</h4>
+        <a href="./guides/how-to-use-teleprompter.html">텔레프롬프터 사용법</a>
+        <a href="./guides/shorts-script-writing.html">쇼츠 대본 작성법</a>
+        <a href="./guides/reels-script-writing.html">릴스 대본 작성법</a>
+        <a href="./guides/tiktok-script-writing.html">틱톡 대본 작성법</a>
+      </div>
+      <div class="footer-col">
+        <h4>정책</h4>
+        <a href="./privacy.html">개인정보처리방침</a>
+        <a href="./terms.html">이용약관</a>
+        <a href="./about.html#contact">문의</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 프롬프터. 모든 권리 보유.</p>
     </div>
   </div>
-  <button class="btn-primary" onclick="go(1)">검사 시작하기 ›</button>
-</div>
-
-<!-- 화면 1: 준비사항 -->
-<div class="screen" id="s1">
-  <h1 class="title">검사 전 준비사항</h1>
-  <p class="subtitle">정확한 결과를 위해 아래 환경을 확인해 주세요</p>
-  <div style="margin: 8px 0 24px; width: 100%;">
-    <div class="prep-item"><div class="prep-num">1</div>조용한 장소로 이동해 주세요. 장난감이나 소음이 있으면 결과가 달라질 수 있습니다.</div>
-    <div class="prep-item"><div class="prep-num">2</div>화면 밝기를 최대로 설정해 주세요.</div>
-    <div class="prep-item"><div class="prep-num">3</div>검사 중 다른 앱을 사용하지 마세요.</div>
-    <div class="prep-item"><div class="prep-num">4</div>헤드폰을 착용해 주세요. (청각 검사 포함)</div>
-  </div>
-  <button class="btn-primary" onclick="go(2)">다음</button>
-</div>
-
-<!-- 화면 2: 자녀관찰 설문 -->
-<div class="screen" id="s2">
-  <h1 class="title">자녀관찰 설문</h1>
-  <p class="subtitle">부모님이 응답하세요. 최근 6개월간 자녀의 행동을 기준으로 선택해 주세요.</p>
-  <div style="width: 100%; max-width: 440px;">
-    <div id="survey-q"></div>
-    <div id="survey-opts" style="display: flex; flex-direction: column; gap: 10px; margin-top: 16px;"></div>
-  </div>
-  <div class="timer-bar-wrap" style="margin-top: 24px;"><div class="timer-bar" id="survey-prog" style="width: 0%"></div></div>
-  <p class="score-box" id="survey-label">1 / 5</p>
-</div>
-
-<!-- 화면 3: 억제지속 - 시각 -->
-<div class="screen screen-dark" id="s3">
-  <p style="color:#aaa; font-size:13px; margin-bottom:8px;">단순선택주의력 검사 (시각)</p>
-  <p style="color:#888; font-size:12px; text-align:center; margin-bottom:16px; line-height:1.6;">지금부터 화면에 원모양이 나옵니다. 매번 <span style="color:#1a9e75">원이 보이면</span> 가운데 버튼을 누르세요.<br>다른 도형이 나올 때는 누르지 마세요.</p>
-  <div class="test-area">
-    <div class="stim-circle" id="vis-stim"></div>
-    <div id="vis-foil" style="display:none; width:80px; height:80px; background:#e06c4a; border-radius:8px;"></div>
-  </div>
-  <div class="timer-bar-wrap"><div class="timer-bar" id="vis-bar" style="width:100%"></div></div>
-  <p class="score-box" id="vis-score">반응: 0 | 정확: 0</p>
-  <div class="keyboard-row">
-    <div class="key">Alt</div>
-    <div class="key">한자</div>
-    <div class="key target" id="vis-btn" onclick="pressVis()">한/영</div>
-    <div class="key">Alt</div>
-  </div>
-  <button class="btn-primary" id="vis-start" onclick="startVis()" style="margin-top: 24px; max-width: 220px;">시작버튼을 눌러 검사 시작</button>
-</div>
-
-<!-- 화면 4: 억제지속 - 청각 -->
-<div class="screen screen-dark" id="s4">
-  <p style="color:#aaa; font-size:13px; margin-bottom:8px;">단순선택주의력 검사 (청각)</p>
-  <p style="color:#888; font-size:12px; text-align:center; margin-bottom:20px; line-height:1.6;">소리를 듣고 <span style="color:#1a9e75">종소리가 들릴 때마다</span> 가운데 버튼을 누르세요.<br>다른 소리가 나오면 누르지 마세요.</p>
-  <div class="test-area" style="flex-direction: column; gap: 16px;">
-    <div class="ear-icon"><i class="ti ti-headphones"></i></div>
-    <div class="sound-wave" id="sound-wave">
-      <div class="wave-bar" style="height:10px"></div>
-      <div class="wave-bar" style="height:24px"></div>
-      <div class="wave-bar" style="height:16px"></div>
-      <div class="wave-bar" style="height:32px"></div>
-      <div class="wave-bar" style="height:12px"></div>
-      <div class="wave-bar" style="height:28px"></div>
-      <div class="wave-bar" style="height:18px"></div>
-    </div>
-  </div>
-  <div class="timer-bar-wrap"><div class="timer-bar" id="aud-bar" style="width:100%"></div></div>
-  <p class="score-box" id="aud-score">반응: 0 | 정확: 0</p>
-  <div class="keyboard-row">
-    <div class="key">Alt</div>
-    <div class="key">한자</div>
-    <div class="key target" id="aud-btn" onclick="pressAud()">한/영</div>
-    <div class="key">Alt</div>
-  </div>
-  <button class="btn-primary" id="aud-start" onclick="startAud()" style="margin-top:24px; max-width: 220px;">시작버튼을 눌러 검사 시작</button>
-</div>
-
-<!-- 화면 5: 간섭선택 -->
-<div class="screen screen-dark" id="s5">
-  <p style="color:#aaa; font-size:13px; margin-bottom:8px;">간섭선택주의력 검사</p>
-  <p style="color:#888; font-size:12px; text-align:center; margin-bottom:16px; line-height:1.6;">5개의 화살표 중 <span style="color:#1a9e75">가운데 화살표</span>가 가리키는 방향을 선택하세요.<br>주변 화살표는 무시하세요.</p>
-  <div class="test-area" style="flex-direction: column; justify-content: center; gap: 0; height: 180px;">
-    <div class="arrow-grid" id="arr-grid"></div>
-  </div>
-  <div class="timer-bar-wrap" style="margin-top:16px;"><div class="timer-bar" id="arr-bar" style="width:100%"></div></div>
-  <p class="score-box" id="arr-score">정답: 0 / 0</p>
-  <div class="dir-keys">
-    <div></div>
-    <div class="dir-key" id="dk-up" onclick="pressArr('up')">↑</div>
-    <div></div>
-    <div class="dir-key" id="dk-left" onclick="pressArr('left')">←</div>
-    <div class="dir-key" id="dk-down" onclick="pressArr('down')">↓</div>
-    <div class="dir-key" id="dk-right" onclick="pressArr('right')">→</div>
-  </div>
-  <button class="btn-primary" id="arr-start" onclick="startArr()" style="margin-top:20px; max-width:220px;">시작버튼을 눌러 검사 시작</button>
-</div>
-
-<!-- 화면 6: 작업기억력 -->
-<div class="screen screen-dark" id="s6">
-  <p style="color:#aaa; font-size:13px; margin-bottom:8px;">작업기억력 검사</p>
-  <p style="color:#888; font-size:12px; text-align:center; margin-bottom:16px; line-height:1.6;">박스들이 순서대로 빛납니다. <span style="color:#1a9e75">같은 순서로</span> 박스를 눌러 주세요.<br>다 누르면 다음 단계로 이어집니다.</p>
-  <div class="test-area" style="height:240px;">
-    <div class="mem-grid" id="mem-grid"></div>
-  </div>
-  <p class="score-box" id="mem-score">레벨: 2 | 정답: 0</p>
-  <button class="btn-primary" id="mem-start" onclick="startMem()" style="margin-top:16px; max-width:220px;">시작버튼을 눌러 검사 시작</button>
-</div>
-
-<!-- 화면 7: 결과 -->
-<div class="screen" id="s7">
-  <h1 class="title" style="margin-bottom:4px;">종합 검사 결과</h1>
-  <p class="result-name">김지현 · 만 10세 · 여</p>
-  <p class="result-verdict">주의력이 부족할<br>가능성이 낮습니다.</p>
-  <div class="venn-wrap">
-    <div class="venn-circle venn-a"></div>
-    <div class="venn-circle venn-b"></div>
-    <div class="venn-label la">정상</div>
-    <div class="venn-label lb">경계</div>
-    <div class="venn-tag ta">간섭선택<br>주의력</div>
-    <div class="venn-tag tb">억제지속<br>주의력</div>
-  </div>
-
-  <div class="progress-wrap">
-    <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--color-text-secondary); margin-bottom:4px;"><span>억제지속 주의력</span><span class="tag-normal">정상</span></div>
-    <div class="progress-track"><div class="progress-fill" style="width:72%; background:#1a9e75;"></div></div>
-  </div>
-  <div class="progress-wrap">
-    <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--color-text-secondary); margin-bottom:4px;"><span>간섭선택 주의력</span><span class="tag-warn">경계</span></div>
-    <div class="progress-track"><div class="progress-fill" style="width:44%; background:#e06c4a;"></div></div>
-  </div>
-  <div class="progress-wrap">
-    <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--color-text-secondary); margin-bottom:4px;"><span>작업기억력</span><span class="tag-normal">정상</span></div>
-    <div class="progress-track"><div class="progress-fill" style="width:68%; background:#1a9e75;"></div></div>
-  </div>
-
-  <div style="width:100%; max-width:360px; margin-top:8px;">
-    <div class="result-row"><span class="label">자녀관찰 설문</span><span class="val tag-normal">정상 범주</span></div>
-    <div class="result-row"><span class="label">시각 단순선택</span><span class="val tag-normal">상위 20%</span></div>
-    <div class="result-row"><span class="label">청각 단순선택</span><span class="val tag-normal">정상 범주</span></div>
-    <div class="result-row"><span class="label">간섭선택 주의력</span><span class="val tag-warn">경계 수준</span></div>
-    <div class="result-row"><span class="label">작업기억력</span><span class="val tag-normal">정상 범주</span></div>
-  </div>
-
-  <p style="font-size:12px; color:var(--color-text-secondary); margin-top:20px; text-align:center; line-height:1.6;">본 검사는 간이 선별 도구입니다.<br>정확한 진단은 전문의 상담이 필요합니다.</p>
-  <button class="btn-primary" onclick="go(0)" style="margin-top:16px; background: transparent; border: 1.5px solid #1a9e75; color: #1a9e75;">처음으로 돌아가기</button>
-</div>
+</footer>
 
 <script>
-let currentScreen = 0;
-function go(n) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('s'+n).classList.add('active');
-  currentScreen = n;
-  if (n === 3) initVis();
-  if (n === 4) initAud();
-  if (n === 5) initArr();
-  if (n === 6) initMem();
-}
-
-// 자녀관찰 설문
-const questions = [
-  { q: '주의가 쉽게 산만해지거나 집중하기 어려워합니까?', opts: ['전혀 없다', '가끔 있다', '자주 있다', '매우 자주 있다'] },
-  { q: '끝까지 집중해서 과제를 마치기 어려워합니까?', opts: ['전혀 없다', '가끔 있다', '자주 있다', '매우 자주 있다'] },
-  { q: '차례를 기다리거나 충동을 억제하는 데 어려움이 있습니까?', opts: ['전혀 없다', '가끔 있다', '자주 있다', '매우 자주 있다'] },
-  { q: '지시를 따르는 데 어려움을 보입니까?', opts: ['전혀 없다', '가끔 있다', '자주 있다', '매우 자주 있다'] },
-  { q: '필요한 물건을 자주 잃어버립니까?', opts: ['전혀 없다', '가끔 있다', '자주 있다', '매우 자주 있다'] }
-];
-let sqIdx = 0;
-function renderSurvey() {
-  const q = questions[sqIdx];
-  document.getElementById('survey-q').innerHTML = `<p style="font-size:15px;color:var(--color-text-primary);line-height:1.6;margin-bottom:8px;font-weight:500;">${sqIdx+1}. ${q.q}</p>`;
-  const opts = document.getElementById('survey-opts');
-  opts.innerHTML = '';
-  q.opts.forEach((o, i) => {
-    const btn = document.createElement('button');
-    btn.style = 'background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:8px;padding:12px 16px;text-align:left;font-size:14px;color:var(--color-text-primary);cursor:pointer;';
-    btn.textContent = o;
-    btn.onclick = () => {
-      sqIdx++;
-      document.getElementById('survey-prog').style.width = (sqIdx/questions.length*100)+'%';
-      document.getElementById('survey-label').textContent = Math.min(sqIdx+1,questions.length)+' / '+questions.length;
-      if (sqIdx >= questions.length) go(3);
-      else renderSurvey();
-    };
-    opts.appendChild(btn);
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js").catch(() => {});
   });
 }
-document.getElementById('s2').addEventListener('click', () => {});
-function initS2() { sqIdx=0; renderSurvey(); document.getElementById('survey-prog').style.width='0%'; document.getElementById('survey-label').textContent='1 / 5'; }
-
-// 원본 go 수정
-const _go = go;
-go = function(n) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('s'+n).classList.add('active');
-  currentScreen = n;
-  if (n === 2) initS2();
-  if (n === 3) initVis();
-  if (n === 4) initAud();
-  if (n === 5) initArr();
-  if (n === 6) initMem();
-}
-
-// 시각 단순선택
-let visRunning=false, visTimer=null, visTotal=0, visHits=0, visFoils=0, visSeq=[];
-function initVis() { visRunning=false; document.getElementById('vis-start').style.display='block'; document.getElementById('vis-stim').classList.remove('visible'); document.getElementById('vis-foil').style.display='none'; document.getElementById('vis-score').textContent='반응: 0 | 정확: 0'; document.getElementById('vis-bar').style.width='100%'; }
-function startVis() {
-  document.getElementById('vis-start').style.display='none';
-  visRunning=true; visHits=0; visFoils=0; visTotal=0;
-  let dur=20, elapsed=0;
-  const bar = document.getElementById('vis-bar');
-  const barTimer = setInterval(()=>{ elapsed+=0.1; bar.style.width=(100-elapsed/dur*100)+'%'; if(elapsed>=dur){clearInterval(barTimer);} },100);
-  runVisSeq(dur*1000);
-}
-function runVisSeq(totalMs) {
-  let elapsed=0;
-  function next() {
-    if(elapsed>=totalMs){endVis();return;}
-    const isTarget=Math.random()<0.7;
-    document.getElementById('vis-stim').classList.toggle('visible',isTarget);
-    document.getElementById('vis-foil').style.display=isTarget?'none':'block';
-    if(isTarget){visSeq.push('target');}else{visSeq.push('foil');}
-    visTotal++;
-    const d=600+Math.random()*400;
-    setTimeout(()=>{
-      document.getElementById('vis-stim').classList.remove('visible');
-      document.getElementById('vis-foil').style.display='none';
-      elapsed+=d+500;
-      setTimeout(next,500);
-    },d);
-  }
-  next();
-}
-let lastVisSeqLen=0;
-function pressVis() {
-  if(!visRunning) return;
-  const btn=document.getElementById('vis-btn');
-  btn.style.background='#1a9e75'; btn.style.color='#fff';
-  setTimeout(()=>{btn.style.background='';btn.style.color='';},150);
-  if(document.getElementById('vis-stim').classList.contains('visible')){visHits++;}else{visFoils++;}
-  document.getElementById('vis-score').textContent=`반응: ${visHits+visFoils} | 정확: ${visHits}`;
-}
-function endVis() { visRunning=false; setTimeout(()=>go(4),800); }
-
-// 청각 단순선택
-let audRunning=false, audHits=0;
-function initAud() { audRunning=false; document.getElementById('aud-start').style.display='block'; document.getElementById('aud-score').textContent='반응: 0 | 정확: 0'; document.getElementById('aud-bar').style.width='100%'; }
-function startAud() {
-  document.getElementById('aud-start').style.display='none';
-  audRunning=true; audHits=0;
-  let dur=15, elapsed=0;
-  const bar=document.getElementById('aud-bar');
-  const bt=setInterval(()=>{ elapsed+=0.1; bar.style.width=(100-elapsed/dur*100)+'%'; if(elapsed>=dur){clearInterval(bt);} },100);
-  animateWaves();
-  setTimeout(()=>{ audRunning=false; setTimeout(()=>go(5),800); },dur*1000);
-}
-let waveAnim=null;
-function animateWaves() {
-  const bars=document.querySelectorAll('#sound-wave .wave-bar');
-  let t=0;
-  waveAnim=setInterval(()=>{
-    if(!audRunning){clearInterval(waveAnim);return;}
-    const idx=Math.floor(Math.random()*bars.length);
-    bars.forEach((b,i)=>{ b.classList.toggle('active',i===idx); });
-    t++;
-  },120);
-}
-function pressAud() {
-  if(!audRunning) return;
-  const btn=document.getElementById('aud-btn');
-  btn.style.background='#1a9e75'; btn.style.color='#fff';
-  setTimeout(()=>{btn.style.background='';btn.style.color='';},150);
-  audHits++;
-  document.getElementById('aud-score').textContent=`반응: ${audHits} | 정확: ${audHits}`;
-}
-
-// 간섭선택
-let arrRunning=false, arrCorrect=0, arrTotal=0, arrAns='';
-const dirs=['up','down','left','right'];
-const dArrows={'up':'↑','down':'↓','left':'←','right':'→'};
-function initArr() { arrRunning=false; document.getElementById('arr-start').style.display='block'; document.getElementById('arr-score').textContent='정답: 0 / 0'; document.getElementById('arr-bar').style.width='100%'; renderArrStim(); }
-function renderArrStim() {
-  const center=dirs[Math.floor(Math.random()*dirs.length)];
-  arrAns=center;
-  const flanker=dirs[Math.floor(Math.random()*dirs.length)];
-  const cells=[];
-  for(let i=0;i<5;i++) cells.push(i===2?center:flanker);
-  const grid=document.getElementById('arr-grid');
-  grid.innerHTML='';
-  cells.forEach((d,i)=>{
-    const c=document.createElement('div');
-    c.className='arrow-cell'+(i===2?' center':'');
-    c.style.color='#fff';
-    c.textContent=dArrows[d];
-    grid.appendChild(c);
-  });
-}
-function startArr() {
-  document.getElementById('arr-start').style.display='none';
-  arrRunning=true; arrCorrect=0; arrTotal=0;
-  let dur=20,elapsed=0;
-  const bar=document.getElementById('arr-bar');
-  const bt=setInterval(()=>{ elapsed+=0.1; bar.style.width=(100-elapsed/dur*100)+'%'; if(elapsed>=dur){clearInterval(bt);} },100);
-  setTimeout(()=>{ arrRunning=false; setTimeout(()=>go(6),800); },dur*1000);
-}
-function pressArr(dir) {
-  if(!arrRunning) return;
-  const isRight=dir===arrAns;
-  arrTotal++;
-  if(isRight) arrCorrect++;
-  ['up','down','left','right'].forEach(d=>{
-    const el=document.getElementById('dk-'+d);
-    el.classList.remove('pressed');
-  });
-  const el=document.getElementById('dk-'+dir);
-  el.classList.add('pressed');
-  setTimeout(()=>el.classList.remove('pressed'),200);
-  document.getElementById('arr-score').textContent=`정답: ${arrCorrect} / ${arrTotal}`;
-  setTimeout(renderArrStim, 300);
-}
-
-// 작업기억
-let memRunning=false, memLevel=2, memSeq=[], memInput=[], memCorrect=0;
-function initMem() {
-  memRunning=false;
-  document.getElementById('mem-start').style.display='block';
-  document.getElementById('mem-score').textContent='레벨: 2 | 정답: 0';
-  renderMemGrid();
-}
-function renderMemGrid() {
-  const grid=document.getElementById('mem-grid');
-  grid.innerHTML='';
-  for(let i=0;i<12;i++){
-    const c=document.createElement('div');
-    c.className='mem-cell';
-    c.id='mc'+i;
-    c.onclick=()=>pressMemCell(i);
-    grid.appendChild(c);
-  }
-}
-function startMem() {
-  document.getElementById('mem-start').style.display='none';
-  memRunning=true; memLevel=2; memCorrect=0;
-  runMemRound();
-}
-function runMemRound() {
-  memSeq=[]; memInput=[];
-  for(let i=0;i<memLevel;i++) memSeq.push(Math.floor(Math.random()*12));
-  document.getElementById('mem-score').textContent=`레벨: ${memLevel} | 정답: ${memCorrect}`;
-  flashSeq(0);
-}
-function flashSeq(idx) {
-  if(idx>=memSeq.length){ setTimeout(()=>{ memInput=[]; },400); return; }
-  const cell=document.getElementById('mc'+memSeq[idx]);
-  setTimeout(()=>{
-    cell.classList.add('lit');
-    setTimeout(()=>{ cell.classList.remove('lit'); flashSeq(idx+1); },400);
-  },600);
-}
-function pressMemCell(i) {
-  if(!memRunning||memInput.length>=memSeq.length) return;
-  const cell=document.getElementById('mc'+i);
-  memInput.push(i);
-  const correct=memInput[memInput.length-1]===memSeq[memInput.length-1];
-  cell.classList.add(correct?'selected':'wrong');
-  setTimeout(()=>cell.classList.remove('selected','wrong'),300);
-  if(!correct){ setTimeout(()=>endMem(),500); return; }
-  if(memInput.length===memSeq.length){
-    memCorrect++;
-    memLevel++;
-    document.getElementById('mem-score').textContent=`레벨: ${memLevel} | 정답: ${memCorrect}`;
-    if(memLevel>6){ setTimeout(()=>endMem(),500); return; }
-    setTimeout(runMemRound,800);
-  }
-}
-function endMem() { memRunning=false; setTimeout(()=>go(7),600); }
 </script>
+
+</body>
+</html>

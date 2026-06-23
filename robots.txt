@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://butblank-oss.github.io/gsso_scat/sitemap.xml

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0a0a0b"/>
+      <stop offset="1" stop-color="#1a1a1f"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect x="60" y="60" width="92" height="92" rx="22" fill="#0066FF"/>
+  <rect x="80" y="92" width="52" height="36" rx="6" fill="#ffffff"/>
+  <polygon points="98,103 98,117 116,110" fill="#0066FF"/>
+  <text x="60" y="320" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif" font-size="96" fill="#ffffff" font-weight="800" letter-spacing="-3">무료 모바일 텔레프롬프터</text>
+  <text x="60" y="400" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="40" fill="#a0a3a8" font-weight="500">유튜브 쇼츠 · 인스타 릴스 · 틱톡 촬영용</text>
+  <text x="60" y="460" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="40" fill="#a0a3a8" font-weight="500">카메라 보며 대본 읽고 바로 녹화까지</text>
+  <text x="60" y="560" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="28" fill="#0066FF" font-weight="600">설치 불필요 · 회원가입 없음 · 100% 무료</text>
+</svg>
