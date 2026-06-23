@@ -3,378 +3,680 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-<meta name="theme-color" content="#0a0a0a">
+<meta name="theme-color" content="#000000">
 <title>프롬프터 카메라</title>
 <style>
   :root {
-    --tp-bg: #0a0a0a;
-    --tp-bg-secondary: #1a1a1a;
-    --tp-text: #ffffff;
-    --tp-text-muted: #8a8a8a;
-    --tp-primary: #1a9e75;
-    --tp-border: #262626;
-    --tp-danger: #e24b4a;
+    --bg: #000000;
+    --surface: #0a0a0a;
+    --surface-2: #141414;
+    --surface-3: #1e1e1e;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.18);
+    --text: rgba(255, 255, 255, 0.96);
+    --text-secondary: rgba(255, 255, 255, 0.62);
+    --text-tertiary: rgba(255, 255, 255, 0.42);
+    --accent: #ffffff;
+    --record: #ff453a;
+    --scrim: rgba(0, 0, 0, 0.72);
   }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
 
   html, body {
-    background: var(--tp-bg);
-    color: var(--tp-text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
     min-height: 100vh;
     overscroll-behavior: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  .tp-container {
+  body {
+    font-size: 15px;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+  }
+
+  .container {
     max-width: 480px;
     margin: 0 auto;
-    padding: 24px 18px calc(24px + env(safe-area-inset-bottom));
+    padding: 28px 20px calc(20px + env(safe-area-inset-bottom));
     min-height: 100vh;
     display: flex;
     flex-direction: column;
   }
 
-  .tp-screen { display: none; flex: 1; flex-direction: column; }
-  .tp-screen.active { display: flex; }
+  .screen { display: none; flex: 1; flex-direction: column; }
+  .screen.active { display: flex; }
 
-  .tp-title { font-size: 22px; font-weight: 700; text-align: center; margin-bottom: 6px; }
-  .tp-subtitle { font-size: 13px; color: var(--tp-text-muted); text-align: center; margin-bottom: 24px; line-height: 1.6; }
-  .tp-section-label { font-size: 12px; color: var(--tp-text-muted); margin-bottom: 8px; font-weight: 500; letter-spacing: 0.2px; }
+  .title {
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    text-align: center;
+    margin-bottom: 6px;
+  }
+  .subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-bottom: 28px;
+    line-height: 1.5;
+  }
+  .section-label {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-bottom: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
 
-  .tp-textarea {
+  .textarea {
     width: 100%;
-    min-height: 160px;
-    background: var(--tp-bg-secondary);
-    border: 1px solid var(--tp-border);
-    border-radius: 12px;
-    padding: 14px;
-    color: var(--tp-text);
+    min-height: 180px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    color: var(--text);
     font-size: 15px;
     line-height: 1.6;
     resize: vertical;
     font-family: inherit;
+    transition: border-color 0.15s ease;
   }
-  .tp-textarea:focus { outline: none; border-color: var(--tp-primary); }
+  .textarea:focus {
+    outline: none;
+    border-color: var(--border-strong);
+  }
 
-  .tp-control-row {
+  .control-row {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
     margin-bottom: 18px;
   }
-  .tp-slider-wrap { flex: 1; }
-  input[type=range] { width: 100%; accent-color: var(--tp-primary); }
-  .tp-val { min-width: 42px; text-align: right; font-size: 13px; color: var(--tp-text-muted); }
-
-  .tp-tab-row { display: flex; gap: 8px; margin-bottom: 20px; }
-  .tp-tab {
-    flex: 1;
-    padding: 11px;
-    background: var(--tp-bg-secondary);
-    border: 1px solid var(--tp-border);
-    border-radius: 10px;
-    color: var(--tp-text-muted);
+  .slider-wrap { flex: 1; min-width: 0; }
+  input[type=range] {
+    width: 100%;
+    height: 22px;
+    background: transparent;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 4px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 2px;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    margin-top: -7px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  }
+  input[type=range]::-moz-range-track {
+    height: 4px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 2px;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    border: none;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  }
+  .val {
+    min-width: 44px;
+    text-align: right;
     font-size: 13px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tab-row {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 22px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 4px;
+  }
+  .tab {
+    flex: 1;
+    padding: 10px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--text-tertiary);
+    font-size: 13px;
+    font-weight: 500;
     cursor: pointer;
     text-align: center;
-    user-select: none;
-    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    transition: background 0.18s ease, color 0.18s ease;
+    font-family: inherit;
   }
-  .tp-tab.active { background: var(--tp-primary); border-color: var(--tp-primary); color: #fff; }
+  .tab.active {
+    background: var(--surface-3);
+    color: var(--text);
+  }
 
-  .tp-btn {
-    background: var(--tp-primary);
-    color: #fff;
+  .btn {
+    background: #fff;
+    color: #000;
     border: none;
-    border-radius: 12px;
-    padding: 15px;
+    border-radius: 14px;
+    padding: 16px;
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
     width: 100%;
-    margin-top: 16px;
-    transition: opacity 0.15s, transform 0.05s;
+    margin-top: auto;
+    transition: opacity 0.15s, transform 0.06s;
+    font-family: inherit;
+    letter-spacing: -0.01em;
   }
-  .tp-btn:active { transform: scale(0.985); }
-  .tp-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .tp-btn-ghost { background: transparent; border: 1.5px solid var(--tp-primary); color: var(--tp-primary); }
-
-  /* Stage: 9:16 preview */
-  .tp-stage {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 9/16;
-    background: #000;
-    border-radius: 16px;
-    overflow: hidden;
-    margin-bottom: 16px;
-    box-shadow: 0 6px 22px rgba(0,0,0,0.35);
-  }
-  .tp-video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block; }
-  .tp-video.no-mirror { transform: none; }
-
-  /* Prompter overlay */
-  .tp-prompter {
-    position: absolute;
-    top: 14%;
-    left: 0;
-    right: 0;
-    bottom: 24%;
-    overflow: hidden;
-    pointer-events: none;
-    mask-image: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 14%, rgba(0,0,0,1) 86%, rgba(0,0,0,0) 100%);
-    -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 14%, rgba(0,0,0,1) 86%, rgba(0,0,0,0) 100%);
-  }
-  .tp-prompter-inner {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    padding: 0 22px;
-    color: #fff;
-    text-align: center;
-    text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 12px rgba(0,0,0,0.6);
-    font-weight: 700;
-    line-height: 1.55;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    will-change: transform;
+  .btn:active { transform: scale(0.985); opacity: 0.9; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--text);
   }
 
-  /* REC badge */
-  .tp-rec-dot {
-    position: absolute;
-    top: 12px;
-    left: 12px;
+  /* === RECORDING SCREEN === */
+
+  .stage-area {
+    flex: 1;
     display: flex;
     align-items: center;
+    justify-content: center;
+    min-height: 0;
+    margin-bottom: 14px;
+  }
+
+  .stage {
+    position: relative;
+    width: 100%;
+    max-width: min(360px, calc((100vh - 240px) * 9 / 16));
+    aspect-ratio: 9/16;
+    background: #000;
+    border-radius: 22px;
+    overflow: hidden;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04);
+  }
+  @supports (height: 100dvh) {
+    .stage {
+      max-width: min(360px, calc((100dvh - 240px) * 9 / 16));
+    }
+  }
+
+  .cam-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+    display: block;
+  }
+  .cam-video.no-mirror { transform: none; }
+
+  .rec-badge {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    display: inline-flex;
+    align-items: center;
     gap: 6px;
-    background: rgba(0,0,0,0.55);
-    padding: 5px 10px 5px 8px;
+    background: var(--scrim);
+    padding: 6px 12px 6px 9px;
     border-radius: 999px;
     font-size: 11px;
     color: #fff;
     font-variant-numeric: tabular-nums;
-    z-index: 2;
+    z-index: 5;
+    font-weight: 600;
+    letter-spacing: 0.06em;
   }
-  .tp-rec-dot::before {
+  .rec-badge::before {
     content: "";
-    width: 8px;
-    height: 8px;
-    background: var(--tp-danger);
+    width: 7px;
+    height: 7px;
+    background: var(--record);
     border-radius: 50%;
   }
-  .tp-rec-dot.recording::before { animation: blink 1s infinite; }
-  @keyframes blink { 50% { opacity: 0.25; } }
+  .rec-badge.recording::before { animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: 0.3; } }
 
-  /* Top right icon buttons inside stage */
-  .tp-top-controls {
+  .stage-top-right {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 12px;
+    right: 12px;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    z-index: 3;
+    z-index: 5;
   }
-  .tp-top-btn {
-    background: rgba(0,0,0,0.55);
+  .icon-pill {
+    background: var(--scrim);
     color: #fff;
     border: none;
-    width: 40px;
-    height: 40px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     cursor: pointer;
-    font-size: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 16px;
+    transition: background 0.15s;
+    font-family: inherit;
   }
-  .tp-top-btn:active { background: rgba(0,0,0,0.8); }
+  .icon-pill:active { background: rgba(0,0,0,0.92); }
+  .icon-pill svg { width: 18px; height: 18px; stroke: currentColor; fill: none; }
 
-  /* Speed slider inside stage at bottom */
-  .tp-bottom-controls {
+  /* progress text top-right */
+  .progress-text {
+    position: absolute;
+    top: 60px;
+    right: 12px;
+    font-size: 10px;
+    color: rgba(255,255,255,0.92);
+    font-variant-numeric: tabular-nums;
+    background: var(--scrim);
+    padding: 4px 10px;
+    border-radius: 999px;
+    z-index: 5;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  /* === PROMPTER === */
+  .prompter {
+    position: absolute;
+    top: 14%;
+    left: 0;
+    right: 22px;
+    bottom: 28%;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 2;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 16%, #000 84%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, #000 16%, #000 84%, transparent 100%);
+  }
+  .prompter-inner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 0 28px;
+    color: #fff;
+    text-align: center;
+    will-change: transform;
+  }
+  .prompter-para {
+    margin: 0 auto 0.95em;
+    line-height: 1.55;
+    font-weight: 700;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.95), 0 0 14px rgba(0,0,0,0.7);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    transition: opacity 0.12s linear;
+    letter-spacing: -0.01em;
+  }
+
+  /* Focus line indicator across the prompter middle */
+  .focus-line {
+    position: absolute;
+    top: 50%;
+    left: 24px;
+    right: 24px;
+    height: 1px;
+    background: linear-gradient(to right, transparent 0%, rgba(255,255,255,0.32) 28%, rgba(255,255,255,0.32) 72%, transparent 100%);
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  /* Vertical progress bar */
+  .progress-bar {
+    position: absolute;
+    top: 14%;
+    right: 8px;
+    width: 4px;
+    bottom: 28%;
+    background: rgba(255,255,255,0.14);
+    border-radius: 4px;
+    z-index: 4;
+    cursor: pointer;
+    touch-action: none;
+  }
+  .progress-bar::before {
+    /* enlarged hit area */
+    content: "";
+    position: absolute;
+    top: -8px;
+    bottom: -8px;
+    left: -14px;
+    right: -14px;
+  }
+  .progress-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255,255,255,0.72);
+    border-radius: 4px;
+    transition: height 0.05s linear;
+  }
+  .progress-knob {
+    position: absolute;
+    right: -6px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.55);
+    transform: translateY(-50%);
+    pointer-events: none;
+    transition: top 0.05s linear;
+  }
+
+  /* === BOTTOM CONTROLS INSIDE STAGE === */
+  .stage-bottom {
     position: absolute;
     bottom: 10px;
     left: 10px;
     right: 10px;
     display: flex;
-    align-items: center;
-    gap: 10px;
-    background: rgba(0,0,0,0.55);
-    padding: 8px 14px;
-    border-radius: 999px;
-    z-index: 3;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 5;
   }
-  .tp-bottom-controls label { font-size: 11px; color: rgba(255,255,255,0.9); }
-
-  /* Record button row */
-  .tp-recbar {
+  .panel {
+    background: var(--scrim);
+    border-radius: 16px;
+    padding: 5px;
     display: flex;
     align-items: center;
-    justify-content: space-around;
-    margin-top: 6px;
-    margin-bottom: 12px;
   }
-  .tp-rec-btn-wrap {
-    width: 78px;
-    height: 78px;
-    border-radius: 50%;
-    border: 3px solid rgba(255,255,255,0.85);
+  .nav-row {
+    gap: 2px;
+    justify-content: space-between;
+  }
+  .nav-btn {
+    flex: 1;
+    background: transparent;
+    color: #fff;
+    border: none;
+    padding: 9px 4px;
+    border-radius: 11px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 3px;
+    min-height: 36px;
+    transition: background 0.1s;
+    font-family: inherit;
+    letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums;
   }
-  .tp-rec-btn {
+  .nav-btn:active { background: rgba(255,255,255,0.12); }
+  .nav-btn.primary {
+    background: rgba(255,255,255,0.16);
+  }
+  .nav-btn.primary:active { background: rgba(255,255,255,0.26); }
+  .nav-btn svg { width: 14px; height: 14px; }
+  .nav-divider {
+    width: 1px;
+    height: 20px;
+    background: rgba(255,255,255,0.2);
+    margin: 0 2px;
+    flex: none;
+  }
+
+  .speed-row {
+    gap: 10px;
+    padding: 8px 12px;
+  }
+  .speed-row label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.9);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+  .speed-row input[type=range] { flex: 1; }
+  .speed-row .val { color: rgba(255,255,255,0.9); font-size: 11px; min-width: 32px; }
+
+  /* === RECORD BAR BELOW STAGE === */
+  .recbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 4px 8px 0;
+  }
+  .rec-wrap {
+    width: 78px;
+    height: 78px;
+    border-radius: 50%;
+    border: 3px solid rgba(255,255,255,0.94);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.2s;
+  }
+  .rec-button {
     width: 62px;
     height: 62px;
     border-radius: 50%;
-    background: var(--tp-danger);
+    background: var(--record);
     border: none;
     cursor: pointer;
-    transition: width 0.2s, height 0.2s, border-radius 0.2s;
+    transition: width 0.22s ease, height 0.22s ease, border-radius 0.22s ease;
   }
-  .tp-rec-btn.recording {
+  .rec-button.recording {
     width: 28px;
     height: 28px;
     border-radius: 6px;
   }
 
-  .tp-icon-btn {
-    background: var(--tp-bg-secondary);
-    border: 1px solid var(--tp-border);
-    color: var(--tp-text);
-    width: 48px;
-    height: 48px;
+  .side-btn {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    transition: background 0.15s;
+    font-family: inherit;
   }
-  .tp-icon-btn:active { background: #2a2a2a; }
+  .side-btn:active { background: var(--surface-3); }
+  .side-btn svg { width: 20px; height: 20px; stroke: currentColor; fill: none; }
 
-  /* Review screen */
-  .tp-review-video {
-    width: 100%;
-    aspect-ratio: 9/16;
-    background: #000;
-    border-radius: 16px;
-    margin-bottom: 16px;
-  }
-  .tp-action-row { display: flex; gap: 10px; margin-top: auto; }
-  .tp-action-row .tp-btn { margin-top: 0; }
-
-  .tp-error {
-    background: rgba(226,75,74,0.12);
-    border: 1px solid var(--tp-danger);
-    color: #ffb4b4;
-    padding: 12px;
-    border-radius: 10px;
-    font-size: 13px;
-    margin-bottom: 12px;
-    line-height: 1.5;
-  }
-
-  /* Status hint above record button */
-  .tp-hint {
+  .hint {
     text-align: center;
     font-size: 12px;
-    color: var(--tp-text-muted);
-    margin-top: 4px;
+    color: var(--text-tertiary);
+    margin-top: 8px;
+    letter-spacing: 0.01em;
+  }
+
+  /* === REVIEW === */
+  .review-video {
+    width: 100%;
+    max-width: min(360px, calc((100vh - 240px) * 9 / 16));
+    aspect-ratio: 9/16;
+    background: #000;
+    border-radius: 22px;
+    margin: 0 auto 18px;
+    display: block;
+  }
+  @supports (height: 100dvh) {
+    .review-video {
+      max-width: min(360px, calc((100dvh - 240px) * 9 / 16));
+    }
+  }
+  .action-row {
+    display: flex;
+    gap: 10px;
+    margin-top: auto;
+  }
+  .action-row .btn { margin-top: 0; flex: 1; }
+
+  .error {
+    background: rgba(255,69,58,0.12);
+    border: 1px solid rgba(255,69,58,0.42);
+    color: #ffb4b4;
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    margin-top: 12px;
+    line-height: 1.5;
   }
 </style>
 </head>
 <body>
-<div class="tp-container">
+<div class="container">
 
   <!-- Setup -->
-  <div class="tp-screen active" id="tp-setup">
-    <h1 class="tp-title">프롬프터 카메라</h1>
-    <p class="tp-subtitle">대본을 보면서 인스타용 영상을<br>9:16 세로로 촬영해보세요.</p>
+  <div class="screen active" id="screen-setup">
+    <h1 class="title">프롬프터</h1>
+    <p class="subtitle">대본을 보며 영상을 촬영하세요</p>
 
-    <p class="tp-section-label">대본</p>
-    <textarea class="tp-textarea" id="tp-script" placeholder="여기에 대본을 입력하세요…">안녕하세요!
+    <p class="section-label">대본</p>
+    <textarea class="textarea" id="script-input" placeholder="대본을 입력하세요...">안녕하세요!
 오늘은 멋진 영상을 함께 찍어볼게요.
 
 천천히 말하면서 자연스럽게
 카메라를 바라보세요.
 
-스크롤 속도는 우측 슬라이더로
-실시간 조절할 수 있습니다.</textarea>
+스크롤 속도는 실시간으로 조절할 수 있고
+앞뒤로 이동하거나 문단 단위로 점프할 수도 있어요.
 
-    <div style="height:18px"></div>
+녹화 중에도 모든 탐색 기능이 동작합니다.</textarea>
 
-    <p class="tp-section-label">카메라</p>
-    <div class="tp-tab-row">
-      <div class="tp-tab active" data-cam="user" id="tp-tab-user">전면 (셀카)</div>
-      <div class="tp-tab" data-cam="environment" id="tp-tab-env">후면</div>
+    <div style="height:22px"></div>
+
+    <p class="section-label">카메라</p>
+    <div class="tab-row">
+      <button class="tab active" id="tab-user">전면</button>
+      <button class="tab" id="tab-env">후면</button>
     </div>
 
-    <p class="tp-section-label">스크롤 속도 (px/s)</p>
-    <div class="tp-control-row">
-      <div class="tp-slider-wrap">
-        <input type="range" id="tp-speed" min="20" max="220" value="70" step="5">
+    <p class="section-label">스크롤 속도</p>
+    <div class="control-row">
+      <div class="slider-wrap">
+        <input type="range" id="setup-speed" min="20" max="220" value="70" step="5">
       </div>
-      <span class="tp-val" id="tp-speed-val">70</span>
+      <span class="val" id="setup-speed-val">70</span>
     </div>
 
-    <p class="tp-section-label">글자 크기</p>
-    <div class="tp-control-row">
-      <div class="tp-slider-wrap">
-        <input type="range" id="tp-fontsize" min="14" max="42" value="24" step="1">
+    <p class="section-label">글자 크기</p>
+    <div class="control-row">
+      <div class="slider-wrap">
+        <input type="range" id="setup-fontsize" min="14" max="42" value="22" step="1">
       </div>
-      <span class="tp-val" id="tp-fontsize-val">24</span>
+      <span class="val" id="setup-fontsize-val">22</span>
     </div>
 
-    <button class="tp-btn" id="tp-start-btn">촬영 시작 ›</button>
+    <button class="btn" id="start-btn">촬영 시작</button>
   </div>
 
   <!-- Record -->
-  <div class="tp-screen" id="tp-record">
-    <div class="tp-stage" id="tp-stage">
-      <video class="tp-video" id="tp-cam" autoplay playsinline muted></video>
+  <div class="screen" id="screen-record">
+    <div class="stage-area">
+      <div class="stage" id="stage">
+        <video class="cam-video" id="cam" autoplay playsinline muted></video>
 
-      <div class="tp-rec-dot" id="tp-rec-dot">대기 00:00</div>
+        <div class="rec-badge" id="rec-badge">00:00</div>
 
-      <div class="tp-top-controls">
-        <button class="tp-top-btn" id="tp-flip-btn" title="카메라 전환">⇄</button>
-        <button class="tp-top-btn" id="tp-scroll-btn" title="스크롤 일시정지">⏸</button>
-        <button class="tp-top-btn" id="tp-reset-btn" title="대본 처음으로">↺</button>
-      </div>
+        <div class="stage-top-right">
+          <button class="icon-pill" id="flip-btn" aria-label="카메라 전환">
+            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4 4 7l3 3"/><path d="M4 7h13a3 3 0 0 1 3 3v2"/><path d="m17 20 3-3-3-3"/><path d="M20 17H7a3 3 0 0 1-3-3v-2"/></svg>
+          </button>
+        </div>
 
-      <div class="tp-prompter" id="tp-prompter">
-        <div class="tp-prompter-inner" id="tp-prompter-inner"></div>
-      </div>
+        <div class="progress-text" id="progress-text">0%</div>
 
-      <div class="tp-bottom-controls">
-        <label>속도</label>
-        <input type="range" id="tp-speed-live" min="20" max="220" value="70" step="5">
+        <div class="prompter" id="prompter">
+          <div class="focus-line"></div>
+          <div class="prompter-inner" id="prompter-inner"></div>
+        </div>
+
+        <div class="progress-bar" id="progress-bar">
+          <div class="progress-fill" id="progress-fill"></div>
+          <div class="progress-knob" id="progress-knob"></div>
+        </div>
+
+        <div class="stage-bottom">
+          <div class="panel nav-row">
+            <button class="nav-btn" id="skip-back-btn" aria-label="5초 뒤로">−5초</button>
+            <button class="nav-btn primary" id="play-pause-btn" aria-label="재생/일시정지">
+              <svg id="pp-icon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+            </button>
+            <button class="nav-btn" id="skip-fwd-btn" aria-label="5초 앞으로">+5초</button>
+            <div class="nav-divider"></div>
+            <button class="nav-btn" id="prev-para-btn" aria-label="이전 문단">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 14 12 8 18 14"/></svg>
+            </button>
+            <button class="nav-btn" id="next-para-btn" aria-label="다음 문단">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 10 12 16 18 10"/></svg>
+            </button>
+          </div>
+          <div class="panel speed-row">
+            <label>속도</label>
+            <input type="range" id="live-speed" min="20" max="220" value="70" step="5">
+            <span class="val" id="live-speed-val">70</span>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div id="tp-err" style="display:none" class="tp-error"></div>
+    <div id="err" class="error" style="display:none"></div>
 
-    <div class="tp-recbar">
-      <button class="tp-icon-btn" id="tp-back-btn" title="설정으로">←</button>
-      <div class="tp-rec-btn-wrap">
-        <button class="tp-rec-btn" id="tp-rec-toggle" aria-label="녹화"></button>
+    <div class="recbar">
+      <button class="side-btn" id="back-btn" aria-label="설정으로">
+        <svg viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 6 9 12 15 18"/></svg>
+      </button>
+      <div class="rec-wrap" id="rec-wrap">
+        <button class="rec-button" id="rec-toggle" aria-label="녹화"></button>
       </div>
-      <button class="tp-icon-btn" id="tp-reset-btn-2" title="대본 처음으로">↺</button>
+      <button class="side-btn" id="reset-btn" aria-label="대본 처음으로">
+        <svg viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 10 9 10"/></svg>
+      </button>
     </div>
-    <p class="tp-hint" id="tp-hint">버튼을 눌러 녹화를 시작하세요</p>
+    <p class="hint" id="hint">버튼을 눌러 녹화를 시작하세요</p>
   </div>
 
   <!-- Review -->
-  <div class="tp-screen" id="tp-review">
-    <h1 class="tp-title">미리보기</h1>
-    <p class="tp-subtitle">촬영된 영상을 확인하고<br>저장하거나 다시 찍을 수 있어요.</p>
-    <video class="tp-review-video" id="tp-review-video" controls playsinline></video>
-    <div class="tp-action-row">
-      <button class="tp-btn tp-btn-ghost" id="tp-retake-btn">다시 촬영</button>
-      <button class="tp-btn" id="tp-download-btn">다운로드</button>
+  <div class="screen" id="screen-review">
+    <h1 class="title">미리보기</h1>
+    <p class="subtitle">촬영된 영상을 확인하세요</p>
+    <video class="review-video" id="review-video" controls playsinline></video>
+    <div class="action-row">
+      <button class="btn btn-ghost" id="retake-btn">다시 촬영</button>
+      <button class="btn" id="download-btn">다운로드</button>
     </div>
   </div>
 
@@ -384,6 +686,7 @@
 (function () {
   const $ = (id) => document.getElementById(id);
 
+  // State
   let stream = null;
   let mediaRecorder = null;
   let recordedChunks = [];
@@ -401,72 +704,246 @@
   let recStartTime = 0;
   let recTimerInterval = null;
 
+  let paragraphs = [];
+  let isDraggingProgress = false;
+  let fontSize = 22;
+  let scriptText = "";
+
+  const PLAY_ICON = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5v14l12-7L7 5z"/></svg>';
+  const PAUSE_ICON = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
+
+  // ---------- Helpers ----------
   function showScreen(id) {
-    document.querySelectorAll(".tp-screen").forEach((s) => s.classList.remove("active"));
+    document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
     $(id).classList.add("active");
   }
+  function showError(msg) { const el = $("err"); el.textContent = msg; el.style.display = "block"; }
+  function clearError() { $("err").style.display = "none"; $("err").textContent = ""; }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+  function setPlayPauseIcon(playing) { $("play-pause-btn").innerHTML = playing ? PAUSE_ICON : PLAY_ICON; }
 
-  function showError(msg) {
-    const el = $("tp-err");
-    el.textContent = msg;
-    el.style.display = "block";
-  }
-  function clearError() {
-    $("tp-err").style.display = "none";
-    $("tp-err").textContent = "";
-  }
-
-  // Setup events
-  $("tp-speed").addEventListener("input", (e) => {
-    $("tp-speed-val").textContent = e.target.value;
+  // ---------- Setup inputs ----------
+  $("setup-speed").addEventListener("input", (e) => {
+    $("setup-speed-val").textContent = e.target.value;
     scrollSpeed = parseInt(e.target.value, 10);
-    $("tp-speed-live").value = e.target.value;
   });
-  $("tp-fontsize").addEventListener("input", (e) => {
-    $("tp-fontsize-val").textContent = e.target.value;
+  $("setup-fontsize").addEventListener("input", (e) => {
+    $("setup-fontsize-val").textContent = e.target.value;
   });
-  $("tp-speed-live").addEventListener("input", (e) => {
+  $("live-speed").addEventListener("input", (e) => {
     scrollSpeed = parseInt(e.target.value, 10);
-    $("tp-speed").value = e.target.value;
-    $("tp-speed-val").textContent = e.target.value;
+    $("live-speed-val").textContent = e.target.value;
+    $("setup-speed").value = e.target.value;
+    $("setup-speed-val").textContent = e.target.value;
   });
-
   function selectCam(mode) {
     facingMode = mode;
-    $("tp-tab-user").classList.toggle("active", mode === "user");
-    $("tp-tab-env").classList.toggle("active", mode === "environment");
+    $("tab-user").classList.toggle("active", mode === "user");
+    $("tab-env").classList.toggle("active", mode === "environment");
   }
-  $("tp-tab-user").addEventListener("click", () => selectCam("user"));
-  $("tp-tab-env").addEventListener("click", () => selectCam("environment"));
+  $("tab-user").addEventListener("click", () => selectCam("user"));
+  $("tab-env").addEventListener("click", () => selectCam("environment"));
 
-  $("tp-start-btn").addEventListener("click", async () => {
-    const script = $("tp-script").value.trim();
-    if (!script) {
-      alert("대본을 입력해 주세요.");
+  // ---------- Prompter rendering ----------
+  function renderScript(text) {
+    const inner = $("prompter-inner");
+    inner.innerHTML = "";
+    paragraphs = [];
+    const parts = text.split(/\n\s*\n/).map((p) => p.trim()).filter((p) => p.length > 0);
+    if (parts.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "prompter-para";
+      empty.style.fontSize = fontSize + "px";
+      empty.textContent = " ";
+      inner.appendChild(empty);
+      paragraphs.push({ el: empty, idx: 0 });
       return;
     }
-    const fontSize = $("tp-fontsize").value;
-    const inner = $("tp-prompter-inner");
-    inner.textContent = script;
-    inner.style.fontSize = fontSize + "px";
+    parts.forEach((p, i) => {
+      const div = document.createElement("div");
+      div.className = "prompter-para";
+      div.style.fontSize = fontSize + "px";
+      div.textContent = p;
+      inner.appendChild(div);
+      paragraphs.push({ el: div, idx: i });
+    });
+  }
 
-    scrollSpeed = parseInt($("tp-speed").value, 10);
-    $("tp-speed-live").value = scrollSpeed;
+  function getMaxScroll() {
+    const inner = $("prompter-inner");
+    return Math.max(0, inner.offsetHeight - 1);
+  }
 
-    showScreen("tp-record");
-    clearError();
+  function updateScroll() {
+    $("prompter-inner").style.transform = "translateY(-" + scrollPos + "px)";
+    updateOpacities();
+    updateProgress();
+  }
 
-    try {
-      await startCamera();
-      resetPrompter();
-      scrollRunning = true;
-      $("tp-scroll-btn").textContent = "⏸";
-      runScroll();
-    } catch (e) {
-      showError("카메라 접근에 실패했어요: " + (e && e.message ? e.message : e) + " — 브라우저 권한을 확인해 주세요.");
+  function updateOpacities() {
+    const container = $("prompter");
+    const containerH = container.offsetHeight;
+    if (containerH === 0) return;
+    const centerY = containerH / 2;
+    const maxDist = containerH * 0.55;
+    for (let i = 0; i < paragraphs.length; i++) {
+      const el = paragraphs[i].el;
+      const paraTop = el.offsetTop - scrollPos;
+      const paraCenter = paraTop + el.offsetHeight / 2;
+      const dist = Math.abs(paraCenter - centerY);
+      const t = clamp(dist / maxDist, 0, 1);
+      const opacity = 0.3 + (1 - t * t) * 0.7;
+      el.style.opacity = opacity.toFixed(3);
     }
+  }
+
+  function updateProgress() {
+    const max = getMaxScroll();
+    const ratio = max > 0 ? clamp(scrollPos / max, 0, 1) : 0;
+    const pct = Math.round(ratio * 100);
+    $("progress-text").textContent = pct + "%";
+    $("progress-fill").style.height = (ratio * 100) + "%";
+    $("progress-knob").style.top = (ratio * 100) + "%";
+  }
+
+  function startScroll() {
+    cancelAnimationFrame(scrollAF);
+    lastFrameTime = performance.now();
+    scrollRunning = true;
+    setPlayPauseIcon(true);
+    const max = getMaxScroll();
+    if (scrollPos >= max) scrollPos = 0;
+    const frame = (t) => {
+      if (!scrollRunning) return;
+      const dt = (t - lastFrameTime) / 1000;
+      lastFrameTime = t;
+      scrollPos += scrollSpeed * dt;
+      const m = getMaxScroll();
+      if (scrollPos >= m) {
+        scrollPos = m;
+        updateScroll();
+        scrollRunning = false;
+        setPlayPauseIcon(false);
+        return;
+      }
+      updateScroll();
+      scrollAF = requestAnimationFrame(frame);
+    };
+    scrollAF = requestAnimationFrame(frame);
+  }
+  function pauseScroll() {
+    scrollRunning = false;
+    setPlayPauseIcon(false);
+    cancelAnimationFrame(scrollAF);
+  }
+  function togglePlayPause() {
+    if (scrollRunning) pauseScroll();
+    else startScroll();
+  }
+  function resetScrollPos() {
+    scrollPos = 0;
+    updateScroll();
+  }
+  function skipTime(seconds) {
+    const max = getMaxScroll();
+    scrollPos = clamp(scrollPos + scrollSpeed * seconds, 0, max);
+    updateScroll();
+    if (scrollRunning) lastFrameTime = performance.now();
+  }
+  function jumpParagraph(direction) {
+    if (paragraphs.length === 0) return;
+    const containerH = $("prompter").offsetHeight;
+    const focusY = scrollPos + containerH / 2;
+
+    let currentIdx = 0;
+    for (let i = 0; i < paragraphs.length; i++) {
+      const el = paragraphs[i].el;
+      const paraCenter = el.offsetTop + el.offsetHeight / 2;
+      if (paraCenter <= focusY + 4) currentIdx = i;
+      else break;
+    }
+
+    let targetIdx;
+    if (direction === "next") targetIdx = Math.min(currentIdx + 1, paragraphs.length - 1);
+    else targetIdx = Math.max(currentIdx - 1, 0);
+
+    const target = paragraphs[targetIdx].el;
+    scrollPos = clamp(target.offsetTop + target.offsetHeight / 2 - containerH / 2, 0, getMaxScroll());
+    updateScroll();
+    if (scrollRunning) lastFrameTime = performance.now();
+  }
+
+  $("skip-back-btn").addEventListener("click", () => skipTime(-5));
+  $("skip-fwd-btn").addEventListener("click", () => skipTime(5));
+  $("play-pause-btn").addEventListener("click", togglePlayPause);
+  $("prev-para-btn").addEventListener("click", () => jumpParagraph("prev"));
+  $("next-para-btn").addEventListener("click", () => jumpParagraph("next"));
+  $("reset-btn").addEventListener("click", () => {
+    resetScrollPos();
+    if (!scrollRunning) startScroll();
+    else lastFrameTime = performance.now();
   });
 
+  // ---------- Progress bar drag ----------
+  (function setupProgressDrag() {
+    const bar = $("progress-bar");
+    function setFromEvent(clientY) {
+      const rect = bar.getBoundingClientRect();
+      const y = clientY - rect.top;
+      const ratio = clamp(y / rect.height, 0, 1);
+      const max = getMaxScroll();
+      scrollPos = ratio * max;
+      updateScroll();
+      if (scrollRunning) lastFrameTime = performance.now();
+    }
+    bar.addEventListener("pointerdown", (e) => {
+      isDraggingProgress = true;
+      try { bar.setPointerCapture(e.pointerId); } catch (_) {}
+      setFromEvent(e.clientY);
+      e.preventDefault();
+    });
+    bar.addEventListener("pointermove", (e) => {
+      if (!isDraggingProgress) return;
+      setFromEvent(e.clientY);
+    });
+    function endDrag(e) {
+      isDraggingProgress = false;
+      try { if (e && e.pointerId !== undefined) bar.releasePointerCapture(e.pointerId); } catch (_) {}
+    }
+    bar.addEventListener("pointerup", endDrag);
+    bar.addEventListener("pointercancel", endDrag);
+  })();
+
+  // ---------- Swipe gesture on prompter for scrubbing ----------
+  (function setupPrompterSwipe() {
+    const prompter = $("prompter");
+    let active = false;
+    let startY = 0;
+    let startScroll = 0;
+    prompter.style.pointerEvents = "auto"; // enable touch
+    prompter.addEventListener("pointerdown", (e) => {
+      active = true;
+      startY = e.clientY;
+      startScroll = scrollPos;
+      try { prompter.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+    prompter.addEventListener("pointermove", (e) => {
+      if (!active) return;
+      const delta = startY - e.clientY;
+      const max = getMaxScroll();
+      scrollPos = clamp(startScroll + delta, 0, max);
+      updateScroll();
+      if (scrollRunning) lastFrameTime = performance.now();
+    });
+    function end(e) {
+      active = false;
+      try { if (e && e.pointerId !== undefined) prompter.releasePointerCapture(e.pointerId); } catch (_) {}
+    }
+    prompter.addEventListener("pointerup", end);
+    prompter.addEventListener("pointercancel", end);
+  })();
+
+  // ---------- Camera ----------
   async function startCamera() {
     stopStream();
     const tryConstraints = [
@@ -484,89 +961,50 @@
       }
     }
     if (!stream) throw lastErr || new Error("미디어를 가져올 수 없습니다.");
-
-    const video = $("tp-cam");
+    const video = $("cam");
     video.srcObject = stream;
     video.classList.toggle("no-mirror", facingMode !== "user");
     try { await video.play(); } catch (_) {}
   }
-
   function stopStream() {
     if (stream) {
       stream.getTracks().forEach((t) => t.stop());
       stream = null;
     }
   }
-
-  $("tp-flip-btn").addEventListener("click", async () => {
-    if (recording) return;
+  $("flip-btn").addEventListener("click", async () => {
     facingMode = facingMode === "user" ? "environment" : "user";
+    try { await startCamera(); }
+    catch (e) { showError("카메라 전환 실패: " + ((e && e.message) || e)); }
+  });
+
+  // ---------- Start button ----------
+  $("start-btn").addEventListener("click", async () => {
+    scriptText = $("script-input").value.trim();
+    if (!scriptText) { alert("대본을 입력해 주세요."); return; }
+    fontSize = parseInt($("setup-fontsize").value, 10);
+    scrollSpeed = parseInt($("setup-speed").value, 10);
+    $("live-speed").value = scrollSpeed;
+    $("live-speed-val").textContent = scrollSpeed;
+
+    showScreen("screen-record");
+    clearError();
+    renderScript(scriptText);
+    resetScrollPos();
+
     try {
       await startCamera();
+      setTimeout(() => {
+        updateOpacities();
+        updateProgress();
+        startScroll();
+      }, 60);
     } catch (e) {
-      showError("카메라 전환 실패: " + (e && e.message ? e.message : e));
+      showError("카메라 접근에 실패했어요: " + ((e && e.message) || e) + " — 브라우저 권한을 확인해 주세요.");
     }
   });
 
-  function toggleScroll() {
-    scrollRunning = !scrollRunning;
-    $("tp-scroll-btn").textContent = scrollRunning ? "⏸" : "▶";
-    if (scrollRunning) runScroll();
-    else cancelAnimationFrame(scrollAF);
-  }
-  $("tp-scroll-btn").addEventListener("click", toggleScroll);
-
-  function resetPrompter() {
-    scrollPos = 0;
-    $("tp-prompter-inner").style.transform = "translateY(0)";
-  }
-  $("tp-reset-btn").addEventListener("click", () => {
-    resetPrompter();
-    if (!scrollRunning) {
-      scrollRunning = true;
-      $("tp-scroll-btn").textContent = "⏸";
-      runScroll();
-    }
-  });
-  $("tp-reset-btn-2").addEventListener("click", () => {
-    resetPrompter();
-    if (!scrollRunning) {
-      scrollRunning = true;
-      $("tp-scroll-btn").textContent = "⏸";
-      runScroll();
-    }
-  });
-
-  function runScroll() {
-    cancelAnimationFrame(scrollAF);
-    lastFrameTime = performance.now();
-    const inner = $("tp-prompter-inner");
-    const frame = (t) => {
-      if (!scrollRunning) return;
-      const dt = (t - lastFrameTime) / 1000;
-      lastFrameTime = t;
-      scrollPos += scrollSpeed * dt;
-      const maxScroll = inner.offsetHeight;
-      if (scrollPos >= maxScroll) {
-        scrollPos = maxScroll;
-        inner.style.transform = "translateY(-" + scrollPos + "px)";
-        scrollRunning = false;
-        $("tp-scroll-btn").textContent = "▶";
-        return;
-      }
-      inner.style.transform = "translateY(-" + scrollPos + "px)";
-      scrollAF = requestAnimationFrame(frame);
-    };
-    scrollAF = requestAnimationFrame(frame);
-  }
-
-  // Recording
-  $("tp-rec-toggle").addEventListener("click", () => {
-    if (!stream) return;
-    if (!recording) startRecording();
-    else stopRecording();
-  });
-
+  // ---------- Recording ----------
   function pickMime() {
     const candidates = [
       "video/mp4;codecs=h264,aac",
@@ -576,13 +1014,10 @@
       "video/webm"
     ];
     for (const m of candidates) {
-      try {
-        if (window.MediaRecorder && MediaRecorder.isTypeSupported(m)) return m;
-      } catch (_) {}
+      try { if (window.MediaRecorder && MediaRecorder.isTypeSupported(m)) return m; } catch (_) {}
     }
     return "";
   }
-
   function startRecording() {
     if (!window.MediaRecorder) {
       showError("이 브라우저는 녹화를 지원하지 않아요. 최신 Chrome/Safari를 사용해 주세요.");
@@ -594,94 +1029,96 @@
     try {
       mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
     } catch (e) {
-      try { mediaRecorder = new MediaRecorder(stream); } catch (e2) {
-        showError("녹화기를 시작할 수 없어요: " + (e2.message || e2));
-        return;
-      }
+      try { mediaRecorder = new MediaRecorder(stream); }
+      catch (e2) { showError("녹화기를 시작할 수 없어요: " + (e2.message || e2)); return; }
     }
-    mediaRecorder.ondataavailable = (e) => {
-      if (e.data && e.data.size > 0) recordedChunks.push(e.data);
-    };
+    mediaRecorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) recordedChunks.push(e.data); };
     mediaRecorder.onstop = () => {
-      const type = recordedMime.split(";")[0] || "video/webm";
+      const type = (recordedMime.split(";")[0]) || "video/webm";
       recordedBlob = new Blob(recordedChunks, { type });
-      const old = $("tp-review-video").src;
-      if (old && old.startsWith("blob:")) URL.revokeObjectURL(old);
-      $("tp-review-video").src = URL.createObjectURL(recordedBlob);
-      showScreen("tp-review");
+      const old = $("review-video").src;
+      if (old && old.indexOf("blob:") === 0) URL.revokeObjectURL(old);
+      $("review-video").src = URL.createObjectURL(recordedBlob);
+      showScreen("screen-review");
     };
     mediaRecorder.start(250);
     recording = true;
-    $("tp-rec-toggle").classList.add("recording");
-    $("tp-rec-dot").classList.add("recording");
-    $("tp-hint").textContent = "녹화 중… 다시 누르면 정지";
+    $("rec-toggle").classList.add("recording");
+    $("rec-badge").classList.add("recording");
+    $("hint").textContent = "녹화 중 — 탐색 버튼도 그대로 사용 가능";
     recStartTime = Date.now();
     recTimerInterval = setInterval(updateRecTimer, 250);
     updateRecTimer();
   }
-
   function stopRecording() {
     if (!mediaRecorder || mediaRecorder.state === "inactive") return;
     mediaRecorder.stop();
     recording = false;
-    $("tp-rec-toggle").classList.remove("recording");
-    $("tp-rec-dot").classList.remove("recording");
-    $("tp-rec-dot").textContent = "대기 00:00";
-    $("tp-hint").textContent = "버튼을 눌러 녹화를 시작하세요";
+    $("rec-toggle").classList.remove("recording");
+    $("rec-badge").classList.remove("recording");
+    $("rec-badge").textContent = "00:00";
+    $("hint").textContent = "버튼을 눌러 녹화를 시작하세요";
     clearInterval(recTimerInterval);
   }
-
   function updateRecTimer() {
     const sec = Math.floor((Date.now() - recStartTime) / 1000);
     const mm = String(Math.floor(sec / 60)).padStart(2, "0");
     const ss = String(sec % 60).padStart(2, "0");
-    $("tp-rec-dot").textContent = "REC " + mm + ":" + ss;
+    $("rec-badge").textContent = "REC " + mm + ":" + ss;
   }
+  $("rec-toggle").addEventListener("click", () => {
+    if (!stream) return;
+    if (!recording) startRecording();
+    else stopRecording();
+  });
 
-  $("tp-back-btn").addEventListener("click", () => {
+  // ---------- Back / Retake / Download ----------
+  $("back-btn").addEventListener("click", () => {
     if (recording) stopRecording();
     cancelAnimationFrame(scrollAF);
+    scrollRunning = false;
     stopStream();
-    showScreen("tp-setup");
+    showScreen("screen-setup");
   });
-
-  $("tp-retake-btn").addEventListener("click", async () => {
-    const old = $("tp-review-video").src;
-    if (old && old.startsWith("blob:")) URL.revokeObjectURL(old);
-    $("tp-review-video").src = "";
+  $("retake-btn").addEventListener("click", async () => {
+    const old = $("review-video").src;
+    if (old && old.indexOf("blob:") === 0) URL.revokeObjectURL(old);
+    $("review-video").src = "";
     recordedBlob = null;
-    showScreen("tp-record");
+    showScreen("screen-record");
     clearError();
+    renderScript(scriptText);
+    resetScrollPos();
     try {
       await startCamera();
-      resetPrompter();
-      scrollRunning = true;
-      $("tp-scroll-btn").textContent = "⏸";
-      runScroll();
+      setTimeout(() => { updateOpacities(); updateProgress(); startScroll(); }, 60);
     } catch (e) {
-      showError("카메라 접근 실패: " + (e && e.message ? e.message : e));
+      showError("카메라 접근 실패: " + ((e && e.message) || e));
     }
   });
-
-  $("tp-download-btn").addEventListener("click", () => {
+  $("download-btn").addEventListener("click", () => {
     if (!recordedBlob) return;
-    const ext = recordedMime.includes("mp4") ? "mp4" : "webm";
+    const ext = recordedMime.indexOf("mp4") >= 0 ? "mp4" : "webm";
     const a = document.createElement("a");
     a.href = URL.createObjectURL(recordedBlob);
     a.download = "prompter-video-" + Date.now() + "." + ext;
     document.body.appendChild(a);
     a.click();
-    setTimeout(() => {
-      URL.revokeObjectURL(a.href);
-      document.body.removeChild(a);
-    }, 0);
+    setTimeout(() => { URL.revokeObjectURL(a.href); document.body.removeChild(a); }, 0);
   });
 
-  // Cleanup on page hide
   window.addEventListener("pagehide", () => {
     if (recording) stopRecording();
     cancelAnimationFrame(scrollAF);
     stopStream();
+  });
+
+  // Re-measure on resize so opacities stay correct
+  window.addEventListener("resize", () => {
+    if ($("screen-record").classList.contains("active")) {
+      updateOpacities();
+      updateProgress();
+    }
   });
 })();
 </script>
