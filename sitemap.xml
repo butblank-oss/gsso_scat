@@ -55,4 +55,29 @@
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
+  <url>
+    <loc>https://butblank-oss.github.io/gsso_scat/guides/capcut-shorts-guide.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://butblank-oss.github.io/gsso_scat/guides/natural-camera-talking.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://butblank-oss.github.io/gsso_scat/guides/shortform-production-guide.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://butblank-oss.github.io/gsso_scat/guides/youtube-shorts-filming-tips.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://butblank-oss.github.io/gsso_scat/guides/reducing-filming-mistakes.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
 </urlset>
