@@ -1,0 +1,36 @@
+{
+  "name": "프롬프터 - 무료 모바일 텔레프롬프터",
+  "short_name": "프롬프터",
+  "description": "유튜브 쇼츠, 인스타 릴스, 틱톡 촬영용 무료 모바일 텔레프롬프터. 카메라를 보며 대본을 읽고 바로 녹화할 수 있습니다.",
+  "start_url": "./teleprompter.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "lang": "ko",
+  "dir": "ltr",
+  "categories": ["productivity", "multimedia", "utilities"],
+  "icons": [
+    {
+      "src": "./icon-192.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
+}
