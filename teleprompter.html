@@ -473,8 +473,8 @@
   async function startCamera() {
     stopStream();
     const tryConstraints = [
-      { audio: true, video: { facingMode: { ideal: facingMode }, width: { ideal: 1080 }, height: { ideal: 1920 }, aspectRatio: { ideal: 9 / 16 } } },
-      { audio: true, video: { facingMode: { ideal: facingMode }, width: { ideal: 720 }, height: { ideal: 1280 } } },
+      { audio: true, video: { facingMode: { ideal: facingMode } } }
+      { audio: true, video: { facingMode: { ideal: facingMode } } },
       { audio: true, video: { facingMode: facingMode } },
       { audio: true, video: true }
     ];
@@ -509,19 +509,42 @@
         if (canvas.width !== vw || canvas.height !== vh) {
           canvas.width = vw;
           canvas.height = vh;
-          stage.style.aspectRatio = vw + " / " + vh;
         }
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, vw, vh);
-        if (facingMode === "user") {
-          ctx.save();
-          ctx.translate(vw, 0);
-          ctx.scale(-1, 1);
-          ctx.drawImage(video, 0, 0, vw, vh);
-          ctx.restore();
-        } else {
-          ctx.drawImage(video, 0, 0, vw, vh);
-        }
+const cw = canvas.width;
+const ch = canvas.height;
+
+const videoRatio = vw / vh;
+const canvasRatio = cw / ch;
+
+let drawW, drawH, dx, dy;
+
+if (videoRatio > canvasRatio) {
+  drawH = ch;
+  drawW = drawH * videoRatio;
+  dx = (cw - drawW) / 2;
+  dy = 0;
+} else {
+  drawW = cw;
+  drawH = drawW / videoRatio;
+  dx = 0;
+  dy = (ch - drawH) / 2;
+}
+
+if (facingMode === "user") {
+  ctx.save();
+  ctx.translate(cw, 0);
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, -dx - drawW, dy, drawW, drawH);
+  ctx.restore();
+} else {
+  ctx.drawImage(video, dx, dy, drawW, drawH);
+}
+
+
+
+        
       }
       drawAF = requestAnimationFrame(draw);
     };
