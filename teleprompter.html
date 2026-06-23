@@ -396,6 +396,13 @@
   const RECORD_W = 720;
   const RECORD_H = 1280;
   let drawAF = null;
+  const supportsBlur = (() => {
+    try {
+      const c = document.createElement("canvas").getContext("2d");
+      c.filter = "blur(1px)";
+      return c.filter === "blur(1px)";
+    } catch (_) { return false; }
+  })();
 
   let scrollPos = 0;
   let scrollRunning = false;
@@ -505,6 +512,18 @@
     canvas.height = RECORD_H;
     const ctx = canvas.getContext("2d");
     const video = $("tp-cam");
+    const drawSource = (dx, dy, dw, dh) => {
+      const tw = canvas.width;
+      if (facingMode === "user") {
+        ctx.save();
+        ctx.translate(tw, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, dx, dy, dw, dh);
+        ctx.restore();
+      } else {
+        ctx.drawImage(video, dx, dy, dw, dh);
+      }
+    };
     const draw = () => {
       if (video.readyState >= 2 && video.videoWidth > 0) {
         const vw = video.videoWidth;
@@ -513,29 +532,47 @@
         const th = canvas.height;
         const sr = vw / vh;
         const tr = tw / th;
-        let dx, dy, dw, dh;
+
+        let fgX, fgY, fgW, fgH;
         if (sr > tr) {
-          dh = th;
-          dw = th * sr;
-          dx = (tw - dw) / 2;
-          dy = 0;
+          fgW = tw;
+          fgH = tw / sr;
+          fgX = 0;
+          fgY = (th - fgH) / 2;
         } else {
-          dw = tw;
-          dh = tw / sr;
-          dx = 0;
-          dy = (th - dh) / 2;
+          fgH = th;
+          fgW = th * sr;
+          fgX = (tw - fgW) / 2;
+          fgY = 0;
         }
+
+        let bgX, bgY, bgW, bgH;
+        if (sr > tr) {
+          bgH = th;
+          bgW = th * sr;
+          bgX = (tw - bgW) / 2;
+          bgY = 0;
+        } else {
+          bgW = tw;
+          bgH = tw / sr;
+          bgX = 0;
+          bgY = (th - bgH) / 2;
+        }
+
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, tw, th);
-        if (facingMode === "user") {
-          ctx.save();
-          ctx.translate(tw, 0);
-          ctx.scale(-1, 1);
-          ctx.drawImage(video, dx, dy, dw, dh);
-          ctx.restore();
+
+        if (supportsBlur) {
+          ctx.filter = "blur(24px) brightness(0.55) saturate(1.15)";
+          drawSource(bgX, bgY, bgW, bgH);
+          ctx.filter = "none";
         } else {
-          ctx.drawImage(video, dx, dy, dw, dh);
+          ctx.globalAlpha = 0.35;
+          drawSource(bgX, bgY, bgW, bgH);
+          ctx.globalAlpha = 1.0;
         }
+
+        drawSource(fgX, fgY, fgW, fgH);
       }
       drawAF = requestAnimationFrame(draw);
     };
