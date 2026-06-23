@@ -470,7 +470,10 @@
   async function startCamera() {
     stopStream();
     const tryConstraints = [
-      { audio: true, video: { facingMode: { ideal: facingMode }, width: { ideal: 1080 }, height: { ideal: 1920 } } },
+  try { await video.play(); } catch (_) {}
+  }
+      
+      
       { audio: true, video: { facingMode: facingMode } },
       { audio: true, video: true }
     ];
@@ -490,7 +493,7 @@
     video.srcObject = stream;
     video.classList.toggle("no-mirror", facingMode !== "user");
     try { await video.play(); } catch (_) {}
-  }
+
 
   function stopStream() {
     if (stream) {
