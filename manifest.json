@@ -1,6 +1,6 @@
 {
-  "name": "프롬프터 - 무료 모바일 텔레프롬프터",
-  "short_name": "프롬프터",
+  "name": "벗프롬프터 (BUT Prompter) - 무료 모바일 텔레프롬프터 / Free Mobile Teleprompter",
+  "short_name": "벗프롬프터",
   "description": "유튜브 쇼츠, 인스타 릴스, 틱톡 촬영용 무료 모바일 텔레프롬프터. 카메라를 보며 대본을 읽고 바로 녹화할 수 있습니다.",
   "start_url": "./teleprompter.html",
   "scope": "./",
