@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#FBF9F4" />
+<title>맬리 · 매일 5분 인지건강 루틴</title>
+<meta name="description" content="60대 이상 시니어를 위한 매일 5분 인지건강 루틴 앱. 지남력 체크부터 6가지 인지영역 훈련까지, 차분하고 다정한 두뇌 운동 도우미." />
+<meta name="keywords" content="치매예방, 인지훈련, 시니어 두뇌운동, 지남력, MMSE, 기억력 훈련" />
+<meta name="robots" content="index, follow" />
+<link rel="canonical" href="https://butprompter.com/malli.html" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="맬리 · 매일 5분 인지건강 루틴" />
+<meta property="og:description" content="병원에서 쓰는 인지재활 도구를 집에서 매일. 차분하고 다정한 두뇌 운동 도우미." />
+<meta property="og:url" content="https://butprompter.com/malli.html" />
+<meta property="og:image" content="https://butprompter.com/og-image.svg" />
+<link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="./icon-192.svg" />
+
+<!-- Pretendard -->
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+
+<!-- Tailwind Play CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          'bg-main':         '#FBF9F4',
+          'card':            '#FFFFFF',
+          'card-border':     '#E4E8EC',
+          'text-primary':    '#191F28',
+          'text-muted':      '#5C6470',
+          'text-subtle':     '#707880',
+          'primary':         '#2E7BE0',
+          'primary-pressed': '#1B5BC4',
+          'primary-soft':    '#EAF2FC',
+          'success':         '#1F8A57',
+          'success-soft':    '#E5F4EC',
+          'caution':         '#B8860B',
+        },
+        borderRadius: {
+          btn:     '16px',
+          card:    '22px',
+          overlay: '26px',
+        },
+        boxShadow: {
+          card:    '0px 4px 16px rgba(25,31,40,0.06)',
+          pressed: '0px 1px 4px rgba(25,31,40,0.08)',
+          float:   '0px 8px 28px rgba(25,31,40,0.10)',
+        },
+        minHeight: {
+          tap:     '60px',
+          'tap-lg':'64px',
+        },
+        transitionTimingFunction: {
+          smooth: 'cubic-bezier(0.4,0,0.2,1)',
+        },
+      },
+    },
+  };
+</script>
+
+<!-- React 18 + Babel standalone (prototype build) -->
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<style>
+  /* ============================================================
+     Design Tokens — Senior-adaptive GDS
+     ============================================================ */
+  :root {
+    --scale: 1;
+    --t-display:  calc(32px * var(--scale));
+    --t-headline: calc(26px * var(--scale));
+    --t-body:     calc(20px * var(--scale));
+    --t-caption:  calc(16px * var(--scale));
+
+    --tracking-headline: 0em;
+    --tracking-body:     0.01em;
+    --leading:           1.6;
+  }
+  html[data-scale="lg"] { --scale: 1.2; }
+  html[data-scale="xl"] { --scale: 1.4; }
+
+  html, body {
+    background: #FBF9F4;
+    color: #191F28;
+    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -webkit-text-size-adjust: 100%;
+    overscroll-behavior-y: none;
+  }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+  }
+  * { box-sizing: border-box; }
+  button { font-family: inherit; }
+
+  /* Typography utilities — font-scale aware */
+  .t-display  { font-size: var(--t-display);  line-height: var(--leading); letter-spacing: var(--tracking-headline); font-weight: 700; }
+  .t-headline { font-size: var(--t-headline); line-height: var(--leading); letter-spacing: var(--tracking-headline); font-weight: 700; }
+  .t-body     { font-size: var(--t-body);     line-height: var(--leading); letter-spacing: var(--tracking-body); }
+  .t-body-strong { font-size: var(--t-body); line-height: var(--leading); letter-spacing: var(--tracking-body); font-weight: 700; }
+  .t-caption  { font-size: var(--t-caption);  line-height: 1.5;            letter-spacing: var(--tracking-body); }
+
+  /* Tap feedback — never hover-based */
+  .tap-press { transition: transform 0.18s cubic-bezier(0.4,0,0.2,1), background-color 0.18s ease, box-shadow 0.18s ease; }
+  .tap-press:active { transform: scale(0.97); }
+
+  /* Soft, calm key-frames */
+  @keyframes calm-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(46,123,224,0.18); }
+    50%      { box-shadow: 0 0 0 10px rgba(46,123,224,0.00); }
+  }
+  .calm-pulse { animation: calm-pulse 2.4s ease-in-out infinite; }
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .fade-up { animation: fade-up 0.32s cubic-bezier(0.4,0,0.2,1) both; }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  .fade-in { animation: fade-in 0.22s ease both; }
+
+  /* Bottom-sheet slide */
+  @keyframes sheet-up {
+    from { transform: translateY(24px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+  .sheet-up { animation: sheet-up 0.28s cubic-bezier(0.4,0,0.2,1) both; }
+
+  /* Hide outline on tap but keep for keyboard */
+  button:focus { outline: none; }
+  button:focus-visible { outline: 3px solid #2E7BE0; outline-offset: 3px; }
+
+  /* App container max-width — looks app-like on desktop too */
+  .app-shell {
+    max-width: 480px;
+    margin: 0 auto;
+    background: #FBF9F4;
+    min-height: 100dvh;
+    position: relative;
+    box-shadow: 0 0 0 1px rgba(228,232,236,0.6);
+  }
+  @media (min-width: 481px) {
+    .app-shell { min-height: 100vh; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="env,react">
+const { useState, useEffect, useMemo, useCallback, useRef } = React;
+
+/* ============================================================
+   Storage helpers
+   ============================================================ */
+const LS = {
+  get(key, fallback) {
+    try {
+      const v = localStorage.getItem(key);
+      return v == null ? fallback : JSON.parse(v);
+    } catch { return fallback; }
+  },
+  set(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+  },
+};
+
+const todayKey = (d = new Date()) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+const useLocalState = (key, initial) => {
+  const [v, setV] = useState(() => LS.get(key, initial));
+  const set = useCallback((next) => {
+    setV(prev => {
+      const value = typeof next === 'function' ? next(prev) : next;
+      LS.set(key, value);
+      return value;
+    });
+  }, [key]);
+  return [v, set];
+};
+
+/* ============================================================
+   TTS (Web Speech API)
+   ============================================================ */
+const useTTS = (enabled) => {
+  const speak = useCallback((text) => {
+    if (!enabled) return;
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'ko-KR';
+      u.rate = 0.95;
+      u.pitch = 1.0;
+      u.volume = 1.0;
+      window.speechSynthesis.speak(u);
+    } catch {}
+  }, [enabled]);
+  const stop = useCallback(() => {
+    try { window.speechSynthesis?.cancel(); } catch {}
+  }, []);
+  return { speak, stop };
+};
+
+/* ============================================================
+   Common UI
+   ============================================================ */
+function Button({ children, variant = 'primary', onClick, disabled, fullWidth = true, className = '' }) {
+  const base = 'tap-press rounded-btn font-bold inline-flex items-center justify-center';
+  const size = 'min-h-tap-lg px-6 t-body';
+  const wide = fullWidth ? 'w-full' : '';
+  const styles = {
+    primary: 'bg-primary text-white active:bg-primary-pressed active:shadow-pressed',
+    secondary: 'bg-white text-text-primary border border-card-border active:bg-bg-main',
+    ghost: 'bg-transparent text-text-muted active:bg-bg-main',
+    success: 'bg-success text-white active:opacity-90',
+  };
+  const disabledStyle = disabled ? 'opacity-50 pointer-events-none' : '';
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`${base} ${size} ${wide} ${styles[variant]} ${disabledStyle} ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Card({ children, className = '', onClick, active = false }) {
+  return (
+    <div
+      onClick={onClick}
+      className={`bg-card border border-card-border rounded-card shadow-card p-6 ${onClick ? 'tap-press cursor-pointer' : ''} ${active ? 'calm-pulse ring-2 ring-primary/30' : ''} ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+function Modal({ open, children, onClose, allowClose = true }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center fade-in" style={{ background: 'rgba(25,31,40,0.45)', backdropFilter: 'blur(8px)' }}>
+      <div
+        className="bg-card w-full max-w-[480px] rounded-t-overlay sm:rounded-overlay shadow-float sheet-up overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {children}
+      </div>
+      {allowClose && (
+        <div className="absolute inset-0 -z-10" onClick={onClose} />
+      )}
+    </div>
+  );
+}
+
+function VoiceButton({ text, voiceEnabled }) {
+  const { speak } = useTTS(voiceEnabled);
+  if (!voiceEnabled) return null;
+  return (
+    <button
+      onClick={() => speak(text)}
+      aria-label="다시 듣기"
+      className="tap-press absolute top-4 right-4 w-12 h-12 rounded-full bg-white border border-card-border shadow-card flex items-center justify-center text-2xl"
+    >
+      🔊
+    </button>
+  );
+}
+
+function BackButton({ onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label="뒤로가기"
+      className="tap-press absolute top-4 left-4 w-12 h-12 rounded-full bg-white border border-card-border shadow-card flex items-center justify-center text-xl text-text-primary"
+    >
+      ←
+    </button>
+  );
+}
+
+/* ============================================================
+   Game definitions — 6 cognitive areas
+   ============================================================ */
+
+// Helper: shuffle
+const shuffle = (arr) => {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+const pick = (arr, n) => shuffle(arr).slice(0, n);
+
+/* ---- 기억력: 물건 기억하기 ---- */
+const MEMORY_POOL = [
+  { icon: '🍎', name: '사과' }, { icon: '🍌', name: '바나나' }, { icon: '🍇', name: '포도' },
+  { icon: '🍊', name: '귤' },  { icon: '🍓', name: '딸기' }, { icon: '🍉', name: '수박' },
+  { icon: '🥕', name: '당근' }, { icon: '🥔', name: '감자' }, { icon: '🍅', name: '토마토' },
+  { icon: '🥬', name: '배추' }, { icon: '🌽', name: '옥수수' }, { icon: '🍄', name: '버섯' },
+];
+function makeMemoryRound() {
+  const showCount = 3;
+  const shown = pick(MEMORY_POOL, showCount);
+  const unseen = MEMORY_POOL.filter(x => !shown.includes(x));
+  const target = shown[Math.floor(Math.random() * shown.length)];
+  const distractors = pick(unseen, 3);
+  const options = shuffle([target, ...distractors]);
+  return { type: 'memory', stimulus: shown, options, answer: target, question: '방금 보신 물건은 무엇인가요?' };
+}
+
+/* ---- 주의집중력: 같은 그림 찾기 ---- */
+const ATTENTION_POOL = ['🐶','🐱','🐰','🐼','🦊','🐯','🐨','🐮','🐷','🐵','🐸','🦁'];
+function makeAttentionRound() {
+  const target = ATTENTION_POOL[Math.floor(Math.random() * ATTENTION_POOL.length)];
+  const distractors = pick(ATTENTION_POOL.filter(x => x !== target), 3);
+  const options = shuffle([target, ...distractors]).map(icon => ({ icon, name: icon }));
+  return {
+    type: 'attention',
+    stimulus: target,
+    options,
+    answer: options.find(o => o.icon === target),
+    question: '위 그림과 똑같은 것을 골라주세요',
+  };
+}
+
+/* ---- 언어능력: 첫 글자 보고 단어 맞히기 ---- */
+const LANG_POOL = [
+  { word: '수박',  initials: 'ㅅㅂ', hint: '🍉' },
+  { word: '사과',  initials: 'ㅅㄱ', hint: '🍎' },
+  { word: '바나나',initials: 'ㅂㄴㄴ', hint: '🍌' },
+  { word: '딸기',  initials: 'ㄸㄱ', hint: '🍓' },
+  { word: '포도',  initials: 'ㅍㄷ', hint: '🍇' },
+  { word: '감자',  initials: 'ㄱㅈ', hint: '🥔' },
+  { word: '당근',  initials: 'ㄷㄱ', hint: '🥕' },
+  { word: '버섯',  initials: 'ㅂㅅ', hint: '🍄' },
+];
+function makeLangRound() {
+  const target = LANG_POOL[Math.floor(Math.random() * LANG_POOL.length)];
+  const distractors = pick(LANG_POOL.filter(x => x.word !== target.word), 3);
+  const options = shuffle([target, ...distractors]).map(o => ({ name: o.word, value: o.word }));
+  return {
+    type: 'lang',
+    stimulus: target,
+    options,
+    answer: { name: target.word, value: target.word },
+    question: '아래 그림과 글자를 보고 무엇인지 골라주세요',
+  };
+}
+
+/* ---- 계산력: 동전 세기 ---- */
+const COIN_DEFS = [
+  { value: 500, color: '#C9B872', label: '500' },
+  { value: 100, color: '#B0B6BC', label: '100' },
+  { value: 50,  color: '#C8CCD1', label:  '50' },
+  { value: 10,  color: '#C9885E', label:  '10' },
+];
+function makeCalcRound() {
+  // pick 2~4 coin types, random counts (1~3 each)
+  const types = pick(COIN_DEFS, 2 + Math.floor(Math.random() * 2));
+  const items = types.map(t => ({ ...t, count: 1 + Math.floor(Math.random() * 3) }));
+  const total = items.reduce((s, x) => s + x.value * x.count, 0);
+  const wrongDeltas = [-200, -100, 100, 200, -50, 50, -110, 220];
+  const distractors = shuffle(wrongDeltas)
+    .map(d => total + d)
+    .filter(v => v > 0 && v !== total)
+    .slice(0, 3);
+  const options = shuffle([total, ...distractors]).map(v => ({ name: `${v.toLocaleString()}원`, value: v }));
+  return {
+    type: 'calc',
+    stimulus: items,
+    options,
+    answer: { name: `${total.toLocaleString()}원`, value: total },
+    question: '모두 합치면 얼마일까요?',
+  };
+}
+
+/* ---- 시공간능력: 시계 맞히기 ---- */
+function makeClockRound() {
+  const hour = 1 + Math.floor(Math.random() * 12);
+  const useMinute = Math.random() < 0.4;
+  const minute = useMinute ? (Math.random() < 0.5 ? 30 : 15) : 0;
+  const label = (h, m) => m === 0 ? `${h}시` : (m === 30 ? `${h}시 반` : `${h}시 ${m}분`);
+  const target = { hour, minute, label: label(hour, minute) };
+  const candidates = [];
+  while (candidates.length < 3) {
+    const h2 = 1 + Math.floor(Math.random() * 12);
+    const m2 = [0, 15, 30][Math.floor(Math.random() * 3)];
+    const l = label(h2, m2);
+    if (l !== target.label && !candidates.find(c => c.label === l)) {
+      candidates.push({ hour: h2, minute: m2, label: l });
+    }
+  }
+  const options = shuffle([target, ...candidates]).map(c => ({ name: c.label, value: c.label }));
+  return {
+    type: 'clock',
+    stimulus: target,
+    options,
+    answer: { name: target.label, value: target.label },
+    question: '시계가 가리키는 시간은 몇 시일까요?',
+  };
+}
+
+/* ============================================================
+   Training catalog (6 games)
+   ============================================================ */
+const TRAININGS = [
+  { id: 'memory',    area: '기억력',     title: '물건 기억하기', desc: '화면에 나온 물건을 잘 기억해주세요', icon: '🧺', maker: makeMemoryRound,    showStimulusMs: 5000 },
+  { id: 'attention', area: '주의집중력', title: '같은 그림 찾기', desc: '같은 그림을 차분히 골라주세요',     icon: '🔎', maker: makeAttentionRound, showStimulusMs: 0 },
+  { id: 'lang',      area: '언어능력',   title: '단어 알아맞히기', desc: '그림과 글자를 보고 단어를 골라요',   icon: '📖', maker: makeLangRound,      showStimulusMs: 0 },
+  { id: 'calc',      area: '계산력',     title: '동전 세기',     desc: '동전을 모두 합치면 얼마일까요',     icon: '🪙', maker: makeCalcRound,      showStimulusMs: 0 },
+  { id: 'clock',     area: '시공간',     title: '시계 보기',     desc: '시계가 가리키는 시간을 골라요',     icon: '🕒', maker: makeClockRound,     showStimulusMs: 0 },
+];
+const TRAININGS_BY_ID = Object.fromEntries(TRAININGS.map(t => [t.id, t]));
+
+// Pick 3 trainings for today (rotates by day-of-year + some randomness, but deterministic per day)
+function pickTodayTrainings(dateKey) {
+  // deterministic hash on dateKey for stable daily selection
+  let h = 0;
+  for (let i = 0; i < dateKey.length; i++) h = (h * 31 + dateKey.charCodeAt(i)) >>> 0;
+  const ordered = [...TRAININGS];
+  // simple Fisher-Yates with seeded pseudo-random
+  for (let i = ordered.length - 1; i > 0; i--) {
+    h = (h * 1664525 + 1013904223) >>> 0;
+    const j = h % (i + 1);
+    [ordered[i], ordered[j]] = [ordered[j], ordered[i]];
+  }
+  return ordered.slice(0, 3).map(t => t.id);
+}
+
+/* ============================================================
+   Game stimulus renderers
+   ============================================================ */
+function MemoryStimulus({ items }) {
+  return (
+    <div className="flex justify-center gap-4 flex-wrap py-6">
+      {items.map((it, i) => (
+        <div key={i} className="bg-primary-soft border border-card-border rounded-card px-6 py-5 flex flex-col items-center min-w-[96px]">
+          <div className="text-6xl">{it.icon}</div>
+          <div className="t-body-strong mt-2 text-text-primary">{it.name}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function AttentionStimulus({ target }) {
+  return (
+    <div className="flex justify-center py-4">
+      <div className="bg-primary-soft border border-card-border rounded-card w-32 h-32 flex items-center justify-center text-7xl">
+        {target}
+      </div>
+    </div>
+  );
+}
+
+function LangStimulus({ target }) {
+  return (
+    <div className="flex flex-col items-center py-4 gap-3">
+      <div className="text-7xl">{target.hint}</div>
+      <div className="t-display tracking-[0.15em] text-primary font-bold">{target.initials}</div>
+    </div>
+  );
+}
+
+function CalcStimulus({ items }) {
+  return (
+    <div className="flex justify-center gap-2 flex-wrap py-4 max-w-full">
+      {items.flatMap((it, i) =>
+        Array.from({ length: it.count }).map((_, j) => (
+          <div
+            key={`${i}-${j}`}
+            className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold border-2 border-white shadow-card"
+            style={{ background: it.color, fontSize: 'calc(14px * var(--scale))' }}
+          >
+            {it.label}
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
+function ClockStimulus({ target }) {
+  const { hour, minute } = target;
+  // hour hand: 30deg per hour + 0.5 per minute, offset -90 to start at 12
+  const hourAngle   = (hour % 12) * 30 + minute * 0.5;
+  const minuteAngle = minute * 6;
+  const cx = 100, cy = 100, r = 92;
+  const polar = (angleDeg, length) => {
+    const a = (angleDeg - 90) * Math.PI / 180;
+    return [cx + length * Math.cos(a), cy + length * Math.sin(a)];
+  };
+  const [hx, hy] = polar(hourAngle, 50);
+  const [mx, my] = polar(minuteAngle, 72);
+  return (
+    <div className="flex justify-center py-2">
+      <svg viewBox="0 0 200 200" className="w-48 h-48">
+        <circle cx={cx} cy={cy} r={r} fill="#FFFFFF" stroke="#191F28" strokeWidth="4" />
+        {Array.from({ length: 12 }).map((_, i) => {
+          const ang = (i * 30 - 90) * Math.PI / 180;
+          const tx = cx + 78 * Math.cos(ang);
+          const ty = cy + 78 * Math.sin(ang);
+          return (
+            <text key={i} x={tx} y={ty} textAnchor="middle" dominantBaseline="central" fontSize="18" fontWeight="700" fill="#191F28">
+              {i === 0 ? 12 : i}
+            </text>
+          );
+        })}
+        <line x1={cx} y1={cy} x2={hx} y2={hy} stroke="#191F28" strokeWidth="7" strokeLinecap="round" />
+        <line x1={cx} y1={cy} x2={mx} y2={my} stroke="#2E7BE0" strokeWidth="5" strokeLinecap="round" />
+        <circle cx={cx} cy={cy} r="6" fill="#191F28" />
+      </svg>
+    </div>
+  );
+}
+
+function Stimulus({ type, data }) {
+  if (type === 'memory')    return <MemoryStimulus items={data} />;
+  if (type === 'attention') return <AttentionStimulus target={data} />;
+  if (type === 'lang')      return <LangStimulus target={data} />;
+  if (type === 'calc')      return <CalcStimulus items={data} />;
+  if (type === 'clock')     return <ClockStimulus target={data} />;
+  return null;
+}
+
+/* ============================================================
+   GameRunner — generic 4-choice loop
+   ============================================================ */
+const TOTAL_QUESTIONS = 3;
+
+function GameRunner({ training, onExit, onComplete, voiceEnabled }) {
+  const { speak, stop } = useTTS(voiceEnabled);
+  const [qIndex, setQIndex] = useState(0);
+  const [round, setRound] = useState(() => training.maker());
+  const [phase, setPhase] = useState(training.showStimulusMs > 0 ? 'study' : 'quiz'); // study | quiz | feedback | done
+  const [studySecondsLeft, setStudySecondsLeft] = useState(Math.ceil(training.showStimulusMs / 1000));
+  const [pickedAnswer, setPickedAnswer] = useState(null);
+  const [wasCorrect, setWasCorrect] = useState(null);
+  const [retriedThisQ, setRetriedThisQ] = useState(false);
+  const [correctCount, setCorrectCount] = useState(0);
+
+  useEffect(() => () => stop(), [stop]);
+
+  // Study phase countdown
+  useEffect(() => {
+    if (phase !== 'study') return;
+    if (studySecondsLeft <= 0) { setPhase('quiz'); return; }
+    const id = setTimeout(() => setStudySecondsLeft(s => s - 1), 1000);
+    return () => clearTimeout(id);
+  }, [phase, studySecondsLeft]);
+
+  useEffect(() => {
+    if (phase === 'quiz') speak(round.question);
+    if (phase === 'feedback' && wasCorrect) speak('정답이에요. 잘하셨어요.');
+    if (phase === 'feedback' && !wasCorrect) speak(`괜찮아요. 정답은 ${round.answer.name}이에요.`);
+    if (phase === 'done') speak('오늘 훈련을 잘 마치셨어요.');
+  }, [phase, speak, round, wasCorrect]);
+
+  const handlePick = (option) => {
+    const correct = option.name === round.answer.name || option.value === round.answer.value;
+    setPickedAnswer(option);
+    setWasCorrect(correct);
+    if (correct) setCorrectCount(c => c + 1);
+    setPhase('feedback');
+  };
+
+  const handleNext = () => {
+    if (!wasCorrect && !retriedThisQ) {
+      // allow one retry on same question
+      setRetriedThisQ(true);
+      setPickedAnswer(null);
+      setWasCorrect(null);
+      setPhase('quiz');
+      return;
+    }
+    if (qIndex + 1 >= TOTAL_QUESTIONS) {
+      setPhase('done');
+      return;
+    }
+    const nextIdx = qIndex + 1;
+    setQIndex(nextIdx);
+    setRound(training.maker());
+    setRetriedThisQ(false);
+    setPickedAnswer(null);
+    setWasCorrect(null);
+    setPhase(training.showStimulusMs > 0 ? 'study' : 'quiz');
+    setStudySecondsLeft(Math.ceil(training.showStimulusMs / 1000));
+  };
+
+  const ttsText = phase === 'quiz' ? round.question
+    : phase === 'study' ? '잘 기억해두세요'
+    : phase === 'feedback' && wasCorrect ? '정답이에요'
+    : phase === 'feedback' ? `정답은 ${round.answer.name}이에요`
+    : '오늘 훈련을 잘 마치셨어요';
+
+  return (
+    <div className="min-h-[100dvh] bg-bg-main relative pb-10">
+      <BackButton onClick={onExit} />
+      <VoiceButton text={ttsText} voiceEnabled={voiceEnabled} />
+
+      {/* Header */}
+      <div className="pt-20 px-6">
+        <div className="t-caption text-text-muted">{training.area}</div>
+        <div className="t-headline text-text-primary mt-1">{training.title}</div>
+        {phase !== 'done' && (
+          <div className="t-caption text-text-muted mt-3">
+            문제 {qIndex + 1} / {TOTAL_QUESTIONS}
+          </div>
+        )}
+      </div>
+
+      {/* Body */}
+      <div className="px-6 mt-6">
+        {phase === 'study' && (
+          <Card className="fade-up">
+            <div className="text-center">
+              <div className="t-body-strong text-text-primary">잘 기억해두세요</div>
+              <div className="t-caption text-text-muted mt-1">{studySecondsLeft}초 남았어요</div>
+            </div>
+            <Stimulus type={round.type} data={round.stimulus} />
+          </Card>
+        )}
+
+        {phase === 'quiz' && (
+          <Card className="fade-up">
+            <div className="t-body-strong text-text-primary text-center">{round.question}</div>
+            {round.type !== 'memory' && (
+              <div className="mt-4">
+                <Stimulus type={round.type} data={round.stimulus} />
+              </div>
+            )}
+            <div className="mt-6 grid grid-cols-1 gap-3">
+              {round.options.map((opt, i) => (
+                <button
+                  key={i}
+                  onClick={() => handlePick(opt)}
+                  className="tap-press bg-white border-2 border-card-border active:border-primary active:bg-primary-soft rounded-btn min-h-tap-lg px-5 py-4 flex items-center gap-3 text-left"
+                >
+                  {opt.icon ? <span className="text-3xl">{opt.icon}</span> : null}
+                  <span className="t-body-strong text-text-primary">{opt.name}</span>
+                </button>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {phase === 'feedback' && (
+          <Card className="fade-up text-center">
+            <div className={`text-6xl ${wasCorrect ? '' : ''}`}>{wasCorrect ? '✅' : '🌿'}</div>
+            <div className="t-headline mt-3" style={{ color: wasCorrect ? '#1F8A57' : '#191F28' }}>
+              {wasCorrect ? '정답이에요!' : '괜찮아요'}
+            </div>
+            <div className="t-body text-text-muted mt-2">
+              {wasCorrect ? '아주 잘하셨어요' : `정답은 ${round.answer.name}이에요`}
+            </div>
+            <div className="mt-6">
+              <Button onClick={handleNext}>
+                {!wasCorrect && !retriedThisQ ? '한 번 더 해볼게요' : (qIndex + 1 >= TOTAL_QUESTIONS ? '결과 보기' : '다음 문제')}
+              </Button>
+            </div>
+          </Card>
+        )}
+
+        {phase === 'done' && (
+          <Card className="fade-up text-center">
+            <div className="text-7xl">🌟</div>
+            <div className="t-display mt-3 text-text-primary">참 잘하셨어요</div>
+            <div className="t-body text-text-muted mt-2">
+              오늘도 두뇌 운동을 잘 마치셨어요
+            </div>
+            <div className="t-caption text-text-subtle mt-3">
+              ({correctCount} / {TOTAL_QUESTIONS} 맞히셨어요)
+            </div>
+            <div className="mt-6">
+              <Button onClick={() => onComplete({ correct: correctCount, total: TOTAL_QUESTIONS })}>
+                다음 훈련으로
+              </Button>
+            </div>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   Orientation Check Modal — MMSE-inspired daily entry
+   ============================================================ */
+function makeDateOptions(today) {
+  // create 3 buttons: today, ±2~3 days off
+  const opts = new Set();
+  opts.add(todayKey(today));
+  while (opts.size < 3) {
+    const offset = (Math.random() < 0.5 ? -1 : 1) * (1 + Math.floor(Math.random() * 3));
+    const d = new Date(today);
+    d.setDate(d.getDate() + offset);
+    opts.add(todayKey(d));
+  }
+  return shuffle([...opts]);
+}
+
+const seasonOf = (m) => (m >= 3 && m <= 5) ? '봄'
+  : (m >= 6 && m <= 8) ? '여름'
+  : (m >= 9 && m <= 11) ? '가을' : '겨울';
+
+const DOW_KO = ['일','월','화','수','목','금','토'];
+
+function OrientationModal({ onDone, voiceEnabled }) {
+  const today = useMemo(() => new Date(), []);
+  const correctKey = todayKey(today);
+  const correctSeason = seasonOf(today.getMonth() + 1);
+
+  const [step, setStep] = useState(1); // 1: date, 2: feedback-date, 3: season, 4: feedback-season
+  const [dateOpts] = useState(() => makeDateOptions(today));
+  const [pickedDate, setPickedDate] = useState(null);
+  const [pickedSeason, setPickedSeason] = useState(null);
+
+  const seasonOptions = useMemo(() => {
+    const all = ['봄','여름','가을','겨울'];
+    const wrongs = pick(all.filter(s => s !== correctSeason), 2);
+    return shuffle([correctSeason, ...wrongs]);
+  }, [correctSeason]);
+
+  const { speak } = useTTS(voiceEnabled);
+
+  useEffect(() => {
+    if (step === 1) speak('오늘은 몇 월 며칠인가요? 차분히 골라주세요.');
+    if (step === 2) speak(`오늘은 ${today.getFullYear()}년 ${today.getMonth()+1}월 ${today.getDate()}일, ${DOW_KO[today.getDay()]}요일이에요.`);
+    if (step === 3) speak('지금은 어느 계절일까요?');
+    if (step === 4) speak(`맞아요, 지금은 ${correctSeason}이에요.`);
+  }, [step, speak, today, correctSeason]);
+
+  const formatDateKo = (key) => {
+    const [y, m, d] = key.split('-').map(Number);
+    return `${m}월 ${d}일`;
+  };
+
+  const todayLong = `${today.getFullYear()}년 ${today.getMonth()+1}월 ${today.getDate()}일 ${DOW_KO[today.getDay()]}요일`;
+
+  return (
+    <Modal open allowClose={false}>
+      <div className="p-8 pb-6 relative">
+        <VoiceButton
+          voiceEnabled={voiceEnabled}
+          text={
+            step === 1 ? '오늘은 몇 월 며칠인가요?'
+            : step === 2 ? `오늘은 ${todayLong}이에요`
+            : step === 3 ? '지금은 어느 계절일까요?'
+            : `지금은 ${correctSeason}이에요`
+          }
+        />
+
+        <div className="t-caption text-primary font-bold">오늘의 첫 인사</div>
+
+        {step === 1 && (
+          <div className="fade-up mt-3">
+            <div className="text-5xl mb-3">📅</div>
+            <div className="t-display text-text-primary leading-snug">오늘은 몇 월 며칠인가요?</div>
+            <div className="t-body text-text-muted mt-2">차분히 골라주세요. 정답을 모르셔도 괜찮아요.</div>
+            <div className="mt-6 grid grid-cols-1 gap-3">
+              {dateOpts.map(k => (
+                <button
+                  key={k}
+                  onClick={() => { setPickedDate(k); setStep(2); }}
+                  className="tap-press bg-white border-2 border-card-border active:border-primary active:bg-primary-soft rounded-btn min-h-tap-lg px-6 py-4 t-headline font-bold text-text-primary"
+                >
+                  {formatDateKo(k)}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="fade-up mt-3 text-center">
+            <div className="text-7xl">{pickedDate === correctKey ? '✅' : '🌿'}</div>
+            <div className="t-display mt-3" style={{ color: pickedDate === correctKey ? '#1F8A57' : '#191F28' }}>
+              {pickedDate === correctKey ? '정확해요!' : '오늘 날짜를 알려드릴게요'}
+            </div>
+            <div className="t-body text-text-muted mt-3">
+              오늘은<br />
+              <span className="t-headline text-text-primary block mt-2">{todayLong}</span>
+              이에요
+            </div>
+            <div className="mt-7">
+              <Button onClick={() => setStep(3)}>계속할게요</Button>
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="fade-up mt-3">
+            <div className="text-5xl mb-3">🍃</div>
+            <div className="t-display text-text-primary leading-snug">지금은 어느 계절일까요?</div>
+            <div className="t-body text-text-muted mt-2">오늘 바깥은 어떤 풍경인가요?</div>
+            <div className="mt-6 grid grid-cols-1 gap-3">
+              {seasonOptions.map(s => (
+                <button
+                  key={s}
+                  onClick={() => { setPickedSeason(s); setStep(4); }}
+                  className="tap-press bg-white border-2 border-card-border active:border-primary active:bg-primary-soft rounded-btn min-h-tap-lg px-6 py-4 t-headline font-bold text-text-primary"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {step === 4 && (
+          <div className="fade-up mt-3 text-center">
+            <div className="text-7xl">{pickedSeason === correctSeason ? '✅' : '🌿'}</div>
+            <div className="t-display mt-3" style={{ color: pickedSeason === correctSeason ? '#1F8A57' : '#191F28' }}>
+              {pickedSeason === correctSeason ? '맞아요!' : '오늘은요'}
+            </div>
+            <div className="t-body text-text-muted mt-3">
+              지금은 <span className="t-headline text-text-primary">{correctSeason}</span>이에요
+            </div>
+            <div className="mt-7">
+              <Button onClick={() => onDone({ dateCorrect: pickedDate === correctKey, seasonCorrect: pickedSeason === correctSeason })}>
+                오늘의 훈련 시작하기
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+/* ============================================================
+   Today Screen — Home
+   ============================================================ */
+function ProgressDots({ total, done }) {
+  return (
+    <div className="flex items-center gap-3">
+      {Array.from({ length: total }).map((_, i) => (
+        <div
+          key={i}
+          className={`w-5 h-5 rounded-full border-2 ${i < done ? 'bg-success border-success' : 'bg-white border-card-border'}`}
+        />
+      ))}
+    </div>
+  );
+}
+
+const MOODS = [
+  { e: '😊', label: '좋아요' },
+  { e: '🙂', label: '괜찮아요' },
+  { e: '😐', label: '그냥그래요' },
+  { e: '😟', label: '힘들어요' },
+];
+
+function TodayScreen({ userName, todayIds, completedIds, onStart, onMood, mood, steps }) {
+  const today = new Date();
+  const todayLong = `${today.getMonth()+1}월 ${today.getDate()}일 ${DOW_KO[today.getDay()]}요일`;
+  const doneCount = completedIds.length;
+  const allDone = doneCount >= todayIds.length;
+  const nextIndex = todayIds.findIndex(id => !completedIds.includes(id));
+
+  return (
+    <div className="px-6 pt-8 pb-32">
+      {/* Greeting */}
+      <div className="fade-up">
+        <div className="t-caption text-text-muted">{todayLong}</div>
+        <div className="t-display text-text-primary mt-1">안녕하세요, {userName}님</div>
+      </div>
+
+      {/* Progress */}
+      <div className="mt-7 flex items-center justify-between">
+        <div>
+          <div className="t-body-strong text-text-primary">오늘의 두뇌 운동</div>
+          <div className="t-caption text-text-muted mt-1">
+            {allDone ? '모두 마치셨어요. 정말 잘하셨어요!' : `오늘 ${doneCount} / ${todayIds.length} 완료`}
+          </div>
+        </div>
+        <ProgressDots total={todayIds.length} done={doneCount} />
+      </div>
+
+      {/* Training cards */}
+      <div className="mt-6 space-y-4">
+        {todayIds.map((id, idx) => {
+          const t = TRAININGS_BY_ID[id];
+          const isDone = completedIds.includes(id);
+          const isActive = idx === nextIndex;
+          const isLocked = !isDone && !isActive;
+          return (
+            <Card
+              key={id}
+              active={isActive}
+              className={isDone ? 'bg-success-soft border-success/30' : ''}
+            >
+              <div className="flex items-start gap-4">
+                <div className="text-5xl">{t.icon}</div>
+                <div className="flex-1">
+                  <div className="t-caption text-text-muted">{t.area}</div>
+                  <div className="t-headline text-text-primary mt-0.5">{t.title}</div>
+                  <div className="t-body text-text-muted mt-1">{t.desc}</div>
+                </div>
+                {isDone && <div className="text-3xl">✅</div>}
+              </div>
+              {!isDone && (
+                <div className="mt-5">
+                  <Button onClick={() => onStart(id)} disabled={isLocked}>
+                    {isLocked ? '순서를 기다려주세요' : '시작하기'}
+                  </Button>
+                </div>
+              )}
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Mood */}
+      <div className="mt-8">
+        <div className="t-body-strong text-text-primary">오늘 기분은 어떠세요?</div>
+        <div className="mt-3 grid grid-cols-4 gap-3">
+          {MOODS.map(m => (
+            <button
+              key={m.label}
+              onClick={() => onMood(m.label)}
+              className={`tap-press bg-white border-2 rounded-card py-4 flex flex-col items-center gap-1 ${mood === m.label ? 'border-primary bg-primary-soft' : 'border-card-border'}`}
+            >
+              <div className="text-3xl">{m.e}</div>
+              <div className="t-caption text-text-muted">{m.label}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Steps card */}
+      <Card className="mt-8">
+        <div className="flex items-center gap-4">
+          <div className="text-5xl">🚶‍♂️</div>
+          <div className="flex-1">
+            <div className="t-caption text-text-muted">오늘의 걸음</div>
+            <div className="t-headline text-text-primary">{steps.toLocaleString()} 걸음</div>
+            <div className="t-caption text-text-subtle mt-1">건강한 신호예요</div>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+/* ============================================================
+   Records Screen
+   ============================================================ */
+function MiniCalendar({ attendance }) {
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = today.getMonth();
+  const first = new Date(y, m, 1);
+  const startDow = first.getDay();
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const cells = [];
+  for (let i = 0; i < startDow; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  return (
+    <div>
+      <div className="t-body-strong text-text-primary">{y}년 {m + 1}월</div>
+      <div className="grid grid-cols-7 gap-1 mt-3">
+        {['일','월','화','수','목','금','토'].map(d => (
+          <div key={d} className="t-caption text-text-muted text-center py-1">{d}</div>
+        ))}
+        {cells.map((d, i) => {
+          if (d == null) return <div key={i} />;
+          const key = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+          const hit = attendance[key];
+          const isToday = d === today.getDate();
+          return (
+            <div key={i} className="aspect-square flex items-center justify-center">
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center t-caption ${hit ? 'bg-success text-white font-bold' : 'text-text-muted'} ${isToday && !hit ? 'border-2 border-primary' : ''}`}>
+                {d}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function AreaBars({ areaStats }) {
+  const max = Math.max(1, ...Object.values(areaStats));
+  return (
+    <div className="space-y-3">
+      {TRAININGS.map(t => {
+        const v = areaStats[t.id] || 0;
+        const pct = (v / max) * 100;
+        return (
+          <div key={t.id} className="flex items-center gap-3">
+            <div className="text-2xl w-8">{t.icon}</div>
+            <div className="flex-1">
+              <div className="flex items-baseline justify-between">
+                <div className="t-caption text-text-primary font-bold">{t.area}</div>
+                <div className="t-caption text-text-muted">{v}회 꾸준히</div>
+              </div>
+              <div className="h-3 bg-bg-main rounded-full mt-1 overflow-hidden border border-card-border">
+                <div className="h-full bg-primary" style={{ width: `${pct}%`, transition: 'width 0.4s ease' }} />
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function RecordsScreen({ attendance, areaStats, userName }) {
+  const total = Object.values(attendance).filter(Boolean).length;
+  return (
+    <div className="px-6 pt-8 pb-32">
+      <div className="fade-up">
+        <div className="t-display text-text-primary">나의 기록</div>
+        <div className="t-body text-text-muted mt-1">
+          {total > 0 ? `이번 달 ${total}일 동안 꾸준히 하고 계세요` : '오늘부터 차근차근 시작해볼까요?'}
+        </div>
+      </div>
+
+      <Card className="mt-6">
+        <MiniCalendar attendance={attendance} />
+      </Card>
+
+      <Card className="mt-5 bg-primary-soft border-primary/20">
+        <div className="flex items-start gap-3">
+          <div className="text-4xl">🌷</div>
+          <div>
+            <div className="t-body-strong text-text-primary">{userName}님, 잘하고 계세요</div>
+            <div className="t-body text-text-muted mt-1">매일의 작은 운동이 큰 힘이 됩니다.</div>
+          </div>
+        </div>
+      </Card>
+
+      <div className="mt-7 t-body-strong text-text-primary">영역별 꾸준함</div>
+      <Card className="mt-3">
+        <AreaBars areaStats={areaStats} />
+      </Card>
+
+      <div className="mt-6">
+        <Button variant="secondary" onClick={() => alert('가족 공유 기능은 곧 준비될 예정이에요.')}>
+          가족과 기록 공유하기
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   More Screen
+   ============================================================ */
+function ToggleRow({ label, value, onChange, options }) {
+  return (
+    <div className="py-4 border-b border-card-border last:border-b-0">
+      <div className="t-body-strong text-text-primary">{label}</div>
+      <div className="mt-3 flex gap-2">
+        {options.map(o => (
+          <button
+            key={o.value}
+            onClick={() => onChange(o.value)}
+            className={`tap-press flex-1 min-h-tap rounded-btn border-2 px-4 py-2 t-body-strong ${value === o.value ? 'border-primary bg-primary text-white' : 'border-card-border bg-white text-text-primary'}`}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MoreScreen({ scale, setScale, voiceEnabled, setVoiceEnabled, userName, setUserName, onResetDay }) {
+  return (
+    <div className="px-6 pt-8 pb-32">
+      <div className="fade-up">
+        <div className="t-display text-text-primary">더보기</div>
+        <div className="t-body text-text-muted mt-1">필요한 것을 차분히 골라보세요</div>
+      </div>
+
+      <Card className="mt-6">
+        <div className="t-body-strong text-text-primary">{userName}님</div>
+        <div className="t-caption text-text-muted mt-1">이름을 바꾸시려면 아래에 적어주세요</div>
+        <input
+          type="text"
+          defaultValue={userName}
+          onBlur={(e) => setUserName(e.target.value || '어르신')}
+          className="mt-3 w-full border-2 border-card-border rounded-btn px-4 py-3 t-body-strong text-text-primary bg-white focus:border-primary outline-none"
+          placeholder="어르신"
+        />
+      </Card>
+
+      <Card className="mt-5">
+        <ToggleRow
+          label="글씨 크기"
+          value={scale}
+          onChange={setScale}
+          options={[{label: '보통', value: 'md'}, {label: '크게', value: 'lg'}, {label: '아주 크게', value: 'xl'}]}
+        />
+        <ToggleRow
+          label="음성 안내"
+          value={voiceEnabled ? 'on' : 'off'}
+          onChange={(v) => setVoiceEnabled(v === 'on')}
+          options={[{label: '켜기', value: 'on'}, {label: '끄기', value: 'off'}]}
+        />
+      </Card>
+
+      <Card className="mt-5">
+        <div className="t-body-strong text-text-primary">가족 연락처</div>
+        <div className="t-caption text-text-muted mt-1">위급 상황 때 연락드릴 분이에요</div>
+        <div className="mt-3">
+          <Button variant="secondary" onClick={() => alert('연락처 등록 기능은 곧 준비될 예정이에요.')}>
+            가족 연락처 등록하기
+          </Button>
+        </div>
+      </Card>
+
+      <Card className="mt-5">
+        <div className="t-body-strong text-text-primary">고객센터</div>
+        <div className="t-caption text-text-muted mt-1">통화로 도와드려요</div>
+        <div className="mt-3">
+          <a href="tel:1588-0000" className="block">
+            <Button variant="primary">
+              📞 1588-0000 전화 연결
+            </Button>
+          </a>
+        </div>
+      </Card>
+
+      <Card className="mt-5">
+        <div className="t-body-strong text-text-primary">자가진단 검사</div>
+        <div className="t-caption text-text-muted mt-1">차분히 진행할 수 있어요</div>
+        <div className="mt-3">
+          <Button variant="secondary" onClick={() => alert('자가진단 플로우는 곧 준비될 예정이에요.')}>
+            검사 시작하기
+          </Button>
+        </div>
+      </Card>
+
+      <div className="mt-8">
+        <button
+          onClick={onResetDay}
+          className="tap-press w-full text-text-subtle t-caption underline-offset-4 underline"
+        >
+          오늘 상태 초기화 (테스트용)
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   Tab Bar
+   ============================================================ */
+function TabBar({ current, onChange }) {
+  const tabs = [
+    { id: 'today',   label: '오늘',     icon: '🏠' },
+    { id: 'records', label: '나의 기록', icon: '📅' },
+    { id: 'more',    label: '더보기',   icon: '⋯' },
+  ];
+  return (
+    <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-card border-t border-card-border z-30" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      <div className="flex">
+        {tabs.map(t => (
+          <button
+            key={t.id}
+            onClick={() => onChange(t.id)}
+            className={`tap-press flex-1 py-3 flex flex-col items-center gap-1 ${current === t.id ? 'text-primary' : 'text-text-muted'}`}
+          >
+            <div className="text-2xl">{t.icon}</div>
+            <div className="t-caption font-bold">{t.label}</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   App Root
+   ============================================================ */
+function App() {
+  const [tab, setTab] = useState('today');
+  const [userName, setUserName] = useLocalState('malli.userName', '어르신');
+  const [scale, setScale] = useLocalState('malli.scale', 'md');
+  const [voiceEnabled, setVoiceEnabled] = useLocalState('malli.voice', false);
+
+  const dateKey = todayKey();
+  const [orientationByDate, setOrientationByDate] = useLocalState('malli.orientation', {});
+  const orientationDoneToday = !!orientationByDate[dateKey];
+
+  const [todayIdsByDate, setTodayIdsByDate] = useLocalState('malli.todayIds', {});
+  const todayIds = useMemo(() => {
+    if (todayIdsByDate[dateKey]) return todayIdsByDate[dateKey];
+    const picked = pickTodayTrainings(dateKey);
+    return picked;
+  }, [dateKey, todayIdsByDate]);
+
+  // ensure persisted once
+  useEffect(() => {
+    if (!todayIdsByDate[dateKey]) {
+      setTodayIdsByDate(prev => ({ ...prev, [dateKey]: todayIds }));
+    }
+  }, [dateKey, todayIds, todayIdsByDate, setTodayIdsByDate]);
+
+  const [completedByDate, setCompletedByDate] = useLocalState('malli.completed', {});
+  const completedIds = completedByDate[dateKey] || [];
+
+  const [attendance, setAttendance] = useLocalState('malli.attendance', {});
+  const [areaStats, setAreaStats] = useLocalState('malli.areaStats', {});
+  const [moodByDate, setMoodByDate] = useLocalState('malli.mood', {});
+  const mood = moodByDate[dateKey];
+  const [steps] = useState(() => 1500 + Math.floor(Math.random() * 3500));
+
+  const [activeGameId, setActiveGameId] = useState(null);
+
+  // Apply scale to html element
+  useEffect(() => {
+    document.documentElement.setAttribute('data-scale', scale);
+  }, [scale]);
+
+  const handleStart = (id) => setActiveGameId(id);
+  const handleExit = () => setActiveGameId(null);
+
+  const handleComplete = ({ correct, total }) => {
+    const id = activeGameId;
+    if (!id) return;
+    setCompletedByDate(prev => {
+      const existing = prev[dateKey] || [];
+      if (existing.includes(id)) return prev;
+      return { ...prev, [dateKey]: [...existing, id] };
+    });
+    setAreaStats(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
+    setAttendance(prev => ({ ...prev, [dateKey]: true }));
+    setActiveGameId(null);
+  };
+
+  const handleOrientationDone = (result) => {
+    setOrientationByDate(prev => ({ ...prev, [dateKey]: result }));
+  };
+
+  const handleMood = (label) => {
+    setMoodByDate(prev => ({ ...prev, [dateKey]: label }));
+  };
+
+  const resetToday = () => {
+    setOrientationByDate(prev => { const c = { ...prev }; delete c[dateKey]; return c; });
+    setCompletedByDate(prev => { const c = { ...prev }; delete c[dateKey]; return c; });
+    setAttendance(prev => { const c = { ...prev }; delete c[dateKey]; return c; });
+    setMoodByDate(prev => { const c = { ...prev }; delete c[dateKey]; return c; });
+    setTab('today');
+  };
+
+  // Active game takes over the whole shell
+  if (activeGameId) {
+    const training = TRAININGS_BY_ID[activeGameId];
+    return (
+      <div className="app-shell">
+        <GameRunner
+          training={training}
+          onExit={handleExit}
+          onComplete={handleComplete}
+          voiceEnabled={voiceEnabled}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="app-shell">
+      {tab === 'today' && (
+        <TodayScreen
+          userName={userName}
+          todayIds={todayIds}
+          completedIds={completedIds}
+          onStart={handleStart}
+          onMood={handleMood}
+          mood={mood}
+          steps={steps}
+        />
+      )}
+      {tab === 'records' && (
+        <RecordsScreen
+          attendance={attendance}
+          areaStats={areaStats}
+          userName={userName}
+        />
+      )}
+      {tab === 'more' && (
+        <MoreScreen
+          scale={scale}
+          setScale={setScale}
+          voiceEnabled={voiceEnabled}
+          setVoiceEnabled={setVoiceEnabled}
+          userName={userName}
+          setUserName={setUserName}
+          onResetDay={resetToday}
+        />
+      )}
+
+      <TabBar current={tab} onChange={setTab} />
+
+      {!orientationDoneToday && (
+        <OrientationModal
+          onDone={handleOrientationDone}
+          voiceEnabled={voiceEnabled}
+        />
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
