@@ -1,0 +1,1772 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#ffffff" />
+<title>내 인생 P&L · 개인 재무 대시보드</title>
+<meta name="description" content="내 인생이라는 사업장의 손익계산서. 수입·지출을 정리해 순이익을 계산하고, 예산 대비 실적과 고정비·변동비 구조, 자산 현황과 저축 목표까지 한 화면에서 관리하는 개인 재무 대시보드." />
+<meta name="keywords" content="가계부, 개인 재무 대시보드, 예산 관리, 지출 관리, 손익계산서, 자산 관리, 저축 목표" />
+<meta name="robots" content="index, follow" />
+<link rel="canonical" href="https://butprompter.com/budget.html" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="내 인생 P&L · 개인 재무 대시보드" />
+<meta property="og:description" content="수입·지출·예산·자산·목표를 한 화면에서 관리하는 개인 재무 경영 대시보드." />
+<meta property="og:url" content="https://butprompter.com/budget.html" />
+<meta property="og:image" content="https://butprompter.com/og-image.svg" />
+<link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="./icon-192.svg" />
+
+<!-- Pretendard -->
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+
+<!-- Tailwind Play CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'Apple SD Gothic Neo', 'system-ui', 'sans-serif'],
+        },
+      },
+    },
+  };
+</script>
+
+<!-- React 18 + Babel standalone (prototype build) -->
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+
+<style>
+  html, body {
+    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  * { box-sizing: border-box; }
+  button { font-family: inherit; }
+  input, select { font-family: inherit; }
+  ::-webkit-scrollbar { height: 6px; width: 6px; }
+  ::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.5); border-radius: 999px; }
+</style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950">
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo, useCallback, useRef } = React;
+
+/* ============================================================
+   Storage layer
+   ============================================================ */
+const LS_PREFIX = 'pl.';
+const USER_ID = 'local';
+
+const LS = {
+  get(key, fallback) {
+    try {
+      const v = localStorage.getItem(LS_PREFIX + key);
+      return v == null ? fallback : JSON.parse(v);
+    } catch { return fallback; }
+  },
+  set(key, val) {
+    try { localStorage.setItem(LS_PREFIX + key, JSON.stringify(val)); } catch {}
+  },
+};
+
+const useLocalState = (key, initial) => {
+  const [v, setV] = useState(() => LS.get(key, initial));
+  const set = useCallback((next) => {
+    setV(prev => {
+      const value = typeof next === 'function' ? next(prev) : next;
+      LS.set(key, value);
+      return value;
+    });
+  }, [key]);
+  return [v, set];
+};
+
+/* ============================================================
+   Date / format utilities
+   ============================================================ */
+const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+
+function pad2(n) { return String(n).padStart(2, '0'); }
+function toDateKey(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; }
+function toMonthKey(d) { return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`; }
+function todayKey() { return toDateKey(new Date()); }
+function todayMonthKey() { return toMonthKey(new Date()); }
+function parseDateKey(s) { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); }
+function monthKeyOf(dateStr) { return dateStr.slice(0, 7); }
+function addMonths(monthKey, delta) {
+  const [y, m] = monthKey.split('-').map(Number);
+  return toMonthKey(new Date(y, m - 1 + delta, 1));
+}
+function daysInMonth(monthKey) {
+  const [y, m] = monthKey.split('-').map(Number);
+  return new Date(y, m, 0).getDate();
+}
+function endOfMonth(monthKey) { return `${monthKey}-${pad2(daysInMonth(monthKey))}`; }
+function monthLabel(monthKey) {
+  const [y, m] = monthKey.split('-').map(Number);
+  return `${y}년 ${m}월`;
+}
+function formatWon(n) {
+  const v = Number(n) || 0;
+  const sign = v < 0 ? '-' : '';
+  return `${sign}${Math.abs(Math.round(v)).toLocaleString('ko-KR')}원`;
+}
+function formatSigned(n) {
+  const v = Number(n) || 0;
+  const sign = v > 0 ? '+' : (v < 0 ? '-' : '');
+  return `${sign}${Math.abs(Math.round(v)).toLocaleString('ko-KR')}원`;
+}
+
+/* ============================================================
+   Default categories & constants
+   ============================================================ */
+const TYPE_COLOR = { income: '#16a34a', fixed_expense: '#2563eb', variable_expense: '#f97316' };
+const TYPE_LABEL = { income: '수입', fixed_expense: '고정비', variable_expense: '변동비' };
+
+const DEFAULT_CATEGORIES = [
+  { id: 'income_salary', name: '근로소득', type: 'income', color: '#16a34a', icon: '💼' },
+  { id: 'income_invest', name: '투자수익', type: 'income', color: '#0891b2', icon: '📈' },
+  { id: 'income_side', name: '사이드프로젝트 수익', type: 'income', color: '#7c3aed', icon: '💻' },
+  { id: 'income_other', name: '기타수입', type: 'income', color: '#65a30d', icon: '🎁' },
+
+  { id: 'fixed_housing', name: '주거비', type: 'fixed_expense', color: '#2563eb', icon: '🏠', budget_monthly: 0 },
+  { id: 'fixed_insurance', name: '보험료', type: 'fixed_expense', color: '#4f46e5', icon: '🛡️', budget_monthly: 0 },
+  { id: 'fixed_pet', name: '반려견 케어', type: 'fixed_expense', color: '#0d9488', icon: '🐾', budget_monthly: 0 },
+  { id: 'fixed_fitness', name: '운동/자기관리', type: 'fixed_expense', color: '#0284c7', icon: '💪', budget_monthly: 0 },
+  { id: 'fixed_subscription', name: '구독서비스', type: 'fixed_expense', color: '#7c3aed', icon: '📺', budget_monthly: 0 },
+  { id: 'fixed_telecom', name: '통신비', type: 'fixed_expense', color: '#6366f1', icon: '📱', budget_monthly: 0 },
+
+  { id: 'var_food', name: '식비', type: 'variable_expense', color: '#f97316', icon: '🍽️', budget_monthly: 0 },
+  { id: 'var_transport', name: '교통비', type: 'variable_expense', color: '#eab308', icon: '🚗', budget_monthly: 0 },
+  { id: 'var_leisure', name: '여가·액티비티', type: 'variable_expense', color: '#f59e0b', icon: '🏃', budget_monthly: 0 },
+  { id: 'var_pet', name: '반려견 기타', type: 'variable_expense', color: '#fb923c', icon: '🐶', budget_monthly: 0 },
+  { id: 'var_shopping', name: '쇼핑', type: 'variable_expense', color: '#ec4899', icon: '🛍️', budget_monthly: 0 },
+  { id: 'var_selfdev', name: '자기계발', type: 'variable_expense', color: '#a855f7', icon: '📚', budget_monthly: 0 },
+  { id: 'var_events', name: '경조사', type: 'variable_expense', color: '#dc2626', icon: '🎉', budget_monthly: 0 },
+  { id: 'var_travel', name: '여행', type: 'variable_expense', color: '#0ea5e9', icon: '✈️', budget_monthly: 0 },
+  { id: 'var_etc', name: '기타', type: 'variable_expense', color: '#94a3b8', icon: '📦', budget_monthly: 0 },
+];
+
+const ASSET_TYPE_LABEL = { stock_kr: '국내주식', stock_us: '미국주식', savings: '예적금', cash: '현금', other: '기타' };
+const ASSET_TYPE_COLOR = { stock_kr: '#2563eb', stock_us: '#7c3aed', savings: '#16a34a', cash: '#f59e0b', other: '#94a3b8' };
+
+const RECUR_CYCLE_LABEL = { monthly: '매월', yearly: '매년', weekly: '매주' };
+const WEEKDAY_LABEL = ['일', '월', '화', '수', '목', '금', '토'];
+
+const TABS = [
+  { id: 'dashboard', label: '대시보드', icon: '🏠' },
+  { id: 'calendar', label: '캘린더', icon: '📅' },
+  { id: 'charts', label: '그래프', icon: '📊' },
+  { id: 'transactions', label: '거래내역', icon: '📋' },
+  { id: 'budget', label: '예산', icon: '💰' },
+  { id: 'assets', label: '자산', icon: '🏦' },
+  { id: 'goals', label: '목표', icon: '🎯' },
+  { id: 'settings', label: '설정', icon: '⚙️' },
+];
+
+const inputCls = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
+
+/* ============================================================
+   Domain helpers
+   ============================================================ */
+function monthTotals(transactions, monthKey) {
+  let income = 0, fixed = 0, variable = 0;
+  transactions.forEach(t => {
+    if (monthKeyOf(t.date) !== monthKey) return;
+    if (t.type === 'income') income += t.amount;
+    else if (t.is_fixed) fixed += t.amount;
+    else variable += t.amount;
+  });
+  const expense = fixed + variable;
+  return { income, fixed, variable, expense, net: income - expense };
+}
+
+function latestAssetSnapshotsByName(assets) {
+  const byName = {};
+  assets.forEach(a => {
+    if (!byName[a.name] || a.recorded_date > byName[a.name].recorded_date) byName[a.name] = a;
+  });
+  return byName;
+}
+
+function sumLatestAsOfDate(assets, cutoffDate) {
+  const byName = {};
+  assets.filter(a => a.recorded_date <= cutoffDate).forEach(a => {
+    if (!byName[a.name] || a.recorded_date > byName[a.name].recorded_date) byName[a.name] = a;
+  });
+  return Object.values(byName).reduce((s, a) => s + a.current_value, 0);
+}
+
+function netWorthAsOf(assets, monthKey) {
+  return sumLatestAsOfDate(assets, endOfMonth(monthKey));
+}
+
+function projectGoalCompletion(goal, assets) {
+  if (!goal.link_to_assets) return null;
+  const nowMonth = todayMonthKey();
+  const months = [];
+  for (let i = 5; i >= 0; i--) months.push(addMonths(nowMonth, -i));
+  const series = months.map(mk => netWorthAsOf(assets, mk));
+  const deltas = [];
+  for (let i = 1; i < series.length; i++) deltas.push(series[i] - series[i - 1]);
+  const avg = deltas.length ? deltas.reduce((a, b) => a + b, 0) / deltas.length : 0;
+  if (avg <= 0) return null;
+  const remaining = goal.target_amount - series[series.length - 1];
+  if (remaining <= 0) return { monthsLeft: 0 };
+  return { monthsLeft: Math.ceil(remaining / avg) };
+}
+
+function computeRecurringOccurrences(tpl, monthKey) {
+  const [y, m] = monthKey.split('-').map(Number);
+  const dim = daysInMonth(monthKey);
+  if (tpl.cycle === 'monthly') {
+    const day = Math.min(tpl.day_of_month || 1, dim);
+    return [`${monthKey}-${pad2(day)}`];
+  }
+  if (tpl.cycle === 'yearly') {
+    const targetMonth = tpl.month_of_year || m;
+    if (targetMonth !== m) return [];
+    const day = Math.min(tpl.day_of_month || 1, dim);
+    return [`${monthKey}-${pad2(day)}`];
+  }
+  if (tpl.cycle === 'weekly') {
+    const weekday = tpl.day_of_week != null ? tpl.day_of_week : 0;
+    const dates = [];
+    for (let d = 1; d <= dim; d++) {
+      if (new Date(y, m - 1, d).getDay() === weekday) dates.push(`${monthKey}-${pad2(d)}`);
+    }
+    return dates;
+  }
+  return [];
+}
+
+function ensureRecurringGenerated(recurring, transactions, monthsBack = 12) {
+  const active = recurring.filter(r => r.active);
+  if (!active.length) return [];
+  const nowMonth = todayMonthKey();
+  const months = [];
+  for (let i = monthsBack; i >= 0; i--) months.push(addMonths(nowMonth, -i));
+  const existing = new Set(transactions.filter(t => t.recurring_id).map(t => `${t.recurring_id}__${t.date}`));
+  const toAdd = [];
+  active.forEach(tpl => {
+    months.forEach(mk => {
+      computeRecurringOccurrences(tpl, mk).forEach(dateStr => {
+        const key = `${tpl.id}__${dateStr}`;
+        if (existing.has(key)) return;
+        existing.add(key);
+        toAdd.push({
+          id: uid(), user_id: USER_ID, date: dateStr, type: 'expense',
+          category_id: tpl.category_id, subcategory: '', amount: tpl.amount,
+          memo: tpl.name, is_fixed: true, payment_method: '', tags: [],
+          recurring_id: tpl.id,
+        });
+      });
+    });
+  });
+  return toAdd;
+}
+
+/* ============================================================
+   Export / import helpers
+   ============================================================ */
+function transactionsToCSV(transactions, categories) {
+  const catMap = Object.fromEntries(categories.map(c => [c.id, c]));
+  const header = ['날짜', '유형', '카테고리', '금액', '고정/변동', '메모', '결제수단', '태그'];
+  const rows = transactions.map(t => {
+    const cat = catMap[t.category_id];
+    return [
+      t.date,
+      t.type === 'income' ? '수입' : '지출',
+      cat ? cat.name : '',
+      t.amount,
+      t.type === 'income' ? '' : (t.is_fixed ? '고정비' : '변동비'),
+      (t.memo || '').replace(/"/g, '""'),
+      t.payment_method || '',
+      (t.tags || []).join(' '),
+    ];
+  });
+  const csv = [header, ...rows].map(r => r.map(v => `"${String(v)}"`).join(',')).join('\n');
+  return '﻿' + csv;
+}
+
+function downloadFile(filename, content, mime = 'text/csv;charset=utf-8;') {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function exportBackup(state) {
+  downloadFile(`내인생PL_백업_${todayKey()}.json`, JSON.stringify(state, null, 2), 'application/json');
+}
+
+/* ============================================================
+   UI primitives
+   ============================================================ */
+function Button({ children, onClick, variant = 'primary', className = '', type = 'button', disabled }) {
+  const styles = {
+    primary: 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800',
+    secondary: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700',
+    danger: 'bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 hover:bg-red-100',
+    ghost: 'bg-transparent text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800',
+  };
+  return (
+    <button type={type} onClick={onClick} disabled={disabled}
+      className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition disabled:opacity-40 disabled:pointer-events-none whitespace-nowrap ${styles[variant]} ${className}`}>
+      {children}
+    </button>
+  );
+}
+
+function Card({ children, className = '' }) {
+  return <div className={`bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-5 ${className}`}>{children}</div>;
+}
+
+function Field({ label, children }) {
+  return (
+    <label className="block mb-3">
+      <div className="text-xs font-semibold text-slate-500 mb-1.5">{label}</div>
+      {children}
+    </label>
+  );
+}
+
+function ProgressBar({ pct, color, height = 8 }) {
+  const clamped = Math.max(0, Math.min(100, pct || 0));
+  return (
+    <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden" style={{ height }}>
+      <div className="h-full rounded-full transition-all" style={{ width: `${clamped}%`, background: color }} />
+    </div>
+  );
+}
+
+function Modal({ open, onClose, title, children }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" style={{ background: 'rgba(15,23,42,0.5)' }} onClick={onClose}>
+      <div className="bg-white dark:bg-slate-900 w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800 sticky top-0 bg-white dark:bg-slate-900 z-10">
+          <h3 className="font-bold text-base">{title}</h3>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">✕</button>
+        </div>
+        <div className="p-5">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function LegendRow({ color, label, value, total }) {
+  const pct = total ? Math.round((value / total) * 100) : 0;
+  return (
+    <div className="flex items-center gap-2">
+      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} />
+      <span className="text-slate-500">{label}</span>
+      <span className="font-semibold ml-auto">{formatWon(value)}</span>
+      <span className="text-slate-400 text-xs w-9 text-right">{pct}%</span>
+    </div>
+  );
+}
+
+function SummaryChip({ label, value, color }) {
+  return (
+    <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl p-3 text-center">
+      <div className="text-[11px] text-slate-400 mb-1">{label}</div>
+      <div className={`font-bold text-sm ${color}`}>{formatWon(value)}</div>
+    </div>
+  );
+}
+
+/* ============================================================
+   Charts (hand-rolled SVG, no external chart library)
+   ============================================================ */
+function DonutChart({ data, size = 160, thickness = 22, centerLabel, centerSub }) {
+  const total = data.reduce((s, d) => s + d.value, 0);
+  const r = size / 2 - thickness / 2;
+  const c = size / 2;
+  const circumference = 2 * Math.PI * r;
+  let offset = 0;
+  return (
+    <div className="relative inline-flex items-center justify-center shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx={c} cy={c} r={r} fill="none" stroke="currentColor" className="text-slate-100 dark:text-slate-800" strokeWidth={thickness} />
+        {total > 0 && data.map((d, i) => {
+          const frac = d.value / total;
+          const dash = frac * circumference;
+          const el = (
+            <circle key={i} cx={c} cy={c} r={r} fill="none" stroke={d.color} strokeWidth={thickness}
+              strokeDasharray={`${dash} ${circumference - dash}`} strokeDashoffset={-offset}>
+              <title>{`${d.label}: ${formatWon(d.value)}`}</title>
+            </circle>
+          );
+          offset += dash;
+          return el;
+        })}
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-2">
+        {centerLabel && <div className="text-base font-bold leading-tight">{centerLabel}</div>}
+        {centerSub && <div className="text-xs text-slate-400">{centerSub}</div>}
+      </div>
+    </div>
+  );
+}
+
+function LineChart({ series, labels, height = 220 }) {
+  const width = Math.max(320, labels.length * 56);
+  const allValues = series.flatMap(s => s.values);
+  const max = Math.max(0, ...allValues);
+  const min = Math.min(0, ...allValues);
+  const range = max - min || 1;
+  const padY = 20, padX = 36;
+  const plotW = width - padX * 2;
+  const plotH = height - padY * 2;
+  const xOf = (i) => padX + (labels.length <= 1 ? 0 : (i / (labels.length - 1)) * plotW);
+  const yOf = (v) => padY + (1 - (v - min) / range) * plotH;
+  const zeroY = yOf(0);
+
+  return (
+    <div className="overflow-x-auto">
+      <svg width={width} height={height}>
+        <line x1={padX} y1={zeroY} x2={width - padX} y2={zeroY} stroke="currentColor" className="text-slate-200 dark:text-slate-700" />
+        {series.map((s, si) => {
+          const d = s.values.map((v, i) => `${i === 0 ? 'M' : 'L'} ${xOf(i)} ${yOf(v)}`).join(' ');
+          return (
+            <g key={si}>
+              <path d={d} fill="none" stroke={s.color} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+              {s.values.map((v, i) => (
+                <circle key={i} cx={xOf(i)} cy={yOf(v)} r="3.5" fill={s.color}>
+                  <title>{`${labels[i]} ${s.name}: ${formatWon(v)}`}</title>
+                </circle>
+              ))}
+            </g>
+          );
+        })}
+        {labels.map((l, i) => (
+          <text key={i} x={xOf(i)} y={height - 4} fontSize="10" textAnchor="middle" className="fill-slate-400">{l}</text>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+function StackedBarChart({ labels, segments, height = 220 }) {
+  const width = Math.max(320, labels.length * 56);
+  const totals = labels.map((_, i) => segments.reduce((s, seg) => s + (seg.values[i] || 0), 0));
+  const max = Math.max(1, ...totals);
+  const padY = 20, padX = 8;
+  const plotH = height - padY * 2 - 14;
+  const slotW = (width - padX * 2) / labels.length;
+  const barW = Math.min(40, slotW - 12);
+
+  return (
+    <div className="overflow-x-auto">
+      <svg width={width} height={height}>
+        {labels.map((l, i) => {
+          const cx = padX + i * slotW + slotW / 2;
+          let yCursor = height - padY - 14;
+          return (
+            <g key={i}>
+              {segments.map((seg, si) => {
+                const v = seg.values[i] || 0;
+                const h = (v / max) * plotH;
+                yCursor -= h;
+                return (
+                  <rect key={si} x={cx - barW / 2} y={yCursor} width={barW} height={h} fill={seg.color} rx="2">
+                    <title>{`${l} ${seg.name}: ${formatWon(v)}`}</title>
+                  </rect>
+                );
+              })}
+              <text x={cx} y={height - 2} fontSize="10" textAnchor="middle" className="fill-slate-400">{l}</text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+function HBarCompare({ rows }) {
+  const max = Math.max(1, ...rows.flatMap(r => [r.a.value, r.b.value]));
+  return (
+    <div className="space-y-4">
+      {rows.map((r, i) => (
+        <div key={i}>
+          <div className="text-xs mb-1 text-slate-500">{r.label}</div>
+          <div className="space-y-1">
+            {[r.a, r.b].map((seg, si) => (
+              <div key={si} className="flex items-center gap-2">
+                <div className="w-10 text-[10px] text-slate-400 shrink-0">{seg.name}</div>
+                <div className="flex-1 bg-slate-100 dark:bg-slate-800 rounded h-3 overflow-hidden">
+                  <div className="h-full rounded" style={{ width: `${(seg.value / max) * 100}%`, background: seg.color }} />
+                </div>
+                <div className="w-24 text-[11px] text-right shrink-0">{formatWon(seg.value)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ============================================================
+   Transaction add/edit modal
+   ============================================================ */
+function TransactionModal({ open, onClose, onSave, onDelete, categories, initial, defaultDate }) {
+  const [type, setType] = useState('expense');
+  const [date, setDate] = useState(todayKey());
+  const [categoryId, setCategoryId] = useState('');
+  const [amount, setAmount] = useState('');
+  const [memo, setMemo] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [tags, setTags] = useState('');
+
+  useEffect(() => {
+    if (!open) return;
+    if (initial) {
+      setType(initial.type); setDate(initial.date); setCategoryId(initial.category_id);
+      setAmount(String(initial.amount)); setMemo(initial.memo || ''); setPaymentMethod(initial.payment_method || '');
+      setTags((initial.tags || []).join(', '));
+    } else {
+      setType('expense'); setDate(defaultDate || todayKey()); setCategoryId('');
+      setAmount(''); setMemo(''); setPaymentMethod(''); setTags('');
+    }
+  }, [open, initial, defaultDate]);
+
+  const filteredCats = categories.filter(c => type === 'income' ? c.type === 'income' : c.type !== 'income');
+
+  useEffect(() => {
+    if (!open) return;
+    if (filteredCats.length && !filteredCats.find(c => c.id === categoryId)) {
+      setCategoryId(filteredCats[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type, open, filteredCats.length]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const amt = Number(amount);
+    if (!amt || amt <= 0 || !categoryId || !date) return;
+    const cat = categories.find(c => c.id === categoryId);
+    onSave({
+      id: initial ? initial.id : uid(),
+      user_id: USER_ID,
+      date, type, category_id: categoryId, subcategory: '',
+      amount: amt, memo,
+      is_fixed: type === 'expense' && !!cat && cat.type === 'fixed_expense',
+      payment_method: paymentMethod,
+      tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+      recurring_id: initial ? (initial.recurring_id || null) : null,
+    });
+    onClose();
+  };
+
+  return (
+    <Modal open={open} onClose={onClose} title={initial ? '거래 수정' : '거래 추가'}>
+      <form onSubmit={handleSubmit}>
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          <button type="button" onClick={() => setType('expense')} className={`py-2.5 rounded-xl text-sm font-semibold ${type === 'expense' ? 'bg-red-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>지출</button>
+          <button type="button" onClick={() => setType('income')} className={`py-2.5 rounded-xl text-sm font-semibold ${type === 'income' ? 'bg-green-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>수입</button>
+        </div>
+        <Field label="금액">
+          <input autoFocus type="number" inputMode="numeric" min="0" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" className={inputCls + ' text-lg font-bold'} />
+        </Field>
+        <Field label="카테고리">
+          <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className={inputCls}>
+            {filteredCats.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+          </select>
+        </Field>
+        <Field label="날짜">
+          <input type="date" value={date} onChange={e => setDate(e.target.value)} className={inputCls} />
+        </Field>
+        <Field label="메모">
+          <input type="text" value={memo} onChange={e => setMemo(e.target.value)} placeholder="선택 입력" className={inputCls} />
+        </Field>
+        <Field label="결제수단 (선택)">
+          <input type="text" value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} placeholder="카드 / 현금 / 계좌이체" className={inputCls} />
+        </Field>
+        <Field label="태그 (쉼표로 구분, 선택)">
+          <input type="text" value={tags} onChange={e => setTags(e.target.value)} placeholder="예: 강남출근, 병원비" className={inputCls} />
+        </Field>
+        <div className="flex gap-2 mt-5">
+          {initial && <Button variant="danger" type="button" onClick={() => { onDelete(initial.id); onClose(); }}>삭제</Button>}
+          <Button variant="secondary" type="button" onClick={onClose} className="flex-1">취소</Button>
+          <Button variant="primary" type="submit" className="flex-1">저장</Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+/* ============================================================
+   Layout
+   ============================================================ */
+function Sidebar({ tab, setTab, dark, setDark }) {
+  return (
+    <aside className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:left-0 md:w-56 border-r border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 z-30">
+      <div className="text-lg font-extrabold px-2 py-3">💼 내 인생 P&L</div>
+      <nav className="flex-1 space-y-1 mt-2">
+        {TABS.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition ${tab === t.id ? 'bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
+            <span>{t.icon}</span><span>{t.label}</span>
+          </button>
+        ))}
+      </nav>
+      <button onClick={() => setDark(!dark)} className="mt-2 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2">
+        <span>{dark ? '☀️' : '🌙'}</span><span>{dark ? '라이트 모드' : '다크 모드'}</span>
+      </button>
+    </aside>
+  );
+}
+
+function BottomNav({ tab, setTab }) {
+  return (
+    <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-t border-slate-100 dark:border-slate-800 z-40 overflow-x-auto">
+      <div className="flex min-w-max">
+        {TABS.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            className={`flex flex-col items-center justify-center gap-0.5 px-4 py-2 min-w-[64px] text-[10px] font-medium ${tab === t.id ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`}>
+            <span className="text-lg leading-none">{t.icon}</span>
+            <span>{t.label}</span>
+          </button>
+        ))}
+      </div>
+    </nav>
+  );
+}
+
+/* ============================================================
+   Dashboard
+   ============================================================ */
+function Dashboard({ transactions, categories, assets, goals, monthKey, setMonthKey, onAdd, onEdit }) {
+  const cur = monthTotals(transactions, monthKey);
+  const prevKey = addMonths(monthKey, -1);
+  const prev = monthTotals(transactions, prevKey);
+  const pctChange = (a, b) => (b === 0 ? null : Math.round(((a - b) / Math.abs(b)) * 100));
+
+  const catMap = Object.fromEntries(categories.map(c => [c.id, c]));
+  const recent = [...transactions].filter(t => monthKeyOf(t.date) <= monthKey).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8);
+
+  const budgetRows = categories.filter(c => c.type !== 'income' && c.budget_monthly > 0).map(c => {
+    const spent = transactions.filter(t => t.category_id === c.id && monthKeyOf(t.date) === monthKey).reduce((s, t) => s + t.amount, 0);
+    return { ...c, spent, pct: (spent / c.budget_monthly) * 100 };
+  }).sort((a, b) => b.pct - a.pct).slice(0, 5);
+
+  const netWorthNow = netWorthAsOf(assets, monthKey);
+  const netWorthPrev = netWorthAsOf(assets, prevKey);
+
+  const incomeChange = pctChange(cur.income, prev.income);
+  const expenseChange = pctChange(cur.expense, prev.expense);
+  const netChange = pctChange(cur.net, prev.net);
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-2">
+        <button onClick={() => setMonthKey(addMonths(monthKey, -1))} className="w-9 h-9 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">◀</button>
+        <div className="font-bold text-lg w-32 text-center">{monthLabel(monthKey)}</div>
+        <button onClick={() => setMonthKey(addMonths(monthKey, 1))} className="w-9 h-9 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">▶</button>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card>
+          <div className="text-xs text-slate-400 mb-1">총수입</div>
+          <div className="text-2xl font-extrabold text-green-600">{formatWon(cur.income)}</div>
+          {incomeChange !== null && <div className="text-xs text-slate-400 mt-1">전월 대비 {incomeChange >= 0 ? '+' : ''}{incomeChange}%</div>}
+        </Card>
+        <Card>
+          <div className="text-xs text-slate-400 mb-1">총지출</div>
+          <div className="text-2xl font-extrabold text-red-500">{formatWon(cur.expense)}</div>
+          {expenseChange !== null && <div className="text-xs text-slate-400 mt-1">전월 대비 {expenseChange >= 0 ? '+' : ''}{expenseChange}%</div>}
+        </Card>
+        <Card>
+          <div className="text-xs text-slate-400 mb-1">순이익</div>
+          <div className={`text-2xl font-extrabold ${cur.net >= 0 ? 'text-green-600' : 'text-red-500'}`}>{formatWon(cur.net)}</div>
+          {netChange !== null && <div className="text-xs text-slate-400 mt-1">전월 대비 {netChange >= 0 ? '+' : ''}{netChange}%</div>}
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card>
+          <div className="font-bold mb-3">고정비 vs 변동비</div>
+          <div className="flex items-center gap-6 flex-wrap">
+            <DonutChart
+              data={[{ label: '고정비', value: cur.fixed, color: TYPE_COLOR.fixed_expense }, { label: '변동비', value: cur.variable, color: TYPE_COLOR.variable_expense }]}
+              centerLabel={formatWon(cur.expense)} centerSub="총지출"
+            />
+            <div className="space-y-2 text-sm flex-1 min-w-[140px]">
+              <LegendRow color={TYPE_COLOR.fixed_expense} label="고정비" value={cur.fixed} total={cur.expense} />
+              <LegendRow color={TYPE_COLOR.variable_expense} label="변동비" value={cur.variable} total={cur.expense} />
+            </div>
+          </div>
+        </Card>
+
+        <Card>
+          <div className="font-bold mb-3">예산 대비 실적</div>
+          {budgetRows.length === 0 && <div className="text-sm text-slate-400 py-4">예산 화면에서 카테고리별 월 예산을 설정해보세요.</div>}
+          <div className="space-y-3">
+            {budgetRows.map(c => (
+              <div key={c.id}>
+                <div className="flex justify-between text-xs mb-1">
+                  <span>{c.icon} {c.name}</span>
+                  <span className={c.pct >= 100 ? 'text-red-500 font-semibold' : c.pct >= 80 ? 'text-amber-500 font-semibold' : 'text-slate-400'}>{formatWon(c.spent)} / {formatWon(c.budget_monthly)}</span>
+                </div>
+                <ProgressBar pct={c.pct} color={c.pct >= 100 ? '#ef4444' : c.pct >= 80 ? '#f59e0b' : c.color} />
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card>
+          <div className="font-bold mb-3">저축·투자 목표</div>
+          {goals.length === 0 && <div className="text-sm text-slate-400 py-4">목표 화면에서 저축·투자 목표를 추가해보세요.</div>}
+          <div className="space-y-3">
+            {goals.slice(0, 4).map(g => {
+              const current = g.link_to_assets ? netWorthNow : g.current_amount;
+              const p = g.target_amount ? (current / g.target_amount) * 100 : 0;
+              return (
+                <div key={g.id}>
+                  <div className="flex justify-between text-xs mb-1"><span>{g.name}</span><span className="text-slate-400">{Math.min(100, Math.round(p))}%</span></div>
+                  <ProgressBar pct={p} color="#2563eb" />
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+
+        <Card>
+          <div className="font-bold mb-3">이번 달 순자산 변화</div>
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <div className="text-2xl font-extrabold">{formatWon(netWorthNow)}</div>
+            <div className={`text-sm font-semibold ${netWorthNow - netWorthPrev >= 0 ? 'text-green-600' : 'text-red-500'}`}>{formatSigned(netWorthNow - netWorthPrev)}</div>
+          </div>
+          <div className="text-xs text-slate-400 mt-1">전월 {formatWon(netWorthPrev)}</div>
+        </Card>
+      </div>
+
+      <Card>
+        <div className="flex items-center justify-between mb-3">
+          <div className="font-bold">최근 거래</div>
+          <Button onClick={() => onAdd()}>+ 거래 추가</Button>
+        </div>
+        {recent.length === 0 && <div className="text-sm text-slate-400 py-6 text-center">아직 기록된 거래가 없어요. 첫 거래를 추가해보세요.</div>}
+        <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          {recent.map(t => {
+            const cat = catMap[t.category_id];
+            return (
+              <button key={t.id} onClick={() => onEdit(t)} className="w-full flex items-center justify-between py-2.5 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 px-1 rounded-lg">
+                <div className="flex items-center gap-2 text-sm">
+                  <span>{cat && cat.icon}</span>
+                  <span>{cat && cat.name}</span>
+                  <span className="text-slate-400 text-xs">{t.date.slice(5)}</span>
+                </div>
+                <div className={`font-semibold text-sm ${t.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>
+                  {t.type === 'income' ? '+' : '-'}{formatWon(t.amount)}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+/* ============================================================
+   Calendar
+   ============================================================ */
+function CalendarScreen({ transactions, categories, monthKey, setMonthKey, onAdd, onEdit }) {
+  const [selectedDate, setSelectedDate] = useState(null);
+  const totals = monthTotals(transactions, monthKey);
+  const [y, m] = monthKey.split('-').map(Number);
+  const firstDow = new Date(y, m - 1, 1).getDay();
+  const dim = daysInMonth(monthKey);
+  const catMap = Object.fromEntries(categories.map(c => [c.id, c]));
+
+  const cells = [];
+  for (let i = 0; i < firstDow; i++) cells.push(null);
+  for (let d = 1; d <= dim; d++) cells.push(d);
+
+  const dayTotals = {};
+  transactions.forEach(t => {
+    if (monthKeyOf(t.date) !== monthKey) return;
+    if (!dayTotals[t.date]) dayTotals[t.date] = { income: 0, fixed: 0, variable: 0 };
+    if (t.type === 'income') dayTotals[t.date].income += t.amount;
+    else if (t.is_fixed) dayTotals[t.date].fixed += t.amount;
+    else dayTotals[t.date].variable += t.amount;
+  });
+
+  const selectedTxs = selectedDate ? transactions.filter(t => t.date === selectedDate).sort((a, b) => a.type.localeCompare(b.type)) : [];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <button onClick={() => setMonthKey(addMonths(monthKey, -1))} className="w-9 h-9 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">◀</button>
+          <div className="font-bold text-lg w-32 text-center">{monthLabel(monthKey)}</div>
+          <button onClick={() => setMonthKey(addMonths(monthKey, 1))} className="w-9 h-9 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">▶</button>
+        </div>
+        <Button variant="secondary" onClick={() => setMonthKey(todayMonthKey())}>이번 달</Button>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        <SummaryChip label="총수입" value={totals.income} color="text-green-600" />
+        <SummaryChip label="총지출" value={totals.expense} color="text-red-500" />
+        <SummaryChip label="순이익" value={totals.net} color={totals.net >= 0 ? 'text-green-600' : 'text-red-500'} />
+      </div>
+
+      <Card className="!p-3">
+        <div className="grid grid-cols-7 text-center text-xs text-slate-400 mb-2">
+          {['일', '월', '화', '수', '목', '금', '토'].map(d => <div key={d} className="py-1">{d}</div>)}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {cells.map((d, i) => {
+            if (d === null) return <div key={i} />;
+            const dateStr = `${monthKey}-${pad2(d)}`;
+            const dt = dayTotals[dateStr];
+            const isToday = dateStr === todayKey();
+            const isSelected = dateStr === selectedDate;
+            return (
+              <button key={i} onClick={() => setSelectedDate(dateStr)}
+                className={`aspect-square rounded-lg p-1 text-left flex flex-col justify-between border ${isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-transparent hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
+                <div className={`text-[11px] ${isToday ? 'w-5 h-5 flex items-center justify-center rounded-full bg-blue-600 text-white' : 'text-slate-500'}`}>{d}</div>
+                <div className="space-y-0.5 leading-none">
+                  {dt && dt.income > 0 && <div className="text-[9px] text-green-600 truncate">+{Math.round(dt.income / 1000)}k</div>}
+                  {dt && (dt.fixed > 0 || dt.variable > 0) && <div className="text-[9px] text-red-500 truncate">-{Math.round((dt.fixed + dt.variable) / 1000)}k</div>}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </Card>
+
+      {selectedDate && (
+        <Card>
+          <div className="flex items-center justify-between mb-3">
+            <div className="font-bold">{selectedDate} 거래 내역</div>
+            <Button onClick={() => onAdd(selectedDate)}>+ 추가</Button>
+          </div>
+          {selectedTxs.length === 0 && <div className="text-sm text-slate-400 py-6 text-center">이 날짜의 거래 내역이 없어요.</div>}
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+            {selectedTxs.map(t => {
+              const cat = catMap[t.category_id];
+              return (
+                <button key={t.id} onClick={() => onEdit(t)} className="w-full flex items-center justify-between py-2.5 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 px-1 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span>{cat && cat.icon}</span>
+                    <span>{cat && cat.name}</span>
+                    {t.memo && <span className="text-slate-400 text-xs">· {t.memo}</span>}
+                  </div>
+                  <div className={`font-semibold text-sm ${t.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>
+                    {t.type === 'income' ? '+' : '-'}{formatWon(t.amount)}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+/* ============================================================
+   Charts / analysis
+   ============================================================ */
+function ChartsScreen({ transactions, categories }) {
+  const [trendMonths, setTrendMonths] = useState(6);
+  const [period, setPeriod] = useState('thisMonth');
+  const [customStart, setCustomStart] = useState(todayKey());
+  const [customEnd, setCustomEnd] = useState(todayKey());
+  const [drillCat, setDrillCat] = useState(null);
+
+  const nowMonth = todayMonthKey();
+  const trendMonthKeys = Array.from({ length: trendMonths }, (_, i) => addMonths(nowMonth, -(trendMonths - 1 - i)));
+  const trendData = trendMonthKeys.map(mk => monthTotals(transactions, mk));
+
+  const range = useMemo(() => {
+    if (period === 'thisMonth') return { start: `${nowMonth}-01`, end: endOfMonth(nowMonth) };
+    if (period === '3m') return { start: `${addMonths(nowMonth, -2)}-01`, end: endOfMonth(nowMonth) };
+    if (period === '6m') return { start: `${addMonths(nowMonth, -5)}-01`, end: endOfMonth(nowMonth) };
+    if (period === '1y') return { start: `${addMonths(nowMonth, -11)}-01`, end: endOfMonth(nowMonth) };
+    return { start: customStart, end: customEnd };
+  }, [period, customStart, customEnd, nowMonth]);
+
+  const periodTx = transactions.filter(t => t.date >= range.start && t.date <= range.end);
+  const expenseByCategory = {};
+  periodTx.filter(t => t.type === 'expense').forEach(t => {
+    expenseByCategory[t.category_id] = (expenseByCategory[t.category_id] || 0) + t.amount;
+  });
+  const catMap = Object.fromEntries(categories.map(c => [c.id, c]));
+  const pieData = Object.entries(expenseByCategory)
+    .map(([id, value]) => ({ label: catMap[id] ? catMap[id].name : '기타', value, color: catMap[id] ? catMap[id].color : '#94a3b8', id }))
+    .sort((a, b) => b.value - a.value);
+  const pieTotal = pieData.reduce((s, d) => s + d.value, 0);
+
+  const budgetCats = categories.filter(c => c.type !== 'income' && c.budget_monthly > 0);
+  const compareRows = budgetCats.map(c => {
+    const actual = transactions.filter(t => t.category_id === c.id && monthKeyOf(t.date) === nowMonth).reduce((s, t) => s + t.amount, 0);
+    return { label: `${c.icon} ${c.name}`, a: { name: '예산', value: c.budget_monthly, color: '#94a3b8' }, b: { name: '실적', value: actual, color: actual > c.budget_monthly ? '#ef4444' : c.color } };
+  });
+
+  return (
+    <div className="space-y-5">
+      <Card>
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <div className="font-bold">월별 추이</div>
+          <div className="flex gap-1">
+            {[6, 12].map(n => (
+              <button key={n} onClick={() => setTrendMonths(n)} className={`px-2.5 py-1 rounded-lg text-xs font-semibold ${trendMonths === n ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>{n}개월</button>
+            ))}
+          </div>
+        </div>
+        <LineChart
+          labels={trendMonthKeys.map(mk => mk.slice(5) + '월')}
+          series={[
+            { name: '수입', color: TYPE_COLOR.income, values: trendData.map(d => d.income) },
+            { name: '지출', color: '#ef4444', values: trendData.map(d => d.expense) },
+            { name: '순이익', color: '#2563eb', values: trendData.map(d => d.net) },
+          ]}
+        />
+        <div className="flex gap-4 mt-2 text-xs text-slate-400 flex-wrap">
+          <span><span className="inline-block w-2 h-2 rounded-full mr-1" style={{ background: TYPE_COLOR.income }} />수입</span>
+          <span><span className="inline-block w-2 h-2 rounded-full mr-1" style={{ background: '#ef4444' }} />지출</span>
+          <span><span className="inline-block w-2 h-2 rounded-full mr-1" style={{ background: '#2563eb' }} />순이익</span>
+        </div>
+      </Card>
+
+      <Card>
+        <div className="font-bold mb-3">고정비 · 변동비 구조 변화</div>
+        <StackedBarChart
+          labels={trendMonthKeys.map(mk => mk.slice(5) + '월')}
+          segments={[
+            { name: '고정비', color: TYPE_COLOR.fixed_expense, values: trendData.map(d => d.fixed) },
+            { name: '변동비', color: TYPE_COLOR.variable_expense, values: trendData.map(d => d.variable) },
+          ]}
+        />
+      </Card>
+
+      <Card>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div className="font-bold">카테고리별 지출 구성</div>
+          <div className="flex flex-wrap gap-1">
+            {[['thisMonth', '이번달'], ['3m', '최근3개월'], ['6m', '최근6개월'], ['1y', '1년'], ['custom', '커스텀']].map(([id, label]) => (
+              <button key={id} onClick={() => setPeriod(id)} className={`px-2.5 py-1 rounded-lg text-xs font-semibold ${period === id ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>{label}</button>
+            ))}
+          </div>
+        </div>
+        {period === 'custom' && (
+          <div className="flex items-center gap-2 mb-3 text-sm flex-wrap">
+            <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className={inputCls + ' w-auto'} />
+            <span className="text-slate-400">~</span>
+            <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className={inputCls + ' w-auto'} />
+          </div>
+        )}
+        {pieData.length === 0 ? (
+          <div className="text-sm text-slate-400 py-6 text-center">해당 기간에 지출 내역이 없어요.</div>
+        ) : (
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <DonutChart data={pieData} centerLabel={formatWon(pieTotal)} centerSub="총지출" />
+            <div className="w-full space-y-1 text-sm">
+              {pieData.map(d => (
+                <button key={d.id} onClick={() => setDrillCat(drillCat === d.id ? null : d.id)} className={`w-full flex items-center gap-2 p-1.5 rounded-lg ${drillCat === d.id ? 'bg-slate-50 dark:bg-slate-800' : ''}`}>
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: d.color }} />
+                  <span className="text-slate-600 dark:text-slate-300">{d.label}</span>
+                  <span className="font-semibold ml-auto">{formatWon(d.value)}</span>
+                  <span className="text-slate-400 text-xs w-9 text-right">{Math.round((d.value / pieTotal) * 100)}%</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {drillCat && (
+          <div className="mt-4 border-t border-slate-100 dark:border-slate-800 pt-3">
+            <div className="text-xs font-semibold text-slate-400 mb-2">{catMap[drillCat] && catMap[drillCat].name} 상세 내역</div>
+            <div className="space-y-1.5 max-h-56 overflow-y-auto">
+              {periodTx.filter(t => t.category_id === drillCat).sort((a, b) => b.date.localeCompare(a.date)).map(t => (
+                <div key={t.id} className="flex justify-between text-sm">
+                  <span className="text-slate-500">{t.date}{t.memo ? ` · ${t.memo}` : ''}</span>
+                  <span className="font-medium">{formatWon(t.amount)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </Card>
+
+      <Card>
+        <div className="font-bold mb-3">예산 vs 실적 (이번 달)</div>
+        {compareRows.length === 0 ? <div className="text-sm text-slate-400 py-4">예산 화면에서 카테고리별 예산을 먼저 설정해주세요.</div> : <HBarCompare rows={compareRows} />}
+      </Card>
+    </div>
+  );
+}
+
+/* ============================================================
+   Transactions table
+   ============================================================ */
+function TransactionsScreen({ transactions, categories, onAdd, onEdit }) {
+  const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [catFilter, setCatFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('date_desc');
+  const [range, setRange] = useState('all');
+  const catMap = Object.fromEntries(categories.map(c => [c.id, c]));
+  const nowMonth = todayMonthKey();
+
+  let rows = transactions;
+  if (range === 'thisMonth') rows = rows.filter(t => monthKeyOf(t.date) === nowMonth);
+  if (range === '3m') rows = rows.filter(t => t.date >= `${addMonths(nowMonth, -2)}-01`);
+  if (typeFilter !== 'all') rows = rows.filter(t => t.type === typeFilter);
+  if (typeFilter === 'expense' && catFilter !== 'all') rows = rows.filter(t => t.category_id === catFilter);
+  if (search.trim()) {
+    const q = search.trim().toLowerCase();
+    rows = rows.filter(t => (t.memo || '').toLowerCase().includes(q) || (t.tags || []).some(tag => tag.toLowerCase().includes(q)));
+  }
+  rows = [...rows].sort((a, b) => {
+    if (sortBy === 'date_desc') return b.date.localeCompare(a.date);
+    if (sortBy === 'date_asc') return a.date.localeCompare(b.date);
+    if (sortBy === 'amount_desc') return b.amount - a.amount;
+    if (sortBy === 'amount_asc') return a.amount - b.amount;
+    return 0;
+  });
+
+  const sumIncome = rows.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const sumExpense = rows.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+  const handleExport = () => downloadFile(`거래내역_${todayKey()}.csv`, transactionsToCSV(rows, categories));
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="메모·태그 검색" className={inputCls + ' max-w-xs'} />
+        <select value={range} onChange={e => setRange(e.target.value)} className={inputCls + ' w-auto'}>
+          <option value="all">전체 기간</option>
+          <option value="thisMonth">이번 달</option>
+          <option value="3m">최근 3개월</option>
+        </select>
+        <select value={typeFilter} onChange={e => { setTypeFilter(e.target.value); setCatFilter('all'); }} className={inputCls + ' w-auto'}>
+          <option value="all">전체 유형</option>
+          <option value="income">수입</option>
+          <option value="expense">지출</option>
+        </select>
+        {typeFilter === 'expense' && (
+          <select value={catFilter} onChange={e => setCatFilter(e.target.value)} className={inputCls + ' w-auto'}>
+            <option value="all">전체 카테고리</option>
+            {categories.filter(c => c.type !== 'income').map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+          </select>
+        )}
+        <select value={sortBy} onChange={e => setSortBy(e.target.value)} className={inputCls + ' w-auto'}>
+          <option value="date_desc">최신순</option>
+          <option value="date_asc">오래된순</option>
+          <option value="amount_desc">금액 높은순</option>
+          <option value="amount_asc">금액 낮은순</option>
+        </select>
+        <div className="ml-auto flex gap-2">
+          <Button variant="secondary" onClick={handleExport}>CSV 내보내기</Button>
+          <Button onClick={() => onAdd()}>+ 거래 추가</Button>
+        </div>
+      </div>
+
+      <Card className="!p-0 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-400 text-xs">
+              <tr>
+                <th className="text-left font-medium px-4 py-2.5">날짜</th>
+                <th className="text-left font-medium px-4 py-2.5">카테고리</th>
+                <th className="text-left font-medium px-4 py-2.5">메모</th>
+                <th className="text-right font-medium px-4 py-2.5">금액</th>
+                <th className="px-4 py-2.5"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {rows.map(t => {
+                const cat = catMap[t.category_id];
+                return (
+                  <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer" onClick={() => onEdit(t)}>
+                    <td className="px-4 py-2.5 text-slate-500 whitespace-nowrap">{t.date}</td>
+                    <td className="px-4 py-2.5 whitespace-nowrap">{cat && cat.icon} {cat && cat.name}{t.is_fixed && <span className="ml-1 text-[10px] text-blue-500">고정</span>}</td>
+                    <td className="px-4 py-2.5 text-slate-400 max-w-[240px] truncate">{t.memo}{t.tags && t.tags.length ? ` · ${t.tags.join(', ')}` : ''}</td>
+                    <td className={`px-4 py-2.5 text-right font-semibold whitespace-nowrap ${t.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>{t.type === 'income' ? '+' : '-'}{formatWon(t.amount)}</td>
+                    <td className="px-4 py-2.5 text-right text-slate-300">›</td>
+                  </tr>
+                );
+              })}
+              {rows.length === 0 && (
+                <tr><td colSpan="5" className="text-center text-slate-400 py-10">조건에 맞는 거래 내역이 없어요.</td></tr>
+              )}
+            </tbody>
+            {rows.length > 0 && (
+              <tfoot className="bg-slate-50 dark:bg-slate-800/50 font-semibold text-sm">
+                <tr>
+                  <td className="px-4 py-2.5" colSpan="3">합계 ({rows.length}건)</td>
+                  <td className="px-4 py-2.5 text-right">
+                    <div className="text-green-600">+{formatWon(sumIncome)}</div>
+                    <div className="text-red-500">-{formatWon(sumExpense)}</div>
+                  </td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+/* ============================================================
+   Budget management + recurring templates
+   ============================================================ */
+function RecurringFormModal({ open, onClose, onSave, categories, initial }) {
+  const [name, setName] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [amount, setAmount] = useState('');
+  const [cycle, setCycle] = useState('monthly');
+  const [dayOfMonth, setDayOfMonth] = useState(1);
+  const [monthOfYear, setMonthOfYear] = useState(1);
+  const [dayOfWeek, setDayOfWeek] = useState(0);
+  const [active, setActive] = useState(true);
+  const fixedCats = categories.filter(c => c.type === 'fixed_expense');
+
+  useEffect(() => {
+    if (!open) return;
+    if (initial) {
+      setName(initial.name); setCategoryId(initial.category_id); setAmount(String(initial.amount));
+      setCycle(initial.cycle); setDayOfMonth(initial.day_of_month || 1); setMonthOfYear(initial.month_of_year || 1);
+      setDayOfWeek(initial.day_of_week || 0); setActive(initial.active);
+    } else {
+      setName(''); setCategoryId(fixedCats[0] ? fixedCats[0].id : ''); setAmount(''); setCycle('monthly');
+      setDayOfMonth(1); setMonthOfYear(1); setDayOfWeek(0); setActive(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initial]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!name.trim() || !amount || !categoryId) return;
+    onSave({
+      id: initial ? initial.id : uid(), user_id: USER_ID, name: name.trim(), category_id: categoryId,
+      amount: Number(amount), cycle, day_of_month: Number(dayOfMonth), month_of_year: Number(monthOfYear),
+      day_of_week: Number(dayOfWeek), active,
+    });
+  };
+
+  return (
+    <Modal open={open} onClose={onClose} title={initial ? '반복 거래 수정' : '반복 거래 추가'}>
+      <form onSubmit={handleSubmit}>
+        <Field label="이름"><input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="예: 월세" className={inputCls} /></Field>
+        <Field label="카테고리">
+          <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className={inputCls}>
+            {fixedCats.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+          </select>
+        </Field>
+        <Field label="금액"><input type="number" value={amount} onChange={e => setAmount(e.target.value)} className={inputCls} /></Field>
+        <Field label="주기">
+          <select value={cycle} onChange={e => setCycle(e.target.value)} className={inputCls}>
+            <option value="monthly">매월</option>
+            <option value="yearly">매년</option>
+            <option value="weekly">매주</option>
+          </select>
+        </Field>
+        {cycle === 'monthly' && (
+          <Field label="매월 며칠"><input type="number" min="1" max="31" value={dayOfMonth} onChange={e => setDayOfMonth(e.target.value)} className={inputCls} /></Field>
+        )}
+        {cycle === 'yearly' && (
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="월"><input type="number" min="1" max="12" value={monthOfYear} onChange={e => setMonthOfYear(e.target.value)} className={inputCls} /></Field>
+            <Field label="일"><input type="number" min="1" max="31" value={dayOfMonth} onChange={e => setDayOfMonth(e.target.value)} className={inputCls} /></Field>
+          </div>
+        )}
+        {cycle === 'weekly' && (
+          <Field label="요일">
+            <select value={dayOfWeek} onChange={e => setDayOfWeek(e.target.value)} className={inputCls}>
+              {WEEKDAY_LABEL.map((w, i) => <option key={i} value={i}>{w}요일</option>)}
+            </select>
+          </Field>
+        )}
+        <label className="flex items-center gap-2 text-sm mb-4">
+          <input type="checkbox" checked={active} onChange={e => setActive(e.target.checked)} /> 활성화
+        </label>
+        <div className="flex gap-2">
+          <Button variant="secondary" type="button" onClick={onClose} className="flex-1">취소</Button>
+          <Button variant="primary" type="submit" className="flex-1">저장</Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+function BudgetScreen({ categories, setCategories, transactions, recurring, setRecurring }) {
+  const nowMonth = todayMonthKey();
+  const prevMonth = addMonths(nowMonth, -1);
+  const [showRecurringForm, setShowRecurringForm] = useState(false);
+  const [editingRecurring, setEditingRecurring] = useState(null);
+  const catMap = Object.fromEntries(categories.map(c => [c.id, c]));
+
+  const updateBudget = (id, value) => {
+    setCategories(prev => prev.map(c => c.id === id ? { ...c, budget_monthly: Number(value) || 0 } : c));
+  };
+
+  const rowsOf = (type) => categories.filter(c => c.type === type).map(c => {
+    const spent = transactions.filter(t => t.category_id === c.id && monthKeyOf(t.date) === nowMonth).reduce((s, t) => s + t.amount, 0);
+    const spentPrev = transactions.filter(t => t.category_id === c.id && monthKeyOf(t.date) === prevMonth).reduce((s, t) => s + t.amount, 0);
+    const pct = c.budget_monthly ? (spent / c.budget_monthly) * 100 : 0;
+    const status = !c.budget_monthly ? null
+      : pct >= 100 ? { label: '초과', cls: 'text-red-500 bg-red-50 dark:bg-red-950' }
+      : pct >= 80 ? { label: '주의', cls: 'text-amber-600 bg-amber-50 dark:bg-amber-950' }
+      : { label: '양호', cls: 'text-green-600 bg-green-50 dark:bg-green-950' };
+    return { ...c, spent, spentPrev, pct, status };
+  });
+
+  const saveRecurring = (tpl) => {
+    setRecurring(prev => {
+      const idx = prev.findIndex(r => r.id === tpl.id);
+      if (idx === -1) return [...prev, tpl];
+      const next = [...prev]; next[idx] = tpl; return next;
+    });
+    setShowRecurringForm(false); setEditingRecurring(null);
+  };
+  const deleteRecurring = (id) => setRecurring(prev => prev.filter(r => r.id !== id));
+
+  return (
+    <div className="space-y-5">
+      {['fixed_expense', 'variable_expense'].map(type => (
+        <Card key={type}>
+          <div className="font-bold mb-3">{TYPE_LABEL[type]} 예산</div>
+          <div className="space-y-4">
+            {rowsOf(type).map(c => (
+              <div key={c.id} className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="text-sm font-medium w-32 shrink-0">{c.icon} {c.name}</div>
+                  <input type="number" defaultValue={c.budget_monthly || ''} placeholder="예산 미설정"
+                    onBlur={e => updateBudget(c.id, e.target.value)}
+                    className={inputCls + ' w-32 text-right'} />
+                  <div className="text-xs text-slate-400 w-28 text-right shrink-0">실적 {formatWon(c.spent)}</div>
+                  {c.status && <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${c.status.cls}`}>{c.status.label}</span>}
+                </div>
+                {c.budget_monthly > 0 && <ProgressBar pct={c.pct} color={c.pct >= 100 ? '#ef4444' : c.pct >= 80 ? '#f59e0b' : c.color} />}
+                <div className="text-[11px] text-slate-400">지난달 실적 {formatWon(c.spentPrev)}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      ))}
+
+      <Card>
+        <div className="flex items-center justify-between mb-3">
+          <div className="font-bold">반복 거래 (고정비 자동화)</div>
+          <Button onClick={() => { setEditingRecurring(null); setShowRecurringForm(true); }}>+ 템플릿 추가</Button>
+        </div>
+        {recurring.length === 0 && <div className="text-sm text-slate-400 py-4">반복되는 고정비를 등록하면 매달 자동으로 거래가 생성돼요.</div>}
+        <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          {recurring.map(r => (
+            <div key={r.id} className="flex items-center justify-between py-2.5 flex-wrap gap-2">
+              <div>
+                <div className="text-sm font-medium">{catMap[r.category_id] && catMap[r.category_id].icon} {r.name}</div>
+                <div className="text-xs text-slate-400">{formatWon(r.amount)} · {RECUR_CYCLE_LABEL[r.cycle]}</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setRecurring(prev => prev.map(x => x.id === r.id ? { ...x, active: !x.active } : x))}
+                  className={`text-xs px-2 py-1 rounded-full font-semibold ${r.active ? 'bg-green-50 text-green-600 dark:bg-green-950' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
+                  {r.active ? '활성' : '중지'}
+                </button>
+                <button onClick={() => { setEditingRecurring(r); setShowRecurringForm(true); }} className="text-slate-400 hover:text-slate-600 text-sm px-1">수정</button>
+                <button onClick={() => deleteRecurring(r.id)} className="text-red-400 hover:text-red-500 text-sm px-1">삭제</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <RecurringFormModal open={showRecurringForm} onClose={() => setShowRecurringForm(false)} onSave={saveRecurring} categories={categories} initial={editingRecurring} />
+    </div>
+  );
+}
+
+/* ============================================================
+   Assets
+   ============================================================ */
+function AssetFormModal({ open, onClose, onSave, existingNames }) {
+  const [name, setName] = useState('');
+  const [type, setType] = useState('stock_kr');
+  const [value, setValue] = useState('');
+  const [date, setDate] = useState(todayKey());
+  const [memo, setMemo] = useState('');
+
+  useEffect(() => {
+    if (open) { setName(''); setType('stock_kr'); setValue(''); setDate(todayKey()); setMemo(''); }
+  }, [open]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!name.trim() || value === '') return;
+    onSave({ id: uid(), user_id: USER_ID, name: name.trim(), type, current_value: Number(value), recorded_date: date, memo });
+    onClose();
+  };
+
+  return (
+    <Modal open={open} onClose={onClose} title="자산 스냅샷 입력">
+      <form onSubmit={handleSubmit}>
+        <Field label="자산 이름">
+          <input list="asset-names" type="text" value={name} onChange={e => setName(e.target.value)} placeholder="예: 국내주식(키움)" className={inputCls} />
+          <datalist id="asset-names">{existingNames.map(n => <option key={n} value={n} />)}</datalist>
+        </Field>
+        <Field label="유형">
+          <select value={type} onChange={e => setType(e.target.value)} className={inputCls}>
+            {Object.entries(ASSET_TYPE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
+        </Field>
+        <Field label="현재 평가금액"><input type="number" value={value} onChange={e => setValue(e.target.value)} className={inputCls} /></Field>
+        <Field label="기록일"><input type="date" value={date} onChange={e => setDate(e.target.value)} className={inputCls} /></Field>
+        <Field label="메모 (선택)"><input type="text" value={memo} onChange={e => setMemo(e.target.value)} className={inputCls} /></Field>
+        <div className="flex gap-2 mt-2">
+          <Button variant="secondary" type="button" onClick={onClose} className="flex-1">취소</Button>
+          <Button variant="primary" type="submit" className="flex-1">저장</Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+function AssetsScreen({ assets, setAssets }) {
+  const [showForm, setShowForm] = useState(false);
+  const assetNames = [...new Set(assets.map(a => a.name))];
+
+  const nowMonth = todayMonthKey();
+  const months = Array.from({ length: 6 }, (_, i) => addMonths(nowMonth, -(5 - i)));
+  const trend = months.map(mk => netWorthAsOf(assets, mk));
+
+  const latestByName = latestAssetSnapshotsByName(assets);
+  const latestTotal = Object.values(latestByName).reduce((s, a) => s + a.current_value, 0);
+
+  const distinctDates = [...new Set(assets.map(a => a.recorded_date))].sort();
+  const prevDate = distinctDates.length > 1 ? distinctDates[distinctDates.length - 2] : null;
+  const prevTotal = prevDate ? sumLatestAsOfDate(assets, prevDate) : 0;
+
+  const byType = {};
+  Object.values(latestByName).forEach(a => { byType[a.type] = (byType[a.type] || 0) + a.current_value; });
+  const pieData = Object.entries(byType).map(([type, value]) => ({ label: ASSET_TYPE_LABEL[type], value, color: ASSET_TYPE_COLOR[type], id: type }));
+
+  const saveAsset = (payload) => setAssets(prev => [...prev, payload]);
+  const deleteAsset = (id) => setAssets(prev => prev.filter(a => a.id !== id));
+  const sortedAssets = [...assets].sort((a, b) => b.recorded_date.localeCompare(a.recorded_date));
+
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card>
+          <div className="text-xs text-slate-400 mb-1">현재 순자산</div>
+          <div className="text-2xl font-extrabold">{formatWon(latestTotal)}</div>
+        </Card>
+        <Card>
+          <div className="text-xs text-slate-400 mb-1">직전 스냅샷 대비</div>
+          <div className={`text-2xl font-extrabold ${latestTotal - prevTotal >= 0 ? 'text-green-600' : 'text-red-500'}`}>{formatSigned(latestTotal - prevTotal)}</div>
+        </Card>
+        <Card className="flex items-center justify-center">
+          <Button onClick={() => setShowForm(true)} className="w-full">+ 스냅샷 입력</Button>
+        </Card>
+      </div>
+
+      <Card>
+        <div className="font-bold mb-3">순자산 추이 (최근 6개월)</div>
+        <LineChart labels={months.map(mk => mk.slice(5) + '월')} series={[{ name: '순자산', color: '#2563eb', values: trend }]} />
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card>
+          <div className="font-bold mb-3">자산 구성</div>
+          {pieData.length === 0 ? <div className="text-sm text-slate-400 py-4">자산 스냅샷을 입력하면 구성비를 볼 수 있어요.</div> : (
+            <div className="flex items-center gap-6 flex-wrap">
+              <DonutChart data={pieData} centerLabel={formatWon(latestTotal)} centerSub="총자산" />
+              <div className="space-y-2 text-sm flex-1 min-w-[140px]">
+                {pieData.map(d => <LegendRow key={d.id} color={d.color} label={d.label} value={d.value} total={latestTotal} />)}
+              </div>
+            </div>
+          )}
+        </Card>
+
+        <Card>
+          <div className="font-bold mb-3">스냅샷 기록</div>
+          <div className="space-y-2 max-h-72 overflow-y-auto">
+            {sortedAssets.map(a => (
+              <div key={a.id} className="flex items-center justify-between text-sm py-1.5 border-b border-slate-50 dark:border-slate-800 last:border-0">
+                <div>
+                  <div className="font-medium">{a.name} <span className="text-xs text-slate-400">({ASSET_TYPE_LABEL[a.type]})</span></div>
+                  <div className="text-xs text-slate-400">{a.recorded_date}</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="font-semibold">{formatWon(a.current_value)}</div>
+                  <button onClick={() => deleteAsset(a.id)} className="text-red-400 text-xs">삭제</button>
+                </div>
+              </div>
+            ))}
+            {sortedAssets.length === 0 && <div className="text-sm text-slate-400 py-4">기록된 스냅샷이 없어요.</div>}
+          </div>
+        </Card>
+      </div>
+
+      <AssetFormModal open={showForm} onClose={() => setShowForm(false)} onSave={saveAsset} existingNames={assetNames} />
+    </div>
+  );
+}
+
+/* ============================================================
+   Goals
+   ============================================================ */
+function GoalFormModal({ open, onClose, onSave, initial }) {
+  const [name, setName] = useState('');
+  const [target, setTarget] = useState('');
+  const [current, setCurrent] = useState('');
+  const [targetDate, setTargetDate] = useState('');
+  const [linked, setLinked] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    if (initial) {
+      setName(initial.name); setTarget(String(initial.target_amount)); setCurrent(String(initial.current_amount || 0));
+      setTargetDate(initial.target_date || ''); setLinked(!!initial.link_to_assets);
+    } else { setName(''); setTarget(''); setCurrent(''); setTargetDate(''); setLinked(false); }
+  }, [open, initial]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!name.trim() || !target) return;
+    onSave({ id: initial ? initial.id : uid(), user_id: USER_ID, name: name.trim(), target_amount: Number(target), current_amount: Number(current) || 0, target_date: targetDate || null, link_to_assets: linked });
+  };
+
+  return (
+    <Modal open={open} onClose={onClose} title={initial ? '목표 수정' : '목표 추가'}>
+      <form onSubmit={handleSubmit}>
+        <Field label="목표 이름"><input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="예: 비상금 1000만원" className={inputCls} /></Field>
+        <Field label="목표 금액"><input type="number" value={target} onChange={e => setTarget(e.target.value)} className={inputCls} /></Field>
+        <label className="flex items-center gap-2 text-sm mb-3">
+          <input type="checkbox" checked={linked} onChange={e => setLinked(e.target.checked)} /> 자산 현황과 연동 (순자산을 현재 금액으로 사용)
+        </label>
+        {!linked && <Field label="현재 금액"><input type="number" value={current} onChange={e => setCurrent(e.target.value)} className={inputCls} /></Field>}
+        <Field label="목표 시점 (선택)"><input type="date" value={targetDate} onChange={e => setTargetDate(e.target.value)} className={inputCls} /></Field>
+        <div className="flex gap-2 mt-2">
+          <Button variant="secondary" type="button" onClick={onClose} className="flex-1">취소</Button>
+          <Button variant="primary" type="submit" className="flex-1">저장</Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+function GoalsScreen({ goals, setGoals, assets }) {
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const netWorthNow = netWorthAsOf(assets, todayMonthKey());
+
+  const saveGoal = (payload) => {
+    setGoals(prev => {
+      const idx = prev.findIndex(g => g.id === payload.id);
+      if (idx === -1) return [...prev, payload];
+      const next = [...prev]; next[idx] = payload; return next;
+    });
+    setShowForm(false); setEditing(null);
+  };
+  const deleteGoal = (id) => setGoals(prev => prev.filter(g => g.id !== id));
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button onClick={() => { setEditing(null); setShowForm(true); }}>+ 목표 추가</Button>
+      </div>
+      {goals.length === 0 && <Card><div className="text-sm text-slate-400 py-6 text-center">아직 등록된 목표가 없어요. 첫 목표를 세워보세요.</div></Card>}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {goals.map(g => {
+          const current = g.link_to_assets ? netWorthNow : g.current_amount;
+          const pct = g.target_amount ? Math.min(100, (current / g.target_amount) * 100) : 0;
+          const projection = projectGoalCompletion(g, assets);
+          const dday = g.target_date ? Math.ceil((parseDateKey(g.target_date) - new Date()) / 86400000) : null;
+          return (
+            <Card key={g.id}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="font-bold">{g.name}</div>
+                <div className="flex gap-2 text-xs">
+                  <button onClick={() => { setEditing(g); setShowForm(true); }} className="text-slate-400 hover:text-slate-600">수정</button>
+                  <button onClick={() => deleteGoal(g.id)} className="text-red-400 hover:text-red-500">삭제</button>
+                </div>
+              </div>
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-slate-500">{formatWon(current)} / {formatWon(g.target_amount)}</span>
+                <span className="font-semibold">{Math.round(pct)}%</span>
+              </div>
+              <ProgressBar pct={pct} color="#2563eb" height={10} />
+              <div className="text-xs text-slate-400 mt-2 space-y-0.5">
+                {g.target_date && <div>목표일: {g.target_date} {dday !== null && `(D${dday >= 0 ? '-' + dday : '+' + (-dday)})`}</div>}
+                {projection && <div>현재 페이스면 약 {projection.monthsLeft}개월 후 달성 예상</div>}
+                {g.link_to_assets && <div className="text-blue-500">자산 현황과 연동 중</div>}
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+      <GoalFormModal open={showForm} onClose={() => setShowForm(false)} onSave={saveGoal} initial={editing} />
+    </div>
+  );
+}
+
+/* ============================================================
+   Settings
+   ============================================================ */
+function CategoryFormModal({ open, onClose, onSave, initial }) {
+  const [name, setName] = useState('');
+  const [type, setType] = useState('variable_expense');
+  const [color, setColor] = useState('#2563eb');
+  const [icon, setIcon] = useState('📦');
+  const [budget, setBudget] = useState('');
+
+  useEffect(() => {
+    if (!open) return;
+    if (initial) {
+      setName(initial.name); setType(initial.type); setColor(initial.color); setIcon(initial.icon); setBudget(String(initial.budget_monthly || ''));
+    } else { setName(''); setType('variable_expense'); setColor('#2563eb'); setIcon('📦'); setBudget(''); }
+  }, [open, initial]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    onSave({ id: initial ? initial.id : uid(), name: name.trim(), type, color, icon: icon || '📦', budget_monthly: type === 'income' ? undefined : (Number(budget) || 0) });
+  };
+
+  return (
+    <Modal open={open} onClose={onClose} title={initial ? '카테고리 수정' : '카테고리 추가'}>
+      <form onSubmit={handleSubmit}>
+        <Field label="이름"><input type="text" value={name} onChange={e => setName(e.target.value)} className={inputCls} /></Field>
+        <Field label="유형">
+          <select value={type} onChange={e => setType(e.target.value)} className={inputCls} disabled={!!initial}>
+            <option value="income">수입</option>
+            <option value="fixed_expense">고정비</option>
+            <option value="variable_expense">변동비</option>
+          </select>
+        </Field>
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="아이콘 (이모지)"><input type="text" value={icon} onChange={e => setIcon(e.target.value)} maxLength="4" className={inputCls} /></Field>
+          <Field label="색상"><input type="color" value={color} onChange={e => setColor(e.target.value)} className={inputCls + ' h-[42px] p-1'} /></Field>
+        </div>
+        {type !== 'income' && <Field label="월 예산 (선택)"><input type="number" value={budget} onChange={e => setBudget(e.target.value)} className={inputCls} /></Field>}
+        <div className="flex gap-2 mt-2">
+          <Button variant="secondary" type="button" onClick={onClose} className="flex-1">취소</Button>
+          <Button variant="primary" type="submit" className="flex-1">저장</Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+function SettingsScreen({ categories, setCategories, transactions, recurring, dark, setDark, fullState, onRestore }) {
+  const [showCatForm, setShowCatForm] = useState(false);
+  const [editingCat, setEditingCat] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const usedCategoryIds = new Set(transactions.map(t => t.category_id));
+  const recurringCategoryIds = new Set(recurring.map(r => r.category_id));
+
+  const deleteCategory = (id) => {
+    if (usedCategoryIds.has(id) || recurringCategoryIds.has(id)) {
+      alert('이 카테고리를 사용하는 거래 내역 또는 반복 거래가 있어 삭제할 수 없어요.');
+      return;
+    }
+    setCategories(prev => prev.filter(c => c.id !== id));
+  };
+
+  const saveCategory = (payload) => {
+    setCategories(prev => {
+      const idx = prev.findIndex(c => c.id === payload.id);
+      if (idx === -1) return [...prev, payload];
+      const next = [...prev]; next[idx] = payload; return next;
+    });
+    setShowCatForm(false); setEditingCat(null);
+  };
+
+  const handleImport = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        if (!confirm('현재 데이터를 백업 파일 내용으로 덮어씁니다. 계속할까요?')) return;
+        onRestore(data);
+        alert('복원이 완료되었어요.');
+      } catch { alert('올바른 백업 파일이 아니에요.'); }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const handleReset = () => {
+    if (!confirm('모든 데이터를 삭제합니다. 이 작업은 되돌릴 수 없어요. 계속할까요?')) return;
+    onRestore({ transactions: [], categories: DEFAULT_CATEGORIES, recurring: [], assets: [], goals: [] });
+  };
+
+  return (
+    <div className="space-y-5">
+      <Card>
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="font-bold">다크 모드</div>
+            <div className="text-xs text-slate-400">눈이 편안한 어두운 화면으로 전환해요.</div>
+          </div>
+          <button onClick={() => setDark(!dark)} className={`w-12 h-7 rounded-full transition relative ${dark ? 'bg-blue-600' : 'bg-slate-200'}`}>
+            <span className={`absolute top-0.5 w-6 h-6 bg-white rounded-full transition ${dark ? 'left-5' : 'left-0.5'}`} />
+          </button>
+        </div>
+      </Card>
+
+      <Card>
+        <div className="flex items-center justify-between mb-3">
+          <div className="font-bold">카테고리 관리</div>
+          <Button onClick={() => { setEditingCat(null); setShowCatForm(true); }}>+ 카테고리 추가</Button>
+        </div>
+        {['income', 'fixed_expense', 'variable_expense'].map(type => (
+          <div key={type} className="mb-4 last:mb-0">
+            <div className="text-xs font-semibold text-slate-400 mb-2">{TYPE_LABEL[type]}</div>
+            <div className="space-y-1.5">
+              {categories.filter(c => c.type === type).map(c => (
+                <div key={c.id} className="flex items-center justify-between py-1.5">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ background: c.color }} />
+                    <span>{c.icon} {c.name}</span>
+                  </div>
+                  <div className="flex gap-2 text-xs">
+                    <button onClick={() => { setEditingCat(c); setShowCatForm(true); }} className="text-slate-400 hover:text-slate-600">수정</button>
+                    <button onClick={() => deleteCategory(c.id)} className="text-red-400 hover:text-red-500">삭제</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </Card>
+
+      <Card>
+        <div className="font-bold mb-3">데이터 백업 · 복원</div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={() => exportBackup(fullState)}>전체 백업 (JSON)</Button>
+          <Button variant="secondary" onClick={() => downloadFile(`거래내역_${todayKey()}.csv`, transactionsToCSV(transactions, categories))}>거래내역 내보내기 (CSV)</Button>
+          <Button variant="secondary" onClick={() => fileInputRef.current && fileInputRef.current.click()}>백업 파일 복원</Button>
+          <input ref={fileInputRef} type="file" accept="application/json" onChange={handleImport} className="hidden" />
+        </div>
+      </Card>
+
+      <Card>
+        <div className="font-bold text-red-500 mb-2">위험 구역</div>
+        <div className="text-xs text-slate-400 mb-3">모든 거래·자산·목표·카테고리 데이터를 초기화합니다.</div>
+        <Button variant="danger" onClick={handleReset}>전체 데이터 초기화</Button>
+      </Card>
+
+      <CategoryFormModal open={showCatForm} onClose={() => setShowCatForm(false)} onSave={saveCategory} initial={editingCat} />
+    </div>
+  );
+}
+
+/* ============================================================
+   App root
+   ============================================================ */
+function App() {
+  const [tab, setTab] = useState('dashboard');
+  const [transactions, setTransactions] = useLocalState('transactions', []);
+  const [categories, setCategories] = useLocalState('categories', DEFAULT_CATEGORIES);
+  const [recurring, setRecurring] = useLocalState('recurring', []);
+  const [assets, setAssets] = useLocalState('assets', []);
+  const [goals, setGoals] = useLocalState('goals', []);
+  const [dark, setDark] = useLocalState('dark', false);
+  const [monthKey, setMonthKey] = useState(todayMonthKey());
+  const [editingTx, setEditingTx] = useState(null);
+  const [txModalOpen, setTxModalOpen] = useState(false);
+  const [txModalDefaultDate, setTxModalDefaultDate] = useState(null);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', dark);
+  }, [dark]);
+
+  useEffect(() => {
+    const toAdd = ensureRecurringGenerated(recurring, transactions);
+    if (toAdd.length) setTransactions(prev => [...prev, ...toAdd]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recurring]);
+
+  const saveTx = (payload) => {
+    setTransactions(prev => {
+      const idx = prev.findIndex(t => t.id === payload.id);
+      if (idx === -1) return [...prev, payload];
+      const next = [...prev]; next[idx] = payload; return next;
+    });
+  };
+  const deleteTx = (id) => setTransactions(prev => prev.filter(t => t.id !== id));
+
+  const openAdd = (date) => { setEditingTx(null); setTxModalDefaultDate(date || todayKey()); setTxModalOpen(true); };
+  const openEdit = (tx) => { setEditingTx(tx); setTxModalOpen(true); };
+
+  const screenProps = {
+    transactions, categories, recurring, assets, goals,
+    setCategories, setRecurring, setAssets, setGoals,
+    monthKey, setMonthKey, onAdd: openAdd, onEdit: openEdit,
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans">
+      <Sidebar tab={tab} setTab={setTab} dark={dark} setDark={setDark} />
+      <div className="md:ml-56 pb-24 md:pb-10">
+        <header className="md:hidden flex items-center justify-between px-4 py-4 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-30">
+          <div className="font-extrabold">💼 내 인생 P&L</div>
+          <button onClick={() => setDark(!dark)} className="text-lg">{dark ? '☀️' : '🌙'}</button>
+        </header>
+        <main className="max-w-6xl mx-auto p-4 md:p-8">
+          {tab === 'dashboard' && <Dashboard {...screenProps} />}
+          {tab === 'calendar' && <CalendarScreen {...screenProps} />}
+          {tab === 'charts' && <ChartsScreen {...screenProps} />}
+          {tab === 'transactions' && <TransactionsScreen {...screenProps} />}
+          {tab === 'budget' && <BudgetScreen {...screenProps} />}
+          {tab === 'assets' && <AssetsScreen {...screenProps} />}
+          {tab === 'goals' && <GoalsScreen {...screenProps} />}
+          {tab === 'settings' && (
+            <SettingsScreen
+              {...screenProps}
+              dark={dark}
+              setDark={setDark}
+              fullState={{ transactions, categories, recurring, assets, goals }}
+              onRestore={(data) => {
+                if (data.transactions) setTransactions(data.transactions);
+                if (data.categories) setCategories(data.categories);
+                if (data.recurring) setRecurring(data.recurring);
+                if (data.assets) setAssets(data.assets);
+                if (data.goals) setGoals(data.goals);
+              }}
+            />
+          )}
+        </main>
+      </div>
+      <BottomNav tab={tab} setTab={setTab} />
+      <button onClick={() => openAdd()} className="fixed right-5 bottom-20 md:bottom-8 w-14 h-14 rounded-full bg-blue-600 text-white text-2xl shadow-lg flex items-center justify-center z-40 active:scale-95 transition">+</button>
+      <TransactionModal
+        open={txModalOpen}
+        onClose={() => setTxModalOpen(false)}
+        onSave={saveTx}
+        onDelete={deleteTx}
+        categories={categories}
+        initial={editingTx}
+        defaultDate={txModalDefaultDate}
+      />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
