@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#4F46E5" />
+<title>G.Soo Life · 주간 스케줄</title>
+<meta name="description" content="나만의 반려견 산책, 운동, 출퇴근, 돌봄 루틴을 드래그로 배치하고 확인하는 개인용 주간 스케줄 플래너" />
+<meta name="robots" content="noindex, nofollow" />
+<link rel="icon" href="./icon-192.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="./icon-192.svg" />
+<link rel="manifest" href="./manifest.json" />
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+
+<style>
+  html, body {
+    background: #F5F3EF;
+    color: #1F2430;
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+    margin: 0;
+  }
+  * { box-sizing: border-box; }
+  .grid-col {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 59px,
+      rgba(31,36,48,0.08) 59px,
+      rgba(31,36,48,0.08) 60px
+    );
+  }
+  .seg-body {
+    cursor: pointer;
+    user-select: none;
+  }
+  .seg-handle {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    height: 8px;
+    cursor: ns-resize;
+  }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #D8D3C8; border-radius: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+// ---------- constants ----------
+const DAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
+const START_HOUR = 4;   // grid top = 04:00
+const END_HOUR = 24;    // grid bottom = 24:00
+const GRID_START = START_HOUR * 60;
+const GRID_END = END_HOUR * 60;
+const PX_PER_MIN = 1;
+const GRID_HEIGHT = (GRID_END - GRID_START) * PX_PER_MIN;
+const SNAP_MIN = 5;
+const MIN_DURATION = 10;
+const STORAGE_KEY = 'gsooLife.events.v1';
+
+const CATEGORIES = {
+  sleep:    { label: '수면',              bg: '#EDE9FE', border: '#8B5CF6', text: '#5B21B6' },
+  dogWalk:  { label: '반려견 산책',        bg: '#DCFCE7', border: '#22C55E', text: '#166534' },
+  exercise: { label: '운동',              bg: '#FFEDD5', border: '#F97316', text: '#9A3412' },
+  commute:  { label: '출퇴근',            bg: '#F1F5F9', border: '#64748B', text: '#334155' },
+  work:     { label: '근무',              bg: '#DBEAFE', border: '#3B82F6', text: '#1E40AF' },
+  petCare:  { label: '반려견 돌봄서비스',   bg: '#FCE7F3', border: '#EC4899', text: '#9D174D' },
+  prep:     { label: '식사/준비/기타',      bg: '#F5EFE0', border: '#B8A377', text: '#6B5F3E' },
+};
+const CATEGORY_ORDER = ['sleep', 'dogWalk', 'exercise', 'commute', 'work', 'petCare', 'prep'];
+
+// ---------- time helpers ----------
+function timeToMin(t) {
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+function minToTime(min) {
+  let m = Math.round(min) % 1440;
+  if (m < 0) m += 1440;
+  const h = Math.floor(m / 60);
+  const mm = m % 60;
+  return String(h).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+}
+function snap(min, step = SNAP_MIN) {
+  return Math.round(min / step) * step;
+}
+function clamp(v, lo, hi) {
+  return Math.max(lo, Math.min(hi, v));
+}
+function isWrapEvent(ev) {
+  return timeToMin(ev.end) <= timeToMin(ev.start);
+}
+
+// ---------- seed data ----------
+function buildSeedEvents() {
+  const events = [];
+  let n = 1;
+  const add = (day, start, end, category, title, memo = '') => {
+    events.push({ id: 'seed' + (n++), day, start, end, category, title, memo });
+  };
+  [0, 1, 2, 3, 4].forEach((d) => add(d, '04:50', '05:00', 'prep', '기상'));
+  [0, 2, 3, 4].forEach((d) => add(d, '05:00', '06:00', 'dogWalk', '아침 산책'));
+  add(1, '05:00', '06:00', 'petCare', '유치원 셔틀');
+  [0, 1, 2, 3, 4].forEach((d) => add(d, '06:30', '07:15', 'exercise', 'F45'));
+  [0, 1, 2, 3].forEach((d) => add(d, '07:15', '09:00', 'commute', '출근'));
+  [0, 1, 2, 3].forEach((d) => add(d, '09:00', '18:00', 'work', '근무'));
+  add(4, '08:00', '17:00', 'work', '재택근무');
+  [0, 1, 2, 3].forEach((d) => add(d, '18:00', '19:30', 'commute', '퇴근'));
+  [0, 1, 2, 3, 4].forEach((d) => add(d, '19:30', '20:00', 'dogWalk', '저녁 산책'));
+  [0, 1, 2, 3, 4].forEach((d) => add(d, '20:00', '20:30', 'prep', '저녁식사'));
+  [0, 1, 2, 3, 4].forEach((d) => add(d, '21:30', '04:50', 'sleep', '취침'));
+  return events;
+}
+
+function loadEvents() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return buildSeedEvents();
+}
+
+// ---------- per-day segment + overlap layout ----------
+// A wrap event (end <= start) is drawn as two segments: a "head" on its own
+// day (start -> midnight) and a "tail" on the next day (04:00 -> end).
+function getDaySegments(events, day) {
+  const segs = [];
+  events.forEach((ev) => {
+    const s = timeToMin(ev.start);
+    const e = timeToMin(ev.end);
+    if (e > s) {
+      if (ev.day === day) segs.push({ event: ev, part: 'full', dispStart: clamp(s, GRID_START, GRID_END), dispEnd: clamp(e, GRID_START, GRID_END) });
+    } else {
+      if (ev.day === day) {
+        const dispStart = clamp(s, GRID_START, GRID_END);
+        if (GRID_END > dispStart) segs.push({ event: ev, part: 'head', dispStart, dispEnd: GRID_END });
+      }
+      const nextDay = (ev.day + 1) % 7;
+      if (nextDay === day) {
+        const dispEnd = clamp(e, GRID_START, GRID_END);
+        if (dispEnd > GRID_START) segs.push({ event: ev, part: 'tail', dispStart: GRID_START, dispEnd });
+      }
+    }
+  });
+  return segs;
+}
+
+function layoutSegments(segs) {
+  const sorted = [...segs].sort((a, b) => a.dispStart - b.dispStart || a.dispEnd - b.dispEnd);
+  const clusters = [];
+  let current = [];
+  let clusterEnd = -Infinity;
+  sorted.forEach((seg) => {
+    if (current.length === 0 || seg.dispStart < clusterEnd) {
+      current.push(seg);
+      clusterEnd = Math.max(clusterEnd, seg.dispEnd);
+    } else {
+      clusters.push(current);
+      current = [seg];
+      clusterEnd = seg.dispEnd;
+    }
+  });
+  if (current.length) clusters.push(current);
+
+  const result = [];
+  clusters.forEach((cluster) => {
+    const colEnds = [];
+    cluster.forEach((seg) => {
+      let placed = false;
+      for (let i = 0; i < colEnds.length; i++) {
+        if (colEnds[i] <= seg.dispStart) {
+          seg._col = i;
+          colEnds[i] = seg.dispEnd;
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        seg._col = colEnds.length;
+        colEnds.push(seg.dispEnd);
+      }
+    });
+    const numCols = colEnds.length;
+    cluster.forEach((seg) => {
+      result.push({ ...seg, col: seg._col, numCols, overlapping: cluster.length > 1 });
+    });
+  });
+  return result;
+}
+
+// ---------- Event block ----------
+function EventBlock({ seg, onSegMouseDown }) {
+  const ev = seg.event;
+  const cat = CATEGORIES[ev.category] || CATEGORIES.prep;
+  const top = (seg.dispStart - GRID_START) * PX_PER_MIN;
+  const height = Math.max(4, (seg.dispEnd - seg.dispStart) * PX_PER_MIN);
+  const widthPct = 100 / seg.numCols;
+  const leftPct = seg.col * widthPct;
+  const wrap = isWrapEvent(ev);
+  const showTopHandle = seg.part === 'full' || seg.part === 'head';
+  const showBottomHandle = seg.part === 'full' || seg.part === 'tail';
+  const tinyBlock = height < 26;
+
+  return (
+    <div
+      className="absolute rounded-md overflow-hidden shadow-sm"
+      style={{
+        top: top + 'px',
+        height: height + 'px',
+        left: `calc(${leftPct}% + 1px)`,
+        width: `calc(${widthPct}% - 2px)`,
+        background: cat.bg,
+        border: `1.5px solid ${seg.overlapping ? '#F59E0B' : cat.border}`,
+        boxShadow: seg.overlapping ? '0 0 0 2px rgba(245,158,11,0.35)' : undefined,
+        zIndex: seg.overlapping ? 5 : 1,
+      }}
+    >
+      <div
+        className="seg-body h-full w-full px-1.5 py-1 text-left"
+        onMouseDown={(e) => onSegMouseDown(e, ev, 'move')}
+        title={`${ev.title} (${ev.start}~${ev.end})`}
+      >
+        <div style={{ color: cat.text, fontSize: tinyBlock ? '10px' : '11.5px', fontWeight: 600, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {ev.title || '(제목없음)'}
+        </div>
+        {!tinyBlock && (
+          <div style={{ color: cat.text, fontSize: '10px', opacity: 0.8, lineHeight: 1.2 }}>
+            {ev.start}~{ev.end}{wrap ? ' (익일)' : ''}
+          </div>
+        )}
+        {seg.overlapping && (
+          <div className="absolute top-0.5 right-1 text-[11px]" title="다른 일정과 겹칩니다">⚠️</div>
+        )}
+      </div>
+      {showTopHandle && (
+        <div className="seg-handle" style={{ top: 0 }} onMouseDown={(e) => onSegMouseDown(e, ev, 'resize-start')} />
+      )}
+      {showBottomHandle && (
+        <div className="seg-handle" style={{ bottom: 0 }} onMouseDown={(e) => onSegMouseDown(e, ev, 'resize-end')} />
+      )}
+    </div>
+  );
+}
+
+// ---------- Edit / Create modal ----------
+function EventModal({ draft, isNew, onChange, onSave, onDelete, onClose }) {
+  const set = (k, v) => onChange({ ...draft, [k]: v });
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onMouseDown={onClose}>
+      <div
+        className="bg-white rounded-xl shadow-xl w-[380px] max-w-[92vw] p-5"
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <div className="text-base font-bold mb-4">{isNew ? '새 이벤트' : '이벤트 수정'}</div>
+
+        <label className="block text-xs font-medium text-gray-500 mb-1">이름</label>
+        <input
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          value={draft.title}
+          onChange={(e) => set('title', e.target.value)}
+          placeholder="예: 아침 산책"
+        />
+
+        <label className="block text-xs font-medium text-gray-500 mb-1">요일</label>
+        <select
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-3 text-sm"
+          value={draft.day}
+          onChange={(e) => set('day', Number(e.target.value))}
+        >
+          {DAY_LABELS.map((d, i) => (
+            <option key={i} value={i}>{d}요일</option>
+          ))}
+        </select>
+
+        <div className="flex gap-3 mb-1">
+          <div className="flex-1">
+            <label className="block text-xs font-medium text-gray-500 mb-1">시작</label>
+            <input
+              type="time"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              value={draft.start}
+              onChange={(e) => set('start', e.target.value)}
+            />
+          </div>
+          <div className="flex-1">
+            <label className="block text-xs font-medium text-gray-500 mb-1">종료</label>
+            <input
+              type="time"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              value={draft.end}
+              onChange={(e) => set('end', e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="text-[11px] text-gray-400 mb-3">
+          종료 시각이 시작 시각보다 빠르거나 같으면, 다음날 새벽까지 이어지는 일정으로 처리돼요. (예: 취침)
+        </div>
+
+        <label className="block text-xs font-medium text-gray-500 mb-1">카테고리</label>
+        <div className="grid grid-cols-4 gap-1.5 mb-3">
+          {CATEGORY_ORDER.map((key) => {
+            const c = CATEGORIES[key];
+            const active = draft.category === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => set('category', key)}
+                className="flex items-center gap-1 px-1.5 py-1 rounded-lg text-[11px] border"
+                style={{
+                  background: active ? c.bg : '#fff',
+                  borderColor: active ? c.border : '#E5E7EB',
+                  color: c.text,
+                  fontWeight: active ? 700 : 400,
+                }}
+                title={c.label}
+              >
+                <span style={{ width: 8, height: 8, borderRadius: 999, background: c.border, flexShrink: 0 }}></span>
+                <span className="truncate">{c.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <label className="block text-xs font-medium text-gray-500 mb-1">메모</label>
+        <textarea
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4 text-sm h-16 resize-none"
+          value={draft.memo}
+          onChange={(e) => set('memo', e.target.value)}
+          placeholder="메모 (선택)"
+        />
+
+        <div className="flex justify-between items-center">
+          <div>
+            {!isNew && (
+              <button
+                onClick={onDelete}
+                className="text-sm text-red-500 hover:text-red-600 px-2 py-1"
+              >
+                삭제
+              </button>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <button onClick={onClose} className="text-sm px-3 py-1.5 rounded-lg border border-gray-300 text-gray-600">
+              취소
+            </button>
+            <button
+              onClick={onSave}
+              className="text-sm px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700"
+            >
+              저장
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Main App ----------
+function App() {
+  const [events, setEvents] = useState(loadEvents);
+  const [modalDraft, setModalDraft] = useState(null);
+  const [modalIsNew, setModalIsNew] = useState(false);
+  const dragRef = useRef(null);
+  const eventsRef = useRef(events);
+
+  useEffect(() => { eventsRef.current = events; }, [events]);
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+  }, [events]);
+
+  const openEdit = useCallback((ev) => {
+    setModalDraft({ ...ev });
+    setModalIsNew(false);
+  }, []);
+
+  const openCreate = useCallback((day, startMin) => {
+    const s = clamp(snap(startMin), GRID_START, GRID_END - 30);
+    setModalDraft({
+      id: 'e' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+      day,
+      start: minToTime(s),
+      end: minToTime(s + 30),
+      category: 'prep',
+      title: '',
+      memo: '',
+    });
+    setModalIsNew(true);
+  }, []);
+
+  const onSegMouseDown = useCallback((e, ev, mode) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragRef.current = {
+      id: ev.id,
+      mode,
+      startY: e.clientY,
+      origStart: timeToMin(ev.start),
+      origEnd: timeToMin(ev.end),
+      moved: false,
+    };
+  }, []);
+
+  useEffect(() => {
+    function handleMove(e) {
+      const d = dragRef.current;
+      if (!d) return;
+      const deltaY = e.clientY - d.startY;
+      if (Math.abs(deltaY) > 3) d.moved = true;
+      if (!d.moved) return;
+      const deltaMin = snap(deltaY / PX_PER_MIN);
+      const wrap = d.origEnd <= d.origStart;
+
+      setEvents((prev) =>
+        prev.map((ev) => {
+          if (ev.id !== d.id) return ev;
+          let s = d.origStart;
+          let en = d.origEnd;
+
+          if (d.mode === 'move') {
+            if (wrap) return ev; // whole-block move disabled for overnight events
+            const duration = d.origEnd - d.origStart;
+            s = clamp(d.origStart + deltaMin, GRID_START, GRID_END - duration);
+            en = s + duration;
+          } else if (d.mode === 'resize-start') {
+            if (wrap) {
+              s = clamp(d.origStart + deltaMin, GRID_START, GRID_END - MIN_DURATION);
+            } else {
+              s = clamp(d.origStart + deltaMin, GRID_START, d.origEnd - MIN_DURATION);
+              en = d.origEnd;
+            }
+          } else if (d.mode === 'resize-end') {
+            if (wrap) {
+              en = clamp(d.origEnd + deltaMin, GRID_START, GRID_START + 12 * 60);
+              s = d.origStart;
+            } else {
+              s = d.origStart;
+              en = clamp(d.origEnd + deltaMin, d.origStart + MIN_DURATION, GRID_END);
+            }
+          }
+          return { ...ev, start: minToTime(s), end: minToTime(en) };
+        })
+      );
+    }
+
+    function handleUp() {
+      const d = dragRef.current;
+      if (!d) return;
+      if (!d.moved) {
+        const ev = eventsRef.current.find((x) => x.id === d.id);
+        if (ev) openEdit(ev);
+      }
+      dragRef.current = null;
+    }
+
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+    };
+  }, [openEdit]);
+
+  const handleSave = () => {
+    if (!modalDraft) return;
+    const draft = { ...modalDraft, title: modalDraft.title.trim() || '(제목없음)' };
+    setEvents((prev) => {
+      if (modalIsNew) return [...prev, draft];
+      return prev.map((ev) => (ev.id === draft.id ? draft : ev));
+    });
+    setModalDraft(null);
+  };
+
+  const handleDelete = () => {
+    if (!modalDraft) return;
+    setEvents((prev) => prev.filter((ev) => ev.id !== modalDraft.id));
+    setModalDraft(null);
+  };
+
+  const handleResetSeed = () => {
+    if (window.confirm('현재 스케줄을 지우고 초기 예시 데이터로 되돌릴까요?')) {
+      setEvents(buildSeedEvents());
+    }
+  };
+
+  const dayColumns = useMemo(() => {
+    return DAY_LABELS.map((_, day) => layoutSegments(getDaySegments(events, day)));
+  }, [events]);
+
+  const hourMarks = [];
+  for (let h = START_HOUR; h <= END_HOUR; h++) hourMarks.push(h);
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <header className="flex items-center justify-between px-5 py-3 border-b border-gray-200 bg-white/80 sticky top-0 z-20">
+        <div>
+          <div className="text-lg font-bold">G.Soo Life · 주간 스케줄</div>
+          <div className="text-xs text-gray-500">클릭으로 수정, 드래그로 이동, 가장자리로 길이 조절</div>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => openCreate(0, 9 * 60)}
+            className="text-sm px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700"
+          >
+            + 새 이벤트
+          </button>
+          <button
+            onClick={handleResetSeed}
+            className="text-sm px-3 py-1.5 rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50"
+          >
+            초기 데이터로 재설정
+          </button>
+        </div>
+      </header>
+
+      <div className="flex flex-wrap gap-3 px-5 py-2 text-[11px] border-b border-gray-100 bg-white/60">
+        {CATEGORY_ORDER.map((key) => {
+          const c = CATEGORIES[key];
+          return (
+            <div key={key} className="flex items-center gap-1">
+              <span style={{ width: 9, height: 9, borderRadius: 999, background: c.border, display: 'inline-block' }}></span>
+              <span className="text-gray-600">{c.label}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex-1 overflow-auto">
+        <div style={{ display: 'grid', gridTemplateColumns: '56px repeat(7, minmax(120px, 1fr))', minWidth: '956px' }}>
+          <div className="sticky top-0 z-10 bg-[#F5F3EF]"></div>
+          {DAY_LABELS.map((label, i) => (
+            <div
+              key={i}
+              className="sticky top-0 z-10 bg-[#F5F3EF] text-center text-sm font-semibold py-2 border-b border-gray-200"
+            >
+              {label}
+            </div>
+          ))}
+
+          <div className="relative" style={{ height: GRID_HEIGHT + 'px' }}>
+            {hourMarks.map((h) => (
+              <div
+                key={h}
+                className="absolute right-1 text-[10px] text-gray-400"
+                style={{ top: (h - START_HOUR) * 60 - 6 + 'px' }}
+              >
+                {String(h % 24).padStart(2, '0')}:00
+              </div>
+            ))}
+          </div>
+
+          {DAY_LABELS.map((_, day) => (
+            <div
+              key={day}
+              className="grid-col relative border-l border-gray-200"
+              style={{ height: GRID_HEIGHT + 'px' }}
+              onDoubleClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const y = e.clientY - rect.top;
+                openCreate(day, GRID_START + y / PX_PER_MIN);
+              }}
+            >
+              {dayColumns[day].map((seg) => (
+                <EventBlock key={seg.event.id + '_' + seg.part} seg={seg} onSegMouseDown={onSegMouseDown} />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {modalDraft && (
+        <EventModal
+          draft={modalDraft}
+          isNew={modalIsNew}
+          onChange={setModalDraft}
+          onSave={handleSave}
+          onDelete={handleDelete}
+          onClose={() => setModalDraft(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
