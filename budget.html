@@ -160,6 +160,12 @@ const ASSET_TYPE_COLOR = { stock_kr: '#2563eb', stock_us: '#7c3aed', savings: '#
 const RECUR_CYCLE_LABEL = { monthly: '매월', yearly: '매년', weekly: '매주' };
 const WEEKDAY_LABEL = ['일', '월', '화', '수', '목', '금', '토'];
 
+const PAYMENT_TYPE_LABEL = { credit: '신용카드', check: '체크카드', cash: '현금', transfer: '계좌이체', other: '기타' };
+const DEFAULT_PAYMENT_METHODS = [
+  { id: 'pm_cash', name: '현금', type: 'cash' },
+  { id: 'pm_transfer', name: '계좌이체', type: 'transfer' },
+];
+
 const TABS = [
   { id: 'dashboard', label: '대시보드', icon: '🏠' },
   { id: 'calendar', label: '캘린더', icon: '📅' },
@@ -276,11 +282,13 @@ function ensureRecurringGenerated(recurring, transactions, monthsBack = 12) {
 /* ============================================================
    Export / import helpers
    ============================================================ */
-function transactionsToCSV(transactions, categories) {
+function transactionsToCSV(transactions, categories, paymentMethods = []) {
   const catMap = Object.fromEntries(categories.map(c => [c.id, c]));
+  const pmMap = Object.fromEntries(paymentMethods.map(p => [p.id, p]));
   const header = ['날짜', '유형', '카테고리', '금액', '고정/변동', '메모', '결제수단', '태그'];
   const rows = transactions.map(t => {
     const cat = catMap[t.category_id];
+    const pm = pmMap[t.payment_method];
     return [
       t.date,
       t.type === 'income' ? '수입' : '지출',
@@ -288,7 +296,7 @@ function transactionsToCSV(transactions, categories) {
       t.amount,
       t.type === 'income' ? '' : (t.is_fixed ? '고정비' : '변동비'),
       (t.memo || '').replace(/"/g, '""'),
-      t.payment_method || '',
+      pm ? `${pm.name}(${PAYMENT_TYPE_LABEL[pm.type]})` : '',
       (t.tags || []).join(' '),
     ];
   });
@@ -520,7 +528,7 @@ function HBarCompare({ rows }) {
 /* ============================================================
    Transaction add/edit modal
    ============================================================ */
-function TransactionModal({ open, onClose, onSave, onDelete, categories, initial, defaultDate }) {
+function TransactionModal({ open, onClose, onSave, onDelete, categories, paymentMethods, initial, defaultDate }) {
   const [type, setType] = useState('expense');
   const [date, setDate] = useState(todayKey());
   const [categoryId, setCategoryId] = useState('');
@@ -591,10 +599,14 @@ function TransactionModal({ open, onClose, onSave, onDelete, categories, initial
           <input type="text" value={memo} onChange={e => setMemo(e.target.value)} placeholder="선택 입력" className={inputCls} />
         </Field>
         <Field label="결제수단 (선택)">
-          <input type="text" value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} placeholder="카드 / 현금 / 계좌이체" className={inputCls} />
+          <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} className={inputCls}>
+            <option value="">선택 안함</option>
+            {paymentMethods.map(pm => <option key={pm.id} value={pm.id}>{pm.name} · {PAYMENT_TYPE_LABEL[pm.type]}</option>)}
+          </select>
         </Field>
         <Field label="태그 (쉼표로 구분, 선택)">
           <input type="text" value={tags} onChange={e => setTags(e.target.value)} placeholder="예: 강남출근, 병원비" className={inputCls} />
+          <div className="text-[11px] text-slate-400 mt-1">거래를 자유롭게 묶어서 나중에 검색·필터링할 수 있는 이름표예요. 카테고리와 별개로, 특정 이벤트나 사람 등으로 여러 거래를 함께 찾고 싶을 때 사용해요. (예: 제주여행, 강아지병원, 부모님)</div>
         </Field>
         <div className="flex gap-2 mt-5">
           {initial && <Button variant="danger" type="button" onClick={() => { onDelete(initial.id); onClose(); }}>삭제</Button>}
@@ -787,6 +799,7 @@ function Dashboard({ transactions, categories, assets, goals, monthKey, setMonth
    ============================================================ */
 function CalendarScreen({ transactions, categories, monthKey, setMonthKey, onAdd, onEdit }) {
   const [selectedDate, setSelectedDate] = useState(null);
+  const [actionDate, setActionDate] = useState(null);
   const totals = monthTotals(transactions, monthKey);
   const [y, m] = monthKey.split('-').map(Number);
   const firstDow = new Date(y, m - 1, 1).getDay();
@@ -837,12 +850,12 @@ function CalendarScreen({ transactions, categories, monthKey, setMonthKey, onAdd
             const isToday = dateStr === todayKey();
             const isSelected = dateStr === selectedDate;
             return (
-              <button key={i} onClick={() => setSelectedDate(dateStr)}
-                className={`aspect-square rounded-lg p-1 text-left flex flex-col justify-between border ${isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-transparent hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
+              <button key={i} onClick={() => setActionDate(dateStr)}
+                className={`min-h-[58px] sm:min-h-[76px] rounded-lg p-1 text-left flex flex-col justify-between border ${isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-transparent hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
                 <div className={`text-[11px] ${isToday ? 'w-5 h-5 flex items-center justify-center rounded-full bg-blue-600 text-white' : 'text-slate-500'}`}>{d}</div>
-                <div className="space-y-0.5 leading-none">
-                  {dt && dt.income > 0 && <div className="text-[9px] text-green-600 truncate">+{Math.round(dt.income / 1000)}k</div>}
-                  {dt && (dt.fixed > 0 || dt.variable > 0) && <div className="text-[9px] text-red-500 truncate">-{Math.round((dt.fixed + dt.variable) / 1000)}k</div>}
+                <div className="space-y-0.5 leading-none overflow-hidden">
+                  {dt && dt.income > 0 && <div className="text-[8px] sm:text-[10px] text-green-600 truncate">+{formatWon(dt.income)}</div>}
+                  {dt && (dt.fixed > 0 || dt.variable > 0) && <div className="text-[8px] sm:text-[10px] text-red-500 truncate">-{formatWon(dt.fixed + dt.variable)}</div>}
                 </div>
               </button>
             );
@@ -854,7 +867,10 @@ function CalendarScreen({ transactions, categories, monthKey, setMonthKey, onAdd
         <Card>
           <div className="flex items-center justify-between mb-3">
             <div className="font-bold">{selectedDate} 거래 내역</div>
-            <Button onClick={() => onAdd(selectedDate)}>+ 추가</Button>
+            <div className="flex items-center gap-2">
+              <Button onClick={() => onAdd(selectedDate)}>+ 추가</Button>
+              <button onClick={() => setSelectedDate(null)} className="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">✕</button>
+            </div>
           </div>
           {selectedTxs.length === 0 && <div className="text-sm text-slate-400 py-6 text-center">이 날짜의 거래 내역이 없어요.</div>}
           <div className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -876,6 +892,27 @@ function CalendarScreen({ transactions, categories, monthKey, setMonthKey, onAdd
           </div>
         </Card>
       )}
+
+      <Modal open={!!actionDate} onClose={() => setActionDate(null)} title={actionDate || ''}>
+        <div className="space-y-2">
+          <button onClick={() => { onAdd(actionDate); setActionDate(null); }}
+            className="w-full flex items-center gap-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-left">
+            <span className="text-xl">📝</span>
+            <div>
+              <div className="font-semibold text-sm">거래 추가</div>
+              <div className="text-xs text-slate-400">이 날짜에 수입 또는 지출을 기록해요.</div>
+            </div>
+          </button>
+          <button onClick={() => { setSelectedDate(actionDate); setActionDate(null); }}
+            className="w-full flex items-center gap-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-left">
+            <span className="text-xl">📋</span>
+            <div>
+              <div className="font-semibold text-sm">상세보기</div>
+              <div className="text-xs text-slate-400">이 날짜의 거래 내역을 확인해요.</div>
+            </div>
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -1015,13 +1052,14 @@ function ChartsScreen({ transactions, categories }) {
 /* ============================================================
    Transactions table
    ============================================================ */
-function TransactionsScreen({ transactions, categories, onAdd, onEdit }) {
+function TransactionsScreen({ transactions, categories, paymentMethods, onAdd, onEdit }) {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [catFilter, setCatFilter] = useState('all');
   const [sortBy, setSortBy] = useState('date_desc');
   const [range, setRange] = useState('all');
   const catMap = Object.fromEntries(categories.map(c => [c.id, c]));
+  const pmMap = Object.fromEntries(paymentMethods.map(p => [p.id, p]));
   const nowMonth = todayMonthKey();
 
   let rows = transactions;
@@ -1043,7 +1081,7 @@ function TransactionsScreen({ transactions, categories, onAdd, onEdit }) {
 
   const sumIncome = rows.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
   const sumExpense = rows.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-  const handleExport = () => downloadFile(`거래내역_${todayKey()}.csv`, transactionsToCSV(rows, categories));
+  const handleExport = () => downloadFile(`거래내역_${todayKey()}.csv`, transactionsToCSV(rows, categories, paymentMethods));
 
   return (
     <div className="space-y-4">
@@ -1092,10 +1130,14 @@ function TransactionsScreen({ transactions, categories, onAdd, onEdit }) {
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {rows.map(t => {
                 const cat = catMap[t.category_id];
+                const pm = pmMap[t.payment_method];
                 return (
                   <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer" onClick={() => onEdit(t)}>
                     <td className="px-4 py-2.5 text-slate-500 whitespace-nowrap">{t.date}</td>
-                    <td className="px-4 py-2.5 whitespace-nowrap">{cat && cat.icon} {cat && cat.name}{t.is_fixed && <span className="ml-1 text-[10px] text-blue-500">고정</span>}</td>
+                    <td className="px-4 py-2.5 whitespace-nowrap">
+                      {cat && cat.icon} {cat && cat.name}{t.is_fixed && <span className="ml-1 text-[10px] text-blue-500">고정</span>}
+                      {pm && <div className="text-[10px] text-slate-400">{pm.name}</div>}
+                    </td>
                     <td className="px-4 py-2.5 text-slate-400 max-w-[240px] truncate">{t.memo}{t.tags && t.tags.length ? ` · ${t.tags.join(', ')}` : ''}</td>
                     <td className={`px-4 py-2.5 text-right font-semibold whitespace-nowrap ${t.type === 'income' ? 'text-green-600' : 'text-red-500'}`}>{t.type === 'income' ? '+' : '-'}{formatWon(t.amount)}</td>
                     <td className="px-4 py-2.5 text-right text-slate-300">›</td>
@@ -1567,13 +1609,50 @@ function CategoryFormModal({ open, onClose, onSave, initial }) {
   );
 }
 
-function SettingsScreen({ categories, setCategories, transactions, recurring, dark, setDark, fullState, onRestore }) {
+function PaymentMethodFormModal({ open, onClose, onSave, initial }) {
+  const [name, setName] = useState('');
+  const [type, setType] = useState('credit');
+
+  useEffect(() => {
+    if (!open) return;
+    if (initial) { setName(initial.name); setType(initial.type); }
+    else { setName(''); setType('credit'); }
+  }, [open, initial]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    onSave({ id: initial ? initial.id : uid(), name: name.trim(), type });
+  };
+
+  return (
+    <Modal open={open} onClose={onClose} title={initial ? '결제수단 수정' : '결제수단 추가'}>
+      <form onSubmit={handleSubmit}>
+        <Field label="이름"><input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="예: 국민 신용카드, 카카오뱅크 체크카드" className={inputCls} /></Field>
+        <Field label="유형">
+          <select value={type} onChange={e => setType(e.target.value)} className={inputCls}>
+            {Object.entries(PAYMENT_TYPE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
+        </Field>
+        <div className="flex gap-2 mt-2">
+          <Button variant="secondary" type="button" onClick={onClose} className="flex-1">취소</Button>
+          <Button variant="primary" type="submit" className="flex-1">저장</Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+function SettingsScreen({ categories, setCategories, transactions, recurring, paymentMethods, setPaymentMethods, dark, setDark, fullState, onRestore }) {
   const [showCatForm, setShowCatForm] = useState(false);
   const [editingCat, setEditingCat] = useState(null);
+  const [showPmForm, setShowPmForm] = useState(false);
+  const [editingPm, setEditingPm] = useState(null);
   const fileInputRef = useRef(null);
 
   const usedCategoryIds = new Set(transactions.map(t => t.category_id));
   const recurringCategoryIds = new Set(recurring.map(r => r.category_id));
+  const usedPaymentMethodIds = new Set(transactions.map(t => t.payment_method).filter(Boolean));
 
   const deleteCategory = (id) => {
     if (usedCategoryIds.has(id) || recurringCategoryIds.has(id)) {
@@ -1590,6 +1669,23 @@ function SettingsScreen({ categories, setCategories, transactions, recurring, da
       const next = [...prev]; next[idx] = payload; return next;
     });
     setShowCatForm(false); setEditingCat(null);
+  };
+
+  const deletePaymentMethod = (id) => {
+    if (usedPaymentMethodIds.has(id)) {
+      alert('이 결제수단을 사용하는 거래 내역이 있어 삭제할 수 없어요.');
+      return;
+    }
+    setPaymentMethods(prev => prev.filter(p => p.id !== id));
+  };
+
+  const savePaymentMethod = (payload) => {
+    setPaymentMethods(prev => {
+      const idx = prev.findIndex(p => p.id === payload.id);
+      if (idx === -1) return [...prev, payload];
+      const next = [...prev]; next[idx] = payload; return next;
+    });
+    setShowPmForm(false); setEditingPm(null);
   };
 
   const handleImport = (e) => {
@@ -1610,7 +1706,7 @@ function SettingsScreen({ categories, setCategories, transactions, recurring, da
 
   const handleReset = () => {
     if (!confirm('모든 데이터를 삭제합니다. 이 작업은 되돌릴 수 없어요. 계속할까요?')) return;
-    onRestore({ transactions: [], categories: DEFAULT_CATEGORIES, recurring: [], assets: [], goals: [] });
+    onRestore({ transactions: [], categories: DEFAULT_CATEGORIES, recurring: [], assets: [], goals: [], paymentMethods: DEFAULT_PAYMENT_METHODS });
   };
 
   return (
@@ -1654,10 +1750,29 @@ function SettingsScreen({ categories, setCategories, transactions, recurring, da
       </Card>
 
       <Card>
+        <div className="flex items-center justify-between mb-3">
+          <div className="font-bold">결제수단 관리</div>
+          <Button onClick={() => { setEditingPm(null); setShowPmForm(true); }}>+ 결제수단 추가</Button>
+        </div>
+        {paymentMethods.length === 0 && <div className="text-sm text-slate-400 py-4">신용카드·체크카드·현금·계좌이체 등 자주 쓰는 결제수단을 등록해두면 거래 추가 시 바로 선택할 수 있어요.</div>}
+        <div className="space-y-1.5">
+          {paymentMethods.map(pm => (
+            <div key={pm.id} className="flex items-center justify-between py-1.5">
+              <div className="text-sm">{pm.name} <span className="text-xs text-slate-400">({PAYMENT_TYPE_LABEL[pm.type]})</span></div>
+              <div className="flex gap-2 text-xs">
+                <button onClick={() => { setEditingPm(pm); setShowPmForm(true); }} className="text-slate-400 hover:text-slate-600">수정</button>
+                <button onClick={() => deletePaymentMethod(pm.id)} className="text-red-400 hover:text-red-500">삭제</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card>
         <div className="font-bold mb-3">데이터 백업 · 복원</div>
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" onClick={() => exportBackup(fullState)}>전체 백업 (JSON)</Button>
-          <Button variant="secondary" onClick={() => downloadFile(`거래내역_${todayKey()}.csv`, transactionsToCSV(transactions, categories))}>거래내역 내보내기 (CSV)</Button>
+          <Button variant="secondary" onClick={() => downloadFile(`거래내역_${todayKey()}.csv`, transactionsToCSV(transactions, categories, paymentMethods))}>거래내역 내보내기 (CSV)</Button>
           <Button variant="secondary" onClick={() => fileInputRef.current && fileInputRef.current.click()}>백업 파일 복원</Button>
           <input ref={fileInputRef} type="file" accept="application/json" onChange={handleImport} className="hidden" />
         </div>
@@ -1670,6 +1785,7 @@ function SettingsScreen({ categories, setCategories, transactions, recurring, da
       </Card>
 
       <CategoryFormModal open={showCatForm} onClose={() => setShowCatForm(false)} onSave={saveCategory} initial={editingCat} />
+      <PaymentMethodFormModal open={showPmForm} onClose={() => setShowPmForm(false)} onSave={savePaymentMethod} initial={editingPm} />
     </div>
   );
 }
@@ -1684,6 +1800,7 @@ function App() {
   const [recurring, setRecurring] = useLocalState('recurring', []);
   const [assets, setAssets] = useLocalState('assets', []);
   const [goals, setGoals] = useLocalState('goals', []);
+  const [paymentMethods, setPaymentMethods] = useLocalState('paymentMethods', DEFAULT_PAYMENT_METHODS);
   const [dark, setDark] = useLocalState('dark', false);
   const [monthKey, setMonthKey] = useState(todayMonthKey());
   const [editingTx, setEditingTx] = useState(null);
@@ -1713,8 +1830,8 @@ function App() {
   const openEdit = (tx) => { setEditingTx(tx); setTxModalOpen(true); };
 
   const screenProps = {
-    transactions, categories, recurring, assets, goals,
-    setCategories, setRecurring, setAssets, setGoals,
+    transactions, categories, recurring, assets, goals, paymentMethods,
+    setCategories, setRecurring, setAssets, setGoals, setPaymentMethods,
     monthKey, setMonthKey, onAdd: openAdd, onEdit: openEdit,
   };
 
@@ -1739,13 +1856,14 @@ function App() {
               {...screenProps}
               dark={dark}
               setDark={setDark}
-              fullState={{ transactions, categories, recurring, assets, goals }}
+              fullState={{ transactions, categories, recurring, assets, goals, paymentMethods }}
               onRestore={(data) => {
                 if (data.transactions) setTransactions(data.transactions);
                 if (data.categories) setCategories(data.categories);
                 if (data.recurring) setRecurring(data.recurring);
                 if (data.assets) setAssets(data.assets);
                 if (data.goals) setGoals(data.goals);
+                if (data.paymentMethods) setPaymentMethods(data.paymentMethods);
               }}
             />
           )}
@@ -1759,6 +1877,7 @@ function App() {
         onSave={saveTx}
         onDelete={deleteTx}
         categories={categories}
+        paymentMethods={paymentMethods}
         initial={editingTx}
         defaultDate={txModalDefaultDate}
       />
