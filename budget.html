@@ -137,35 +137,134 @@ function formatSigned(n) {
 /* ============================================================
    Default categories & constants
    ============================================================ */
-const TYPE_COLOR = { income: '#16a34a', fixed_expense: '#2563eb', variable_expense: '#f97316' };
-const TYPE_LABEL = { income: '수입', fixed_expense: '고정비', variable_expense: '변동비' };
+const TYPE_COLOR = { income: '#16a34a', fixed_expense: '#2563eb', variable_expense: '#f97316', savings: '#8b5cf6' };
+const TYPE_LABEL = { income: '수입', fixed_expense: '고정비', variable_expense: '변동비', savings: '저축/투자' };
 
-const DEFAULT_CATEGORIES = [
-  { id: 'income_salary', name: '근로소득', type: 'income', color: '#16a34a', icon: '💼' },
-  { id: 'income_invest', name: '투자수익', type: 'income', color: '#0891b2', icon: '📈' },
-  { id: 'income_side', name: '사이드프로젝트 수익', type: 'income', color: '#7c3aed', icon: '💻' },
-  { id: 'income_other', name: '기타수입', type: 'income', color: '#65a30d', icon: '🎁' },
-
-  { id: 'fixed_housing', name: '주거비', type: 'fixed_expense', color: '#2563eb', icon: '🏠', budget_monthly: 0 },
-  { id: 'fixed_insurance', name: '보험료', type: 'fixed_expense', color: '#4f46e5', icon: '🛡️', budget_monthly: 0 },
-  { id: 'fixed_pet', name: '반려견 케어', type: 'fixed_expense', color: '#0d9488', icon: '🐾', budget_monthly: 0 },
-  { id: 'fixed_fitness', name: '운동/자기관리', type: 'fixed_expense', color: '#0284c7', icon: '💪', budget_monthly: 0 },
-  { id: 'fixed_subscription', name: '구독서비스', type: 'fixed_expense', color: '#7c3aed', icon: '📺', budget_monthly: 0 },
-  { id: 'fixed_telecom', name: '통신비', type: 'fixed_expense', color: '#6366f1', icon: '📱', budget_monthly: 0 },
-
-  { id: 'var_food', name: '식비', type: 'variable_expense', color: '#f97316', icon: '🍽️', budget_monthly: 0 },
-  { id: 'var_transport', name: '교통비', type: 'variable_expense', color: '#eab308', icon: '🚗', budget_monthly: 0 },
-  { id: 'var_leisure', name: '여가·액티비티', type: 'variable_expense', color: '#f59e0b', icon: '🏃', budget_monthly: 0 },
-  { id: 'var_pet', name: '반려견 기타', type: 'variable_expense', color: '#fb923c', icon: '🐶', budget_monthly: 0 },
-  { id: 'var_shopping', name: '쇼핑', type: 'variable_expense', color: '#ec4899', icon: '🛍️', budget_monthly: 0 },
-  { id: 'var_selfdev', name: '자기계발', type: 'variable_expense', color: '#a855f7', icon: '📚', budget_monthly: 0 },
-  { id: 'var_events', name: '경조사', type: 'variable_expense', color: '#dc2626', icon: '🎉', budget_monthly: 0 },
-  { id: 'var_travel', name: '여행', type: 'variable_expense', color: '#0ea5e9', icon: '✈️', budget_monthly: 0 },
-  { id: 'var_etc', name: '기타', type: 'variable_expense', color: '#94a3b8', icon: '📦', budget_monthly: 0 },
+// Category groups (대분류). Categories (소분류) reference a group_id.
+// Groups are organizational only — they don't carry a type, since one group
+// (e.g. 반려동물) can contain both fixed and variable subcategories.
+const DEFAULT_CATEGORY_GROUPS = [
+  { id: 'grp_salary', name: '근로소득', icon: '💼', color: '#16a34a' },
+  { id: 'grp_invest_income', name: '투자수익', icon: '📈', color: '#0891b2' },
+  { id: 'grp_side', name: '사이드프로젝트', icon: '💻', color: '#7c3aed' },
+  { id: 'grp_income_other', name: '기타수입', icon: '🎁', color: '#65a30d' },
+  { id: 'grp_housing', name: '주거비', icon: '🏠', color: '#2563eb' },
+  { id: 'grp_insurance', name: '보험료', icon: '🛡️', color: '#4f46e5' },
+  { id: 'grp_pet', name: '반려동물', icon: '🐾', color: '#0d9488' },
+  { id: 'grp_fitness', name: '운동/자기관리', icon: '💪', color: '#0284c7' },
+  { id: 'grp_subscription', name: '구독서비스', icon: '📺', color: '#7c3aed' },
+  { id: 'grp_telecom', name: '통신비', icon: '📱', color: '#6366f1' },
+  { id: 'grp_food', name: '식비', icon: '🍽️', color: '#f97316' },
+  { id: 'grp_transport', name: '교통비', icon: '🚗', color: '#eab308' },
+  { id: 'grp_leisure', name: '여가·액티비티', icon: '🏃', color: '#f59e0b' },
+  { id: 'grp_shopping', name: '쇼핑', icon: '🛍️', color: '#ec4899' },
+  { id: 'grp_selfdev', name: '자기계발', icon: '📚', color: '#a855f7' },
+  { id: 'grp_events', name: '경조사', icon: '🎉', color: '#dc2626' },
+  { id: 'grp_travel', name: '여행', icon: '✈️', color: '#0ea5e9' },
+  { id: 'grp_etc', name: '기타', icon: '📦', color: '#94a3b8' },
+  { id: 'grp_savings', name: '저축/투자', icon: '💰', color: '#8b5cf6' },
 ];
 
-const ASSET_TYPE_LABEL = { stock_kr: '국내주식', stock_us: '미국주식', savings: '예적금', cash: '현금', other: '기타' };
-const ASSET_TYPE_COLOR = { stock_kr: '#2563eb', stock_us: '#7c3aed', savings: '#16a34a', cash: '#f59e0b', other: '#94a3b8' };
+const DEFAULT_CATEGORIES = [
+  { id: 'income_salary', name: '근로소득', type: 'income', color: '#16a34a', icon: '💼', group_id: 'grp_salary' },
+  { id: 'income_invest', name: '투자수익', type: 'income', color: '#0891b2', icon: '📈', group_id: 'grp_invest_income' },
+  { id: 'income_side', name: '사이드프로젝트 수익', type: 'income', color: '#7c3aed', icon: '💻', group_id: 'grp_side' },
+  { id: 'income_other', name: '기타수입', type: 'income', color: '#65a30d', icon: '🎁', group_id: 'grp_income_other' },
+
+  { id: 'fixed_housing', name: '주거비', type: 'fixed_expense', color: '#2563eb', icon: '🏠', budget_monthly: 0, group_id: 'grp_housing' },
+  { id: 'fixed_housing_mgmt', name: '관리비', type: 'fixed_expense', color: '#2563eb', icon: '🏢', budget_monthly: 0, group_id: 'grp_housing' },
+  { id: 'fixed_housing_gas', name: '가스비', type: 'fixed_expense', color: '#2563eb', icon: '🔥', budget_monthly: 0, group_id: 'grp_housing' },
+  { id: 'fixed_insurance', name: '보험료', type: 'fixed_expense', color: '#4f46e5', icon: '🛡️', budget_monthly: 0, group_id: 'grp_insurance' },
+  { id: 'fixed_pet', name: '반려견 케어', type: 'fixed_expense', color: '#0d9488', icon: '🐾', budget_monthly: 0, group_id: 'grp_pet' },
+  { id: 'fixed_pet_daycare', name: '유치원비용', type: 'fixed_expense', color: '#0d9488', icon: '🐕', budget_monthly: 0, group_id: 'grp_pet' },
+  { id: 'fixed_pet_sitting', name: '펫시팅비용', type: 'fixed_expense', color: '#0d9488', icon: '🐕', budget_monthly: 0, group_id: 'grp_pet' },
+  { id: 'fixed_fitness', name: '운동/자기관리', type: 'fixed_expense', color: '#0284c7', icon: '💪', budget_monthly: 0, group_id: 'grp_fitness' },
+  { id: 'fixed_subscription', name: '구독서비스', type: 'fixed_expense', color: '#7c3aed', icon: '📺', budget_monthly: 0, group_id: 'grp_subscription' },
+  { id: 'fixed_telecom', name: '통신비', type: 'fixed_expense', color: '#6366f1', icon: '📱', budget_monthly: 0, group_id: 'grp_telecom' },
+
+  { id: 'var_food', name: '식비', type: 'variable_expense', color: '#f97316', icon: '🍽️', budget_monthly: 0, group_id: 'grp_food' },
+  { id: 'var_transport', name: '교통비', type: 'variable_expense', color: '#eab308', icon: '🚗', budget_monthly: 0, group_id: 'grp_transport' },
+  { id: 'var_leisure', name: '여가·액티비티', type: 'variable_expense', color: '#f59e0b', icon: '🏃', budget_monthly: 0, group_id: 'grp_leisure' },
+  { id: 'var_pet', name: '반려견 기타', type: 'variable_expense', color: '#fb923c', icon: '🐶', budget_monthly: 0, group_id: 'grp_pet' },
+  { id: 'var_pet_cafe', name: '강아지카페', type: 'variable_expense', color: '#fb923c', icon: '☕', budget_monthly: 0, group_id: 'grp_pet' },
+  { id: 'var_pet_supplies', name: '용품', type: 'variable_expense', color: '#fb923c', icon: '🧸', budget_monthly: 0, group_id: 'grp_pet' },
+  { id: 'var_pet_food', name: '사료', type: 'variable_expense', color: '#fb923c', icon: '🍖', budget_monthly: 0, group_id: 'grp_pet' },
+  { id: 'var_shopping', name: '쇼핑', type: 'variable_expense', color: '#ec4899', icon: '🛍️', budget_monthly: 0, group_id: 'grp_shopping' },
+  { id: 'var_selfdev', name: '자기계발', type: 'variable_expense', color: '#a855f7', icon: '📚', budget_monthly: 0, group_id: 'grp_selfdev' },
+  { id: 'var_events', name: '경조사', type: 'variable_expense', color: '#dc2626', icon: '🎉', budget_monthly: 0, group_id: 'grp_events' },
+  { id: 'var_travel', name: '여행', type: 'variable_expense', color: '#0ea5e9', icon: '✈️', budget_monthly: 0, group_id: 'grp_travel' },
+  { id: 'var_etc', name: '기타', type: 'variable_expense', color: '#94a3b8', icon: '📦', budget_monthly: 0, group_id: 'grp_etc' },
+
+  { id: 'savings_deposit', name: '정기적금', type: 'savings', color: '#8b5cf6', icon: '🏦', budget_monthly: 0, group_id: 'grp_savings' },
+  { id: 'savings_invest', name: '투자적립', type: 'savings', color: '#8b5cf6', icon: '📊', budget_monthly: 0, group_id: 'grp_savings' },
+];
+
+// One-time migration for accounts that already have categories/groups saved
+// under the old flat (no group_id) shape. Purely additive: never renames or
+// removes an existing id, so old transactions/recurring/budgets keep working.
+const CATEGORY_GROUP_MIGRATION_MAP = {
+  income_salary: 'grp_salary', income_invest: 'grp_invest_income', income_side: 'grp_side', income_other: 'grp_income_other',
+  fixed_housing: 'grp_housing', fixed_insurance: 'grp_insurance', fixed_pet: 'grp_pet', fixed_fitness: 'grp_fitness',
+  fixed_subscription: 'grp_subscription', fixed_telecom: 'grp_telecom',
+  var_food: 'grp_food', var_transport: 'grp_transport', var_leisure: 'grp_leisure', var_pet: 'grp_pet',
+  var_shopping: 'grp_shopping', var_selfdev: 'grp_selfdev', var_events: 'grp_events', var_travel: 'grp_travel', var_etc: 'grp_etc',
+};
+const EXTRA_DEFAULT_CATEGORIES = DEFAULT_CATEGORIES.filter(c => ![
+  'income_salary', 'income_invest', 'income_side', 'income_other',
+  'fixed_housing', 'fixed_insurance', 'fixed_pet', 'fixed_fitness', 'fixed_subscription', 'fixed_telecom',
+  'var_food', 'var_transport', 'var_leisure', 'var_pet', 'var_shopping', 'var_selfdev', 'var_events', 'var_travel', 'var_etc',
+].includes(c.id));
+
+function migrateCategories(categories) {
+  const existingIds = new Set(categories.map(c => c.id));
+  let changed = false;
+  const withGroups = categories.map(c => {
+    if (c.group_id) return c;
+    changed = true;
+    return { ...c, group_id: CATEGORY_GROUP_MIGRATION_MAP[c.id] || `grp_custom_${c.id}` };
+  });
+  const toAdd = EXTRA_DEFAULT_CATEGORIES.filter(c => !existingIds.has(c.id));
+  if (toAdd.length) changed = true;
+  if (!changed) return categories;
+  return [...withGroups, ...toAdd];
+}
+
+function migrateCategoryGroups(groups, categories) {
+  const existingIds = new Set(groups.map(g => g.id));
+  const missingDefaults = DEFAULT_CATEGORY_GROUPS.filter(g => !existingIds.has(g.id));
+  const have = new Set([...existingIds, ...missingDefaults.map(g => g.id)]);
+  const synthetic = [];
+  new Set(categories.map(c => c.group_id).filter(Boolean)).forEach(gid => {
+    if (have.has(gid) || !gid.startsWith('grp_custom_')) return;
+    const origCat = categories.find(c => c.id === gid.replace('grp_custom_', ''));
+    if (origCat) synthetic.push({ id: gid, name: origCat.name, icon: origCat.icon, color: origCat.color });
+  });
+  if (!missingDefaults.length && !synthetic.length) return groups;
+  return [...groups, ...missingDefaults, ...synthetic];
+}
+
+// Asset types: 자산(asset) add to net worth, 부채(liability) subtract from it.
+const ASSET_TYPE_GROUPS = {
+  stock_kr: { label: '국내주식', kind: 'asset' },
+  stock_us: { label: '미국주식', kind: 'asset' },
+  savings: { label: '예적금', kind: 'asset' },
+  cash: { label: '현금', kind: 'asset' },
+  pension: { label: '연금', kind: 'asset' },
+  real_estate: { label: '부동산', kind: 'asset' },
+  car: { label: '자동차', kind: 'asset' },
+  other: { label: '기타자산', kind: 'asset' },
+  mortgage: { label: '주택담보대출', kind: 'liability' },
+  credit_loan: { label: '신용대출', kind: 'liability' },
+  overdraft: { label: '마이너스통장', kind: 'liability' },
+  other_debt: { label: '기타부채', kind: 'liability' },
+};
+const ASSET_TYPE_LABEL = Object.fromEntries(Object.entries(ASSET_TYPE_GROUPS).map(([k, v]) => [k, v.label]));
+const ASSET_TYPE_KIND = Object.fromEntries(Object.entries(ASSET_TYPE_GROUPS).map(([k, v]) => [k, v.kind]));
+const ASSET_TYPE_COLOR = {
+  stock_kr: '#2563eb', stock_us: '#7c3aed', savings: '#16a34a', cash: '#f59e0b', pension: '#0d9488',
+  real_estate: '#0ea5e9', car: '#eab308', other: '#94a3b8',
+  mortgage: '#ef4444', credit_loan: '#f97316', overdraft: '#dc2626', other_debt: '#fb7185',
+};
 
 const RECUR_CYCLE_LABEL = { monthly: '매월', yearly: '매년', weekly: '매주' };
 const WEEKDAY_LABEL = ['일', '월', '화', '수', '목', '금', '토'];
@@ -192,16 +291,28 @@ const inputCls = 'w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:bor
 /* ============================================================
    Domain helpers
    ============================================================ */
-function monthTotals(transactions, monthKey) {
-  let income = 0, fixed = 0, variable = 0;
+function monthTotals(transactions, categories, monthKey) {
+  const catMap = Object.fromEntries(categories.map(c => [c.id, c]));
+  let income = 0, fixed = 0, variable = 0, savings = 0;
   transactions.forEach(t => {
     if (monthKeyOf(t.date) !== monthKey) return;
-    if (t.type === 'income') income += t.amount;
+    if (t.type === 'income') { income += t.amount; return; }
+    const cat = catMap[t.category_id];
+    if (cat && cat.type === 'savings') savings += t.amount;
     else if (t.is_fixed) fixed += t.amount;
     else variable += t.amount;
   });
-  const expense = fixed + variable;
-  return { income, fixed, variable, expense, net: income - expense };
+  const expense = fixed + variable + savings;
+  return { income, fixed, variable, savings, expense, net: income - expense };
+}
+
+function computeBudgetPlan(categories, expectedIncome) {
+  const sumBudget = type => categories.filter(c => c.type === type).reduce((s, c) => s + (c.budget_monthly || 0), 0);
+  const fixedBudgetTotal = sumBudget('fixed_expense');
+  const savingsBudgetTotal = sumBudget('savings');
+  const variableBudgetTotal = sumBudget('variable_expense');
+  const remainingForVariable = expectedIncome - fixedBudgetTotal - savingsBudgetTotal;
+  return { fixedBudgetTotal, savingsBudgetTotal, variableBudgetTotal, remainingForVariable };
 }
 
 function latestAssetSnapshotsByName(assets) {
@@ -217,7 +328,7 @@ function sumLatestAsOfDate(assets, cutoffDate) {
   assets.filter(a => a.recorded_date <= cutoffDate).forEach(a => {
     if (!byName[a.name] || a.recorded_date > byName[a.name].recorded_date) byName[a.name] = a;
   });
-  return Object.values(byName).reduce((s, a) => s + a.current_value, 0);
+  return Object.values(byName).reduce((s, a) => s + (ASSET_TYPE_KIND[a.type] === 'liability' ? -a.current_value : a.current_value), 0);
 }
 
 function netWorthAsOf(assets, monthKey) {
@@ -370,8 +481,8 @@ function ProgressBar({ pct, color, height = 8 }) {
 function Modal({ open, onClose, title, children }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" style={{ background: 'rgba(15,23,42,0.5)' }} onClick={onClose}>
-      <div className="bg-white dark:bg-slate-900 w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" style={{ background: 'rgba(15,23,42,0.5)' }}>
+      <div className="bg-white dark:bg-slate-900 w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800 sticky top-0 bg-white dark:bg-slate-900 z-10">
           <h3 className="font-bold text-base">{title}</h3>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">✕</button>
@@ -392,6 +503,24 @@ function LegendRow({ color, label, value, total }) {
       <span className="text-slate-400 text-xs w-9 text-right">{pct}%</span>
     </div>
   );
+}
+
+function CategoryOptions({ categories, categoryGroups }) {
+  const groupMap = Object.fromEntries(categoryGroups.map(g => [g.id, g]));
+  const byGroup = {};
+  categories.forEach(c => {
+    const gid = c.group_id || 'ungrouped';
+    if (!byGroup[gid]) byGroup[gid] = [];
+    byGroup[gid].push(c);
+  });
+  return Object.entries(byGroup).map(([gid, cats]) => {
+    const group = groupMap[gid];
+    return (
+      <optgroup key={gid} label={group ? `${group.icon} ${group.name}` : '기타'}>
+        {cats.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+      </optgroup>
+    );
+  });
 }
 
 function SummaryChip({ label, value, color }) {
@@ -538,7 +667,7 @@ function HBarCompare({ rows }) {
 /* ============================================================
    Transaction add/edit modal
    ============================================================ */
-function TransactionModal({ open, onClose, onSave, onDelete, categories, paymentMethods, initial, defaultDate }) {
+function TransactionModal({ open, onClose, onSave, onDelete, categories, categoryGroups, paymentMethods, initial, defaultDate }) {
   const [type, setType] = useState('expense');
   const [date, setDate] = useState(todayKey());
   const [categoryId, setCategoryId] = useState('');
@@ -599,7 +728,7 @@ function TransactionModal({ open, onClose, onSave, onDelete, categories, payment
         </Field>
         <Field label="카테고리">
           <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className={inputCls}>
-            {filteredCats.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+            <CategoryOptions categories={filteredCats} categoryGroups={categoryGroups} />
           </select>
         </Field>
         <Field label="날짜">
@@ -678,10 +807,10 @@ function BottomNav({ tab, setTab }) {
 /* ============================================================
    Dashboard
    ============================================================ */
-function Dashboard({ transactions, categories, assets, goals, monthKey, setMonthKey, onAdd, onEdit }) {
-  const cur = monthTotals(transactions, monthKey);
+function Dashboard({ transactions, categories, assets, goals, monthKey, setMonthKey, expectedIncome, onAdd, onEdit }) {
+  const cur = monthTotals(transactions, categories, monthKey);
   const prevKey = addMonths(monthKey, -1);
-  const prev = monthTotals(transactions, prevKey);
+  const prev = monthTotals(transactions, categories, prevKey);
   const pctChange = (a, b) => (b === 0 ? null : Math.round(((a - b) / Math.abs(b)) * 100));
 
   const catMap = Object.fromEntries(categories.map(c => [c.id, c]));
@@ -698,6 +827,14 @@ function Dashboard({ transactions, categories, assets, goals, monthKey, setMonth
   const incomeChange = pctChange(cur.income, prev.income);
   const expenseChange = pctChange(cur.expense, prev.expense);
   const netChange = pctChange(cur.net, prev.net);
+
+  const plan = computeBudgetPlan(categories, expectedIncome || 0);
+  const isCurrentMonth = monthKey === todayMonthKey();
+  const today = new Date();
+  const totalDaysInMonth = daysInMonth(monthKey);
+  const daysLeft = isCurrentMonth ? totalDaysInMonth - today.getDate() + 1 : 0;
+  const variableRemaining = plan.remainingForVariable - cur.variable;
+  const dailyAllowance = daysLeft > 0 ? variableRemaining / daysLeft : 0;
 
   return (
     <div className="space-y-5">
@@ -727,15 +864,20 @@ function Dashboard({ transactions, categories, assets, goals, monthKey, setMonth
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
-          <div className="font-bold mb-3">고정비 vs 변동비</div>
+          <div className="font-bold mb-3">고정비 · 변동비 · 저축</div>
           <div className="flex items-center gap-6 flex-wrap">
             <DonutChart
-              data={[{ label: '고정비', value: cur.fixed, color: TYPE_COLOR.fixed_expense }, { label: '변동비', value: cur.variable, color: TYPE_COLOR.variable_expense }]}
+              data={[
+                { label: '고정비', value: cur.fixed, color: TYPE_COLOR.fixed_expense },
+                { label: '변동비', value: cur.variable, color: TYPE_COLOR.variable_expense },
+                { label: '저축/투자', value: cur.savings, color: TYPE_COLOR.savings },
+              ]}
               centerLabel={formatWon(cur.expense)} centerSub="총지출"
             />
             <div className="space-y-2 text-sm flex-1 min-w-[140px]">
               <LegendRow color={TYPE_COLOR.fixed_expense} label="고정비" value={cur.fixed} total={cur.expense} />
               <LegendRow color={TYPE_COLOR.variable_expense} label="변동비" value={cur.variable} total={cur.expense} />
+              <LegendRow color={TYPE_COLOR.savings} label="저축/투자" value={cur.savings} total={cur.expense} />
             </div>
           </div>
         </Card>
@@ -756,6 +898,32 @@ function Dashboard({ transactions, categories, assets, goals, monthKey, setMonth
           </div>
         </Card>
       </div>
+
+      <Card>
+        <div className="font-bold mb-2">이번 달 변동비 페이스</div>
+        {!expectedIncome ? (
+          <div className="text-sm text-slate-400 py-2">예산 화면에서 예상 월수입을 입력하면, 정해진 수입 안에서 하루에 얼마까지 써도 되는지 계산해드려요.</div>
+        ) : (
+          <>
+            <div className="flex justify-between text-sm mb-1">
+              <span className="text-slate-500">변동비 예산 (수입 − 고정비 − 저축)</span>
+              <span className="font-semibold">{formatWon(plan.remainingForVariable)}</span>
+            </div>
+            <ProgressBar pct={plan.remainingForVariable > 0 ? (cur.variable / plan.remainingForVariable) * 100 : 100} color={variableRemaining >= 0 ? TYPE_COLOR.variable_expense : '#ef4444'} height={10} />
+            <div className="flex justify-between text-xs mt-1.5 text-slate-400">
+              <span>지금까지 씀 {formatWon(cur.variable)}</span>
+              <span className={variableRemaining >= 0 ? 'text-green-600 font-semibold' : 'text-red-500 font-semibold'}>{variableRemaining >= 0 ? '남음' : '초과'} {formatWon(Math.abs(variableRemaining))}</span>
+            </div>
+            {isCurrentMonth && daysLeft > 0 && (
+              <div className="text-xs text-slate-400 mt-2">
+                오늘부터 남은 {daysLeft}일 동안 {dailyAllowance >= 0
+                  ? <>하루 평균 <span className="font-semibold text-slate-600 dark:text-slate-300">{formatWon(dailyAllowance)}</span>까지 써도 예산 안에 들어와요.</>
+                  : <span className="text-red-500 font-semibold">이미 이번 달 변동비 예산을 넘었어요. 남은 기간엔 지출을 최대한 줄여보세요.</span>}
+              </div>
+            )}
+          </>
+        )}
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
@@ -818,8 +986,7 @@ function Dashboard({ transactions, categories, assets, goals, monthKey, setMonth
    ============================================================ */
 function CalendarScreen({ transactions, categories, monthKey, setMonthKey, onAdd, onEdit }) {
   const [selectedDate, setSelectedDate] = useState(null);
-  const [actionDate, setActionDate] = useState(null);
-  const totals = monthTotals(transactions, monthKey);
+  const totals = monthTotals(transactions, categories, monthKey);
   const [y, m] = monthKey.split('-').map(Number);
   const firstDow = new Date(y, m - 1, 1).getDay();
   const dim = daysInMonth(monthKey);
@@ -832,8 +999,10 @@ function CalendarScreen({ transactions, categories, monthKey, setMonthKey, onAdd
   const dayTotals = {};
   transactions.forEach(t => {
     if (monthKeyOf(t.date) !== monthKey) return;
-    if (!dayTotals[t.date]) dayTotals[t.date] = { income: 0, fixed: 0, variable: 0 };
-    if (t.type === 'income') dayTotals[t.date].income += t.amount;
+    if (!dayTotals[t.date]) dayTotals[t.date] = { income: 0, fixed: 0, variable: 0, savings: 0 };
+    if (t.type === 'income') { dayTotals[t.date].income += t.amount; return; }
+    const cat = catMap[t.category_id];
+    if (cat && cat.type === 'savings') dayTotals[t.date].savings += t.amount;
     else if (t.is_fixed) dayTotals[t.date].fixed += t.amount;
     else dayTotals[t.date].variable += t.amount;
   });
@@ -869,12 +1038,13 @@ function CalendarScreen({ transactions, categories, monthKey, setMonthKey, onAdd
             const isToday = dateStr === todayKey();
             const isSelected = dateStr === selectedDate;
             return (
-              <button key={i} onClick={() => setActionDate(dateStr)}
+              <button key={i} onClick={() => setSelectedDate(isSelected ? null : dateStr)}
                 className={`min-h-[58px] sm:min-h-[76px] rounded-lg p-1 text-left flex flex-col justify-between border ${isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-transparent hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
                 <div className={`text-[11px] ${isToday ? 'w-5 h-5 flex items-center justify-center rounded-full bg-blue-600 text-white' : 'text-slate-500'}`}>{d}</div>
                 <div className="space-y-0.5 leading-none overflow-hidden">
                   {dt && dt.income > 0 && <div className="text-[8px] sm:text-[10px] text-green-600 truncate">+{formatWon(dt.income)}</div>}
                   {dt && (dt.fixed > 0 || dt.variable > 0) && <div className="text-[8px] sm:text-[10px] text-red-500 truncate">-{formatWon(dt.fixed + dt.variable)}</div>}
+                  {dt && dt.savings > 0 && <div className="text-[8px] sm:text-[10px] truncate" style={{ color: TYPE_COLOR.savings }}>-{formatWon(dt.savings)}</div>}
                 </div>
               </button>
             );
@@ -911,27 +1081,6 @@ function CalendarScreen({ transactions, categories, monthKey, setMonthKey, onAdd
           </div>
         </Card>
       )}
-
-      <Modal open={!!actionDate} onClose={() => setActionDate(null)} title={actionDate || ''}>
-        <div className="space-y-2">
-          <button onClick={() => { onAdd(actionDate); setActionDate(null); }}
-            className="w-full flex items-center gap-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-left">
-            <span className="text-xl">📝</span>
-            <div>
-              <div className="font-semibold text-sm">거래 추가</div>
-              <div className="text-xs text-slate-400">이 날짜에 수입 또는 지출을 기록해요.</div>
-            </div>
-          </button>
-          <button onClick={() => { setSelectedDate(actionDate); setActionDate(null); }}
-            className="w-full flex items-center gap-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-left">
-            <span className="text-xl">📋</span>
-            <div>
-              <div className="font-semibold text-sm">상세보기</div>
-              <div className="text-xs text-slate-400">이 날짜의 거래 내역을 확인해요.</div>
-            </div>
-          </button>
-        </div>
-      </Modal>
     </div>
   );
 }
@@ -948,7 +1097,7 @@ function ChartsScreen({ transactions, categories }) {
 
   const nowMonth = todayMonthKey();
   const trendMonthKeys = Array.from({ length: trendMonths }, (_, i) => addMonths(nowMonth, -(trendMonths - 1 - i)));
-  const trendData = trendMonthKeys.map(mk => monthTotals(transactions, mk));
+  const trendData = trendMonthKeys.map(mk => monthTotals(transactions, categories, mk));
 
   const range = useMemo(() => {
     if (period === 'thisMonth') return { start: `${nowMonth}-01`, end: endOfMonth(nowMonth) };
@@ -1002,12 +1151,13 @@ function ChartsScreen({ transactions, categories }) {
       </Card>
 
       <Card>
-        <div className="font-bold mb-3">고정비 · 변동비 구조 변화</div>
+        <div className="font-bold mb-3">고정비 · 변동비 · 저축 구조 변화</div>
         <StackedBarChart
           labels={trendMonthKeys.map(mk => mk.slice(5) + '월')}
           segments={[
             { name: '고정비', color: TYPE_COLOR.fixed_expense, values: trendData.map(d => d.fixed) },
             { name: '변동비', color: TYPE_COLOR.variable_expense, values: trendData.map(d => d.variable) },
+            { name: '저축', color: TYPE_COLOR.savings, values: trendData.map(d => d.savings) },
           ]}
         />
       </Card>
@@ -1071,7 +1221,7 @@ function ChartsScreen({ transactions, categories }) {
 /* ============================================================
    Transactions table
    ============================================================ */
-function TransactionsScreen({ transactions, categories, paymentMethods, onAdd, onEdit }) {
+function TransactionsScreen({ transactions, categories, categoryGroups, paymentMethods, onAdd, onEdit }) {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [catFilter, setCatFilter] = useState('all');
@@ -1119,7 +1269,7 @@ function TransactionsScreen({ transactions, categories, paymentMethods, onAdd, o
         {typeFilter === 'expense' && (
           <select value={catFilter} onChange={e => setCatFilter(e.target.value)} className={inputCls + ' w-auto'}>
             <option value="all">전체 카테고리</option>
-            {categories.filter(c => c.type !== 'income').map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+            <CategoryOptions categories={categories.filter(c => c.type !== 'income')} categoryGroups={categoryGroups} />
           </select>
         )}
         <select value={sortBy} onChange={e => setSortBy(e.target.value)} className={inputCls + ' w-auto'}>
@@ -1189,7 +1339,7 @@ function TransactionsScreen({ transactions, categories, paymentMethods, onAdd, o
 /* ============================================================
    Budget management + recurring templates
    ============================================================ */
-function RecurringFormModal({ open, onClose, onSave, categories, initial }) {
+function RecurringFormModal({ open, onClose, onSave, categories, categoryGroups, initial }) {
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [amount, setAmount] = useState('');
@@ -1229,7 +1379,7 @@ function RecurringFormModal({ open, onClose, onSave, categories, initial }) {
         <Field label="이름"><input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="예: 월세" className={inputCls} /></Field>
         <Field label="카테고리">
           <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className={inputCls}>
-            {fixedCats.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+            <CategoryOptions categories={fixedCats} categoryGroups={categoryGroups} />
           </select>
         </Field>
         <Field label="금액"><input type="number" value={amount} onChange={e => setAmount(e.target.value)} className={inputCls} /></Field>
@@ -1268,12 +1418,13 @@ function RecurringFormModal({ open, onClose, onSave, categories, initial }) {
   );
 }
 
-function BudgetScreen({ categories, setCategories, transactions, recurring, setRecurring }) {
+function BudgetScreen({ categories, categoryGroups, setCategories, transactions, recurring, setRecurring, expectedIncome, setExpectedIncome }) {
   const nowMonth = todayMonthKey();
   const prevMonth = addMonths(nowMonth, -1);
   const [showRecurringForm, setShowRecurringForm] = useState(false);
   const [editingRecurring, setEditingRecurring] = useState(null);
   const catMap = Object.fromEntries(categories.map(c => [c.id, c]));
+  const groupMap = Object.fromEntries(categoryGroups.map(g => [g.id, g]));
 
   const updateBudget = (id, value) => {
     setCategories(prev => prev.map(c => c.id === id ? { ...c, budget_monthly: Number(value) || 0 } : c));
@@ -1290,6 +1441,22 @@ function BudgetScreen({ categories, setCategories, transactions, recurring, setR
     return { ...c, spent, spentPrev, pct, status };
   });
 
+  const groupedRowsOf = (type) => {
+    const rows = rowsOf(type);
+    const byGroup = {};
+    rows.forEach(r => {
+      const gid = r.group_id || 'ungrouped';
+      if (!byGroup[gid]) byGroup[gid] = [];
+      byGroup[gid].push(r);
+    });
+    return Object.entries(byGroup).map(([gid, rows]) => ({ group: groupMap[gid] || { id: gid, name: '기타', icon: '📦' }, rows }));
+  };
+
+  const budgetTotal = (type) => categories.filter(c => c.type === type).reduce((s, c) => s + (c.budget_monthly || 0), 0);
+  const actualTotal = (type) => transactions.filter(t => monthKeyOf(t.date) === nowMonth && catMap[t.category_id] && catMap[t.category_id].type === type).reduce((s, t) => s + t.amount, 0);
+
+  const plan = computeBudgetPlan(categories, expectedIncome || 0);
+
   const saveRecurring = (tpl) => {
     setRecurring(prev => {
       const idx = prev.findIndex(r => r.id === tpl.id);
@@ -1302,22 +1469,57 @@ function BudgetScreen({ categories, setCategories, transactions, recurring, setR
 
   return (
     <div className="space-y-5">
-      {['fixed_expense', 'variable_expense'].map(type => (
+      <Card>
+        <div className="font-bold mb-3">이번 달 예산 계획</div>
+        <Field label="예상 월수입 (실수령액 기준)">
+          <input type="number" defaultValue={expectedIncome || ''} placeholder="예: 3500000"
+            onBlur={e => setExpectedIncome(Number(e.target.value) || 0)}
+            className={inputCls + ' text-lg font-bold'} />
+        </Field>
+        {expectedIncome > 0 && (
+          <div className="mt-3 space-y-1.5 text-sm">
+            <div className="flex justify-between text-slate-500"><span>예상 월수입</span><span className="font-semibold text-slate-700 dark:text-slate-200">{formatWon(expectedIncome)}</span></div>
+            <div className="flex justify-between text-slate-500"><span>− 고정비 예산 합계</span><span>{formatWon(plan.fixedBudgetTotal)}</span></div>
+            <div className="flex justify-between text-slate-500"><span>− 저축/투자 예산 합계</span><span>{formatWon(plan.savingsBudgetTotal)}</span></div>
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-1.5 flex justify-between font-bold">
+              <span>= 이번 달 변동비 예산</span>
+              <span className={plan.remainingForVariable >= 0 ? 'text-blue-600' : 'text-red-500'}>{formatWon(plan.remainingForVariable)}</span>
+            </div>
+            {plan.variableBudgetTotal > 0 && plan.variableBudgetTotal !== plan.remainingForVariable && (
+              <div className="text-[11px] text-slate-400">참고: 변동비 카테고리별로 직접 설정한 예산 합계는 {formatWon(plan.variableBudgetTotal)}이에요.</div>
+            )}
+          </div>
+        )}
+      </Card>
+
+      {['fixed_expense', 'savings', 'variable_expense'].map(type => (
         <Card key={type}>
-          <div className="font-bold mb-3">{TYPE_LABEL[type]} 예산</div>
-          <div className="space-y-4">
-            {rowsOf(type).map(c => (
-              <div key={c.id} className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <div className="text-sm font-medium w-32 shrink-0">{c.icon} {c.name}</div>
-                  <input type="number" defaultValue={c.budget_monthly || ''} placeholder="예산 미설정"
-                    onBlur={e => updateBudget(c.id, e.target.value)}
-                    className={inputCls + ' w-32 text-right'} />
-                  <div className="text-xs text-slate-400 w-28 text-right shrink-0">실적 {formatWon(c.spent)}</div>
-                  {c.status && <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${c.status.cls}`}>{c.status.label}</span>}
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-1">
+            <div className="font-bold">{TYPE_LABEL[type]}</div>
+            <div className="text-xs text-slate-400">예산 합계 <span className="font-semibold text-slate-600 dark:text-slate-300">{formatWon(budgetTotal(type))}</span> · 실적 합계 <span className="font-semibold text-slate-600 dark:text-slate-300">{formatWon(actualTotal(type))}</span></div>
+          </div>
+          <div className="space-y-5">
+            {groupedRowsOf(type).map(({ group, rows }) => (
+              <div key={group.id}>
+                <div className="text-xs font-semibold text-slate-500 mb-2 flex items-center gap-1.5">
+                  <span>{group.icon}</span><span>{group.name}</span>
                 </div>
-                {c.budget_monthly > 0 && <ProgressBar pct={c.pct} color={c.pct >= 100 ? '#ef4444' : c.pct >= 80 ? '#f59e0b' : c.color} />}
-                <div className="text-[11px] text-slate-400">지난달 실적 {formatWon(c.spentPrev)}</div>
+                <div className="space-y-4 pl-2 border-l-2 border-slate-100 dark:border-slate-800">
+                  {rows.map(c => (
+                    <div key={c.id} className="flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <div className="text-sm font-medium w-28 shrink-0 truncate">{c.icon} {c.name}</div>
+                        <input type="number" defaultValue={c.budget_monthly || ''} placeholder="예산 미설정"
+                          onBlur={e => updateBudget(c.id, e.target.value)}
+                          className={inputCls + ' w-28 text-right'} />
+                        <div className="text-xs text-slate-400 w-24 text-right shrink-0">실적 {formatWon(c.spent)}</div>
+                        {c.status && <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${c.status.cls}`}>{c.status.label}</span>}
+                      </div>
+                      {c.budget_monthly > 0 && <ProgressBar pct={c.pct} color={c.pct >= 100 ? '#ef4444' : c.pct >= 80 ? '#f59e0b' : c.color} />}
+                      <div className="text-[11px] text-slate-400">지난달 실적 {formatWon(c.spentPrev)}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
@@ -1350,7 +1552,7 @@ function BudgetScreen({ categories, setCategories, transactions, recurring, setR
         </div>
       </Card>
 
-      <RecurringFormModal open={showRecurringForm} onClose={() => setShowRecurringForm(false)} onSave={saveRecurring} categories={categories} initial={editingRecurring} />
+      <RecurringFormModal open={showRecurringForm} onClose={() => setShowRecurringForm(false)} onSave={saveRecurring} categories={categories} categoryGroups={categoryGroups} initial={editingRecurring} />
     </div>
   );
 }
@@ -1376,19 +1578,29 @@ function AssetFormModal({ open, onClose, onSave, existingNames }) {
     onClose();
   };
 
+  const kind = ASSET_TYPE_KIND[type];
+
   return (
-    <Modal open={open} onClose={onClose} title="자산 스냅샷 입력">
+    <Modal open={open} onClose={onClose} title="자산 · 부채 스냅샷 입력">
       <form onSubmit={handleSubmit}>
-        <Field label="자산 이름">
-          <input list="asset-names" type="text" value={name} onChange={e => setName(e.target.value)} placeholder="예: 국내주식(키움)" className={inputCls} />
+        <Field label="이름">
+          <input list="asset-names" type="text" value={name} onChange={e => setName(e.target.value)} placeholder="예: 국내주식(키움), 주택담보대출" className={inputCls} />
           <datalist id="asset-names">{existingNames.map(n => <option key={n} value={n} />)}</datalist>
         </Field>
         <Field label="유형">
           <select value={type} onChange={e => setType(e.target.value)} className={inputCls}>
-            {Object.entries(ASSET_TYPE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            <optgroup label="자산">
+              {Object.entries(ASSET_TYPE_GROUPS).filter(([, v]) => v.kind === 'asset').map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+            </optgroup>
+            <optgroup label="부채">
+              {Object.entries(ASSET_TYPE_GROUPS).filter(([, v]) => v.kind === 'liability').map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+            </optgroup>
           </select>
         </Field>
-        <Field label="현재 평가금액"><input type="number" value={value} onChange={e => setValue(e.target.value)} className={inputCls} /></Field>
+        <Field label={kind === 'liability' ? '현재 대출/부채 잔액 (양수로 입력)' : '현재 평가금액'}>
+          <input type="number" min="0" value={value} onChange={e => setValue(e.target.value)} className={inputCls} />
+        </Field>
+        {kind === 'liability' && <div className="text-[11px] text-slate-400 -mt-2 mb-3">부채는 순자산 계산 시 자동으로 차감돼요. 잔액은 양수로 입력해주세요.</div>}
         <Field label="기록일"><input type="date" value={date} onChange={e => setDate(e.target.value)} className={inputCls} /></Field>
         <Field label="메모 (선택)"><input type="text" value={memo} onChange={e => setMemo(e.target.value)} className={inputCls} /></Field>
         <div className="flex gap-2 mt-2">
@@ -1409,14 +1621,19 @@ function AssetsScreen({ assets, setAssets }) {
   const trend = months.map(mk => netWorthAsOf(assets, mk));
 
   const latestByName = latestAssetSnapshotsByName(assets);
-  const latestTotal = Object.values(latestByName).reduce((s, a) => s + a.current_value, 0);
+  const allLatest = Object.values(latestByName);
+  const assetEntries = allLatest.filter(a => ASSET_TYPE_KIND[a.type] !== 'liability');
+  const liabilityEntries = allLatest.filter(a => ASSET_TYPE_KIND[a.type] === 'liability');
+  const assetsTotal = assetEntries.reduce((s, a) => s + a.current_value, 0);
+  const liabilitiesTotal = liabilityEntries.reduce((s, a) => s + a.current_value, 0);
+  const netWorthNow = assetsTotal - liabilitiesTotal;
 
   const distinctDates = [...new Set(assets.map(a => a.recorded_date))].sort();
   const prevDate = distinctDates.length > 1 ? distinctDates[distinctDates.length - 2] : null;
   const prevTotal = prevDate ? sumLatestAsOfDate(assets, prevDate) : 0;
 
   const byType = {};
-  Object.values(latestByName).forEach(a => { byType[a.type] = (byType[a.type] || 0) + a.current_value; });
+  assetEntries.forEach(a => { byType[a.type] = (byType[a.type] || 0) + a.current_value; });
   const pieData = Object.entries(byType).map(([type, value]) => ({ label: ASSET_TYPE_LABEL[type], value, color: ASSET_TYPE_COLOR[type], id: type }));
 
   const saveAsset = (payload) => setAssets(prev => [...prev, payload]);
@@ -1427,15 +1644,26 @@ function AssetsScreen({ assets, setAssets }) {
     <div className="space-y-5">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
-          <div className="text-xs text-slate-400 mb-1">현재 순자산</div>
-          <div className="text-2xl font-extrabold">{formatWon(latestTotal)}</div>
+          <div className="text-xs text-slate-400 mb-1">현재 순자산 (자산 − 부채)</div>
+          <div className="text-2xl font-extrabold">{formatWon(netWorthNow)}</div>
         </Card>
         <Card>
           <div className="text-xs text-slate-400 mb-1">직전 스냅샷 대비</div>
-          <div className={`text-2xl font-extrabold ${latestTotal - prevTotal >= 0 ? 'text-green-600' : 'text-red-500'}`}>{formatSigned(latestTotal - prevTotal)}</div>
+          <div className={`text-2xl font-extrabold ${netWorthNow - prevTotal >= 0 ? 'text-green-600' : 'text-red-500'}`}>{formatSigned(netWorthNow - prevTotal)}</div>
         </Card>
         <Card className="flex items-center justify-center">
           <Button onClick={() => setShowForm(true)} className="w-full">+ 스냅샷 입력</Button>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Card>
+          <div className="text-xs text-slate-400 mb-1">총자산</div>
+          <div className="text-xl font-bold text-green-600">{formatWon(assetsTotal)}</div>
+        </Card>
+        <Card>
+          <div className="text-xs text-slate-400 mb-1">총부채</div>
+          <div className="text-xl font-bold text-red-500">{formatWon(liabilitiesTotal)}</div>
         </Card>
       </div>
 
@@ -1449,33 +1677,50 @@ function AssetsScreen({ assets, setAssets }) {
           <div className="font-bold mb-3">자산 구성</div>
           {pieData.length === 0 ? <div className="text-sm text-slate-400 py-4">자산 스냅샷을 입력하면 구성비를 볼 수 있어요.</div> : (
             <div className="flex items-center gap-6 flex-wrap">
-              <DonutChart data={pieData} centerLabel={formatWon(latestTotal)} centerSub="총자산" />
+              <DonutChart data={pieData} centerLabel={formatWon(assetsTotal)} centerSub="총자산" />
               <div className="space-y-2 text-sm flex-1 min-w-[140px]">
-                {pieData.map(d => <LegendRow key={d.id} color={d.color} label={d.label} value={d.value} total={latestTotal} />)}
+                {pieData.map(d => <LegendRow key={d.id} color={d.color} label={d.label} value={d.value} total={assetsTotal} />)}
               </div>
             </div>
           )}
         </Card>
 
         <Card>
-          <div className="font-bold mb-3">스냅샷 기록</div>
-          <div className="space-y-2 max-h-72 overflow-y-auto">
-            {sortedAssets.map(a => (
+          <div className="font-bold mb-3">부채 현황</div>
+          {liabilityEntries.length === 0 ? <div className="text-sm text-slate-400 py-4">등록된 대출·부채가 없어요.</div> : (
+            <div className="space-y-2">
+              {liabilityEntries.map(a => (
+                <div key={a.name} className="flex items-center justify-between text-sm py-1">
+                  <span className="text-slate-500">{a.name} <span className="text-xs text-slate-400">({ASSET_TYPE_LABEL[a.type]})</span></span>
+                  <span className="font-semibold text-red-500">-{formatWon(a.current_value)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      </div>
+
+      <Card>
+        <div className="font-bold mb-3">스냅샷 기록</div>
+        <div className="space-y-2 max-h-72 overflow-y-auto">
+          {sortedAssets.map(a => {
+            const isLiability = ASSET_TYPE_KIND[a.type] === 'liability';
+            return (
               <div key={a.id} className="flex items-center justify-between text-sm py-1.5 border-b border-slate-50 dark:border-slate-800 last:border-0">
                 <div>
                   <div className="font-medium">{a.name} <span className="text-xs text-slate-400">({ASSET_TYPE_LABEL[a.type]})</span></div>
                   <div className="text-xs text-slate-400">{a.recorded_date}</div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="font-semibold">{formatWon(a.current_value)}</div>
+                  <div className={`font-semibold ${isLiability ? 'text-red-500' : ''}`}>{isLiability ? '-' : ''}{formatWon(a.current_value)}</div>
                   <button onClick={() => deleteAsset(a.id)} className="text-red-400 text-xs">삭제</button>
                 </div>
               </div>
-            ))}
-            {sortedAssets.length === 0 && <div className="text-sm text-slate-400 py-4">기록된 스냅샷이 없어요.</div>}
-          </div>
-        </Card>
-      </div>
+            );
+          })}
+          {sortedAssets.length === 0 && <div className="text-sm text-slate-400 py-4">기록된 스냅샷이 없어요.</div>}
+        </div>
+      </Card>
 
       <AssetFormModal open={showForm} onClose={() => setShowForm(false)} onSave={saveAsset} existingNames={assetNames} />
     </div>
@@ -1583,24 +1828,30 @@ function GoalsScreen({ goals, setGoals, assets }) {
 /* ============================================================
    Settings
    ============================================================ */
-function CategoryFormModal({ open, onClose, onSave, initial }) {
+function CategoryFormModal({ open, onClose, onSave, initial, categoryGroups }) {
   const [name, setName] = useState('');
   const [type, setType] = useState('variable_expense');
   const [color, setColor] = useState('#2563eb');
   const [icon, setIcon] = useState('📦');
   const [budget, setBudget] = useState('');
+  const [groupId, setGroupId] = useState('');
 
   useEffect(() => {
     if (!open) return;
     if (initial) {
-      setName(initial.name); setType(initial.type); setColor(initial.color); setIcon(initial.icon); setBudget(String(initial.budget_monthly || ''));
-    } else { setName(''); setType('variable_expense'); setColor('#2563eb'); setIcon('📦'); setBudget(''); }
+      setName(initial.name); setType(initial.type); setColor(initial.color); setIcon(initial.icon);
+      setBudget(String(initial.budget_monthly || '')); setGroupId(initial.group_id || (categoryGroups[0] ? categoryGroups[0].id : ''));
+    } else {
+      setName(''); setType('variable_expense'); setColor('#2563eb'); setIcon('📦'); setBudget('');
+      setGroupId(categoryGroups[0] ? categoryGroups[0].id : '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initial]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!name.trim()) return;
-    onSave({ id: initial ? initial.id : uid(), name: name.trim(), type, color, icon: icon || '📦', budget_monthly: type === 'income' ? undefined : (Number(budget) || 0) });
+    if (!name.trim() || !groupId) return;
+    onSave({ id: initial ? initial.id : uid(), name: name.trim(), type, color, icon: icon || '📦', group_id: groupId, budget_monthly: type === 'income' ? undefined : (Number(budget) || 0) });
   };
 
   return (
@@ -1612,13 +1863,54 @@ function CategoryFormModal({ open, onClose, onSave, initial }) {
             <option value="income">수입</option>
             <option value="fixed_expense">고정비</option>
             <option value="variable_expense">변동비</option>
+            <option value="savings">저축/투자</option>
           </select>
+        </Field>
+        <Field label="그룹 (대분류)">
+          <select value={groupId} onChange={e => setGroupId(e.target.value)} className={inputCls}>
+            {categoryGroups.map(g => <option key={g.id} value={g.id}>{g.icon} {g.name}</option>)}
+          </select>
+          <div className="text-[11px] text-slate-400 mt-1">그룹은 설정 화면의 "카테고리 그룹 관리"에서 새로 만들 수 있어요.</div>
         </Field>
         <div className="grid grid-cols-2 gap-2">
           <Field label="아이콘 (이모지)"><input type="text" value={icon} onChange={e => setIcon(e.target.value)} maxLength="4" className={inputCls} /></Field>
           <Field label="색상"><input type="color" value={color} onChange={e => setColor(e.target.value)} className={inputCls + ' h-[42px] p-1'} /></Field>
         </div>
         {type !== 'income' && <Field label="월 예산 (선택)"><input type="number" value={budget} onChange={e => setBudget(e.target.value)} className={inputCls} /></Field>}
+        <div className="flex gap-2 mt-2">
+          <Button variant="secondary" type="button" onClick={onClose} className="flex-1">취소</Button>
+          <Button variant="primary" type="submit" className="flex-1">저장</Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+function CategoryGroupFormModal({ open, onClose, onSave, initial }) {
+  const [name, setName] = useState('');
+  const [icon, setIcon] = useState('📦');
+  const [color, setColor] = useState('#94a3b8');
+
+  useEffect(() => {
+    if (!open) return;
+    if (initial) { setName(initial.name); setIcon(initial.icon); setColor(initial.color); }
+    else { setName(''); setIcon('📦'); setColor('#94a3b8'); }
+  }, [open, initial]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    onSave({ id: initial ? initial.id : uid(), name: name.trim(), icon: icon || '📦', color });
+  };
+
+  return (
+    <Modal open={open} onClose={onClose} title={initial ? '카테고리 그룹 수정' : '카테고리 그룹 추가'}>
+      <form onSubmit={handleSubmit}>
+        <Field label="그룹 이름"><input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="예: 반려동물" className={inputCls} /></Field>
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="아이콘 (이모지)"><input type="text" value={icon} onChange={e => setIcon(e.target.value)} maxLength="4" className={inputCls} /></Field>
+          <Field label="색상"><input type="color" value={color} onChange={e => setColor(e.target.value)} className={inputCls + ' h-[42px] p-1'} /></Field>
+        </div>
         <div className="flex gap-2 mt-2">
           <Button variant="secondary" type="button" onClick={onClose} className="flex-1">취소</Button>
           <Button variant="primary" type="submit" className="flex-1">저장</Button>
@@ -1662,9 +1954,11 @@ function PaymentMethodFormModal({ open, onClose, onSave, initial }) {
   );
 }
 
-function SettingsScreen({ categories, setCategories, transactions, recurring, paymentMethods, setPaymentMethods, dark, setDark, fullState, onRestore }) {
+function SettingsScreen({ categories, setCategories, categoryGroups, setCategoryGroups, transactions, recurring, paymentMethods, setPaymentMethods, dark, setDark, fullState, onRestore }) {
   const [showCatForm, setShowCatForm] = useState(false);
   const [editingCat, setEditingCat] = useState(null);
+  const [showGroupForm, setShowGroupForm] = useState(false);
+  const [editingGroup, setEditingGroup] = useState(null);
   const [showPmForm, setShowPmForm] = useState(false);
   const [editingPm, setEditingPm] = useState(null);
   const fileInputRef = useRef(null);
@@ -1672,6 +1966,7 @@ function SettingsScreen({ categories, setCategories, transactions, recurring, pa
   const usedCategoryIds = new Set(transactions.map(t => t.category_id));
   const recurringCategoryIds = new Set(recurring.map(r => r.category_id));
   const usedPaymentMethodIds = new Set(transactions.map(t => t.payment_method).filter(Boolean));
+  const usedGroupIds = new Set(categories.map(c => c.group_id).filter(Boolean));
 
   const deleteCategory = (id) => {
     if (usedCategoryIds.has(id) || recurringCategoryIds.has(id)) {
@@ -1688,6 +1983,23 @@ function SettingsScreen({ categories, setCategories, transactions, recurring, pa
       const next = [...prev]; next[idx] = payload; return next;
     });
     setShowCatForm(false); setEditingCat(null);
+  };
+
+  const deleteGroup = (id) => {
+    if (usedGroupIds.has(id)) {
+      alert('이 그룹을 사용하는 카테고리가 있어 삭제할 수 없어요. 먼저 해당 카테고리를 다른 그룹으로 옮기거나 삭제해주세요.');
+      return;
+    }
+    setCategoryGroups(prev => prev.filter(g => g.id !== id));
+  };
+
+  const saveGroup = (payload) => {
+    setCategoryGroups(prev => {
+      const idx = prev.findIndex(g => g.id === payload.id);
+      if (idx === -1) return [...prev, payload];
+      const next = [...prev]; next[idx] = payload; return next;
+    });
+    setShowGroupForm(false); setEditingGroup(null);
   };
 
   const deletePaymentMethod = (id) => {
@@ -1725,7 +2037,7 @@ function SettingsScreen({ categories, setCategories, transactions, recurring, pa
 
   const handleReset = () => {
     if (!confirm('모든 데이터를 삭제합니다. 이 작업은 되돌릴 수 없어요. 계속할까요?')) return;
-    onRestore({ transactions: [], categories: DEFAULT_CATEGORIES, recurring: [], assets: [], goals: [], paymentMethods: DEFAULT_PAYMENT_METHODS });
+    onRestore({ transactions: [], categories: DEFAULT_CATEGORIES, categoryGroups: DEFAULT_CATEGORY_GROUPS, recurring: [], assets: [], goals: [], paymentMethods: DEFAULT_PAYMENT_METHODS });
   };
 
   return (
@@ -1744,28 +2056,72 @@ function SettingsScreen({ categories, setCategories, transactions, recurring, pa
 
       <Card>
         <div className="flex items-center justify-between mb-3">
-          <div className="font-bold">카테고리 관리</div>
+          <div className="font-bold">카테고리 그룹 관리 (대분류)</div>
+          <Button onClick={() => { setEditingGroup(null); setShowGroupForm(true); }}>+ 그룹 추가</Button>
+        </div>
+        <div className="text-xs text-slate-400 mb-3">그룹은 여러 카테고리(소분류)를 묶는 대분류예요. 예: "반려동물" 그룹에 유치원비, 펫시팅비, 용품, 사료 등을 함께 담을 수 있어요.</div>
+        <div className="space-y-1.5">
+          {categoryGroups.map(g => (
+            <div key={g.id} className="flex items-center justify-between py-1.5">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ background: g.color }} />
+                <span>{g.icon} {g.name}</span>
+              </div>
+              <div className="flex gap-2 text-xs">
+                <button onClick={() => { setEditingGroup(g); setShowGroupForm(true); }} className="text-slate-400 hover:text-slate-600">수정</button>
+                <button onClick={() => deleteGroup(g.id)} className="text-red-400 hover:text-red-500">삭제</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card>
+        <div className="flex items-center justify-between mb-3">
+          <div className="font-bold">카테고리 관리 (소분류)</div>
           <Button onClick={() => { setEditingCat(null); setShowCatForm(true); }}>+ 카테고리 추가</Button>
         </div>
-        {['income', 'fixed_expense', 'variable_expense'].map(type => (
-          <div key={type} className="mb-4 last:mb-0">
-            <div className="text-xs font-semibold text-slate-400 mb-2">{TYPE_LABEL[type]}</div>
-            <div className="space-y-1.5">
-              {categories.filter(c => c.type === type).map(c => (
-                <div key={c.id} className="flex items-center justify-between py-1.5">
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="w-2.5 h-2.5 rounded-full" style={{ background: c.color }} />
-                    <span>{c.icon} {c.name}</span>
-                  </div>
-                  <div className="flex gap-2 text-xs">
-                    <button onClick={() => { setEditingCat(c); setShowCatForm(true); }} className="text-slate-400 hover:text-slate-600">수정</button>
-                    <button onClick={() => deleteCategory(c.id)} className="text-red-400 hover:text-red-500">삭제</button>
-                  </div>
-                </div>
-              ))}
+        {['income', 'fixed_expense', 'variable_expense', 'savings'].map(type => {
+          const catsOfType = categories.filter(c => c.type === type);
+          const byGroup = {};
+          catsOfType.forEach(c => {
+            const gid = c.group_id || 'ungrouped';
+            if (!byGroup[gid]) byGroup[gid] = [];
+            byGroup[gid].push(c);
+          });
+          const groupMap = Object.fromEntries(categoryGroups.map(g => [g.id, g]));
+          return (
+            <div key={type} className="mb-4 last:mb-0">
+              <div className="text-xs font-semibold text-slate-400 mb-2">{TYPE_LABEL[type]}</div>
+              <div className="space-y-3">
+                {Object.entries(byGroup).map(([gid, cats]) => {
+                  const group = groupMap[gid] || { name: '기타', icon: '📦' };
+                  return (
+                    <div key={gid}>
+                      <div className="text-[11px] text-slate-400 mb-1 flex items-center gap-1">
+                        <span>{group.icon}</span><span>{group.name}</span>
+                      </div>
+                      <div className="space-y-1.5 pl-2 border-l-2 border-slate-100 dark:border-slate-800">
+                        {cats.map(c => (
+                          <div key={c.id} className="flex items-center justify-between py-1">
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className="w-2.5 h-2.5 rounded-full" style={{ background: c.color }} />
+                              <span>{c.icon} {c.name}</span>
+                            </div>
+                            <div className="flex gap-2 text-xs">
+                              <button onClick={() => { setEditingCat(c); setShowCatForm(true); }} className="text-slate-400 hover:text-slate-600">수정</button>
+                              <button onClick={() => deleteCategory(c.id)} className="text-red-400 hover:text-red-500">삭제</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </Card>
 
       <Card>
@@ -1803,7 +2159,8 @@ function SettingsScreen({ categories, setCategories, transactions, recurring, pa
         <Button variant="danger" onClick={handleReset}>전체 데이터 초기화</Button>
       </Card>
 
-      <CategoryFormModal open={showCatForm} onClose={() => setShowCatForm(false)} onSave={saveCategory} initial={editingCat} />
+      <CategoryFormModal open={showCatForm} onClose={() => setShowCatForm(false)} onSave={saveCategory} initial={editingCat} categoryGroups={categoryGroups} />
+      <CategoryGroupFormModal open={showGroupForm} onClose={() => setShowGroupForm(false)} onSave={saveGroup} initial={editingGroup} />
       <PaymentMethodFormModal open={showPmForm} onClose={() => setShowPmForm(false)} onSave={savePaymentMethod} initial={editingPm} />
     </div>
   );
@@ -1860,10 +2217,12 @@ function App() {
   const [tab, setTab] = useState('dashboard');
   const [transactions, setTransactions] = useLocalState('transactions', []);
   const [categories, setCategories] = useLocalState('categories', DEFAULT_CATEGORIES);
+  const [categoryGroups, setCategoryGroups] = useLocalState('categoryGroups', DEFAULT_CATEGORY_GROUPS);
   const [recurring, setRecurring] = useLocalState('recurring', []);
   const [assets, setAssets] = useLocalState('assets', []);
   const [goals, setGoals] = useLocalState('goals', []);
   const [paymentMethods, setPaymentMethods] = useLocalState('paymentMethods', DEFAULT_PAYMENT_METHODS);
+  const [expectedIncome, setExpectedIncome] = useLocalState('expectedIncome', 0);
   const [dark, setDark] = useLocalState('dark', false);
   const [monthKey, setMonthKey] = useState(todayMonthKey());
   const [editingTx, setEditingTx] = useState(null);
@@ -1879,6 +2238,16 @@ function App() {
     if (toAdd.length) setTransactions(prev => [...prev, ...toAdd]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recurring]);
+
+  // One-time, additive-only migration for accounts with categories saved
+  // before category groups existed. Never renames/removes existing ids.
+  useEffect(() => {
+    const migratedCats = migrateCategories(categories);
+    if (migratedCats !== categories) setCategories(migratedCats);
+    const migratedGroups = migrateCategoryGroups(categoryGroups, migratedCats);
+    if (migratedGroups !== categoryGroups) setCategoryGroups(migratedGroups);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auth: track the logged-in session
   useEffect(() => {
@@ -1900,10 +2269,12 @@ function App() {
         const d = data.data;
         if (d.transactions) setTransactions(d.transactions);
         if (d.categories) setCategories(d.categories);
+        if (d.categoryGroups) setCategoryGroups(d.categoryGroups);
         if (d.recurring) setRecurring(d.recurring);
         if (d.assets) setAssets(d.assets);
         if (d.goals) setGoals(d.goals);
         if (d.paymentMethods) setPaymentMethods(d.paymentMethods);
+        if (typeof d.expectedIncome === 'number') setExpectedIncome(d.expectedIncome);
       }
       if (!cancelled) setRemoteLoaded(true);
     })();
@@ -1918,7 +2289,7 @@ function App() {
     const timer = setTimeout(() => {
       sb.from('budget_data').upsert({
         user_id: session.user.id,
-        data: { transactions, categories, recurring, assets, goals, paymentMethods },
+        data: { transactions, categories, categoryGroups, recurring, assets, goals, paymentMethods, expectedIncome },
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' }).then(({ error }) => {
         setSyncStatus(error ? 'error' : 'saved');
@@ -1926,7 +2297,7 @@ function App() {
     }, 800);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session, remoteLoaded, transactions, categories, recurring, assets, goals, paymentMethods]);
+  }, [session, remoteLoaded, transactions, categories, categoryGroups, recurring, assets, goals, paymentMethods, expectedIncome]);
 
   const saveTx = (payload) => {
     setTransactions(prev => {
@@ -1941,8 +2312,8 @@ function App() {
   const openEdit = (tx) => { setEditingTx(tx); setTxModalOpen(true); };
 
   const screenProps = {
-    transactions, categories, recurring, assets, goals, paymentMethods,
-    setCategories, setRecurring, setAssets, setGoals, setPaymentMethods,
+    transactions, categories, categoryGroups, recurring, assets, goals, paymentMethods, expectedIncome,
+    setCategories, setCategoryGroups, setRecurring, setAssets, setGoals, setPaymentMethods, setExpectedIncome,
     monthKey, setMonthKey, onAdd: openAdd, onEdit: openEdit,
   };
 
@@ -1977,14 +2348,16 @@ function App() {
               {...screenProps}
               dark={dark}
               setDark={setDark}
-              fullState={{ transactions, categories, recurring, assets, goals, paymentMethods }}
+              fullState={{ transactions, categories, categoryGroups, recurring, assets, goals, paymentMethods, expectedIncome }}
               onRestore={(data) => {
                 if (data.transactions) setTransactions(data.transactions);
                 if (data.categories) setCategories(data.categories);
+                if (data.categoryGroups) setCategoryGroups(data.categoryGroups);
                 if (data.recurring) setRecurring(data.recurring);
                 if (data.assets) setAssets(data.assets);
                 if (data.goals) setGoals(data.goals);
                 if (data.paymentMethods) setPaymentMethods(data.paymentMethods);
+                if (typeof data.expectedIncome === 'number') setExpectedIncome(data.expectedIncome);
               }}
             />
           )}
@@ -1998,6 +2371,7 @@ function App() {
         onSave={saveTx}
         onDelete={deleteTx}
         categories={categories}
+        categoryGroups={categoryGroups}
         paymentMethods={paymentMethods}
         initial={editingTx}
         defaultDate={txModalDefaultDate}
