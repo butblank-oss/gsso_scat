@@ -1,0 +1,101 @@
+<style>
+:root{--bg:#F6F5F1;--paper:#FFFFFF;--ink:#20262E;--sub:#5C6570;--muted:#969AA0;--line:#E6E3DA;--line2:#F0EEE7;--brand:#146B6B;--brand-soft:#E2EFED;--warn:#B5811C;--warn-soft:#FBF0D6;--bad:#B0453B;--code:#12352F;}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15181B;--paper:#1E2226;--ink:#ECEDEB;--sub:#A6ADB4;--muted:#727A81;--line:#2F363C;--line2:#262B30;--brand:#5FBDB6;--brand-soft:#123634;--warn:#DDA83C;--warn-soft:#33280F;--bad:#E0716A;--code:#0F1A18;}}
+:root[data-theme="dark"]{--bg:#15181B;--paper:#1E2226;--ink:#ECEDEB;--sub:#A6ADB4;--muted:#727A81;--line:#2F363C;--line2:#262B30;--brand:#5FBDB6;--brand-soft:#123634;--warn:#DDA83C;--warn-soft:#33280F;--bad:#E0716A;--code:#0F1A18;}
+*{box-sizing:border-box;}body{margin:0;}
+.doc{background:var(--bg);color:var(--ink);font-family:'Pretendard',-apple-system,'Malgun Gothic',sans-serif;line-height:1.7;font-size:15px;padding-bottom:70px;}
+.wrap{max-width:780px;margin:0 auto;padding:0 24px;}
+.cover{background:var(--ink);color:#fff;padding:38px 0 34px;margin-bottom:24px;}
+:root[data-theme="dark"] .cover{background:#0F1214;}
+.cover .kick{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#8FD0CB;font-weight:700;}
+.cover h1{font-size:26px;font-weight:800;margin:10px 0 6px;letter-spacing:-.02em;}
+.cover p{color:#B7BDC2;font-size:13.5px;margin:0;}
+h2{font-size:18px;font-weight:800;margin:30px 0 10px;display:flex;gap:10px;align-items:baseline;}
+h2 .n{color:var(--brand);font-family:'Roboto Mono',monospace;}
+ol.steps{counter-reset:s;list-style:none;padding:0;margin:0;}
+ol.steps>li{position:relative;padding:2px 0 16px 34px;margin:0;border-left:2px solid var(--line);}
+ol.steps>li:last-child{border-left-color:transparent;}
+ol.steps>li::before{counter-increment:s;content:counter(s);position:absolute;left:-13px;top:0;width:24px;height:24px;border-radius:50%;background:var(--brand);color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center;font-family:'Roboto Mono',monospace;}
+b.k{background:var(--brand-soft);color:var(--brand);padding:1px 7px;border-radius:5px;font-size:13.5px;}
+pre{background:var(--code);color:#D6E6E2;border-radius:10px;padding:16px 18px;overflow-x:auto;font-family:'Roboto Mono',monospace;font-size:12.5px;line-height:1.6;}
+.note{background:var(--warn-soft);border:1px solid var(--warn);border-radius:9px;padding:12px 16px;font-size:13px;margin:14px 0;}
+.bad{background:#FBEFE9;border:1px solid var(--bad);color:#7A3229;border-radius:9px;padding:12px 16px;font-size:13px;margin:14px 0;}
+:root[data-theme="dark"] .bad{background:#2C1C19;color:#E0A79E;}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:6px 20px 14px;margin:8px 0;}
+code{background:var(--line2);padding:1px 6px;border-radius:5px;font-family:'Roboto Mono',monospace;font-size:13px;}
+.foot{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted);}
+</style>
+<div class="doc">
+<div class="cover"><div class="wrap">
+  <div class="kick">맬리 브레인 · 운영 어드민</div>
+  <h1>대상자 관리 ↔ Google 시트 연동 설정 가이드</h1>
+  <p>브라우저 저장(localStorage)을 넘어, 여러 명이 한 시트에 저장·공유하도록 백엔드를 붙입니다 · 약 5분</p>
+</div></div>
+<div class="wrap">
+
+<div class="bad">⚠️ <b>먼저 확인</b> — 이 실시간 연동은 <b>배포된 페이지(예: butprompter.com/malli-dashboard.html)에서만</b> 동작합니다. claude.ai <b>미리보기(Artifact)는 외부 연결이 차단</b>되어 시트 호출이 실패합니다. 시트 연동을 쓰려면 대시보드를 GitHub Pages(자체 도메인)에 올린 뒤 그 페이지에서 사용하세요.</div>
+
+<h2><span class="n">A.</span> 왜 이걸 하나요?</h2>
+<div class="card"><p>대상자 관리 탭의 대응상태·담당자·메모는 원래 <b>내 브라우저(localStorage)에만</b> 저장됩니다. 즉 다른 사람·다른 PC와 공유되지 않습니다. Google 시트를 백엔드처럼 연결하면 <b>여러 명이 같은 시트에 저장하고 최신 상태를 함께</b> 볼 수 있습니다. 별도 서버 없이 무료로 됩니다.</p></div>
+
+<h2><span class="n">B.</span> 설정 순서</h2>
+<ol class="steps">
+  <li><b>Google 시트</b>를 새로 하나 만듭니다(내용은 비어 있어도 됩니다).</li>
+  <li>상단 메뉴 <b class="k">확장 프로그램 → Apps Script</b>를 엽니다.</li>
+  <li>기본 코드(<code>function myFunction(){}</code>)를 <b>모두 지우고</b>, 아래 <b>C. 코드</b>를 통째로 붙여넣은 뒤 저장(💾)합니다.</li>
+  <li>오른쪽 위 <b class="k">배포 → 새 배포</b>를 누릅니다.</li>
+  <li>톱니바퀴(유형 선택) → <b class="k">웹 앱</b>을 고릅니다.</li>
+  <li>설정 — <b>실행:</b> <code>나(본인)</code>, <b>액세스 권한:</b> <code>모든 사용자</code> 로 두고 <b class="k">배포</b>.</li>
+  <li>권한 승인 창이 뜨면 본인 계정으로 <b>허용</b>합니다(“안전하지 않음” 경고가 보이면 <i>고급 → 이동</i>).</li>
+  <li>발급된 <b>웹 앱 URL</b>(<code>https://script.google.com/macros/s/…/exec</code>)을 복사합니다.</li>
+  <li>대시보드 <b>대상자 관리 탭 → ☁ Google 시트</b> 칸에 URL을 붙여넣습니다(자동 기억됨).</li>
+  <li><b class="k">↑ 시트에 저장</b>을 눌러 현재 466명 명단을 시트로 보냅니다. 이후 팀원은 <b class="k">↓ 시트에서 불러오기</b>로 최신 상태를 받습니다.</li>
+</ol>
+
+<div class="note"><b>자동저장</b> 체크박스를 켜면, 상태·담당자·메모를 수정할 때마다 잠시 후 시트로 자동 전송됩니다. 여러 명이 동시에 쓸 때는 <b>최종 저장이 우선</b>(마지막에 저장한 사람 기준)이니, 담당 구역을 나눠 쓰는 것을 권장합니다.</div>
+
+<h2><span class="n">C.</span> 붙여넣을 코드 (Code.gs)</h2>
+<div class="card"><p style="font-size:13px;color:var(--sub)">저장소 파일 <code>malli-sheets-appsscript.gs</code>와 동일합니다. POST가 오면 시트를 전체 교체하고, GET은 전체 행을 JSON으로 돌려줍니다.</p></div>
+<pre>var SHEET_NAME = '대상자관리';
+var HEADERS = ['id','name','risk','dsl','status','owner','memo'];
+
+function sheet_(){
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(SHEET_NAME);
+  if(!sh){ sh = ss.insertSheet(SHEET_NAME); sh.appendRow(HEADERS); }
+  return sh;
+}
+function json_(obj){
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+function doGet(e){
+  var sh = sheet_();
+  var values = sh.getDataRange().getValues();
+  var head = values.shift() || HEADERS;
+  var rows = values
+    .filter(function(r){ return String(r[0]||'').trim() !== ''; })
+    .map(function(r){ var o={}; head.forEach(function(h,i){o[h]=r[i];}); return o; });
+  return json_({ ok:true, rows:rows });
+}
+function doPost(e){
+  var body = {};
+  try{ body = JSON.parse(e.postData.contents || '{}'); }catch(err){}
+  var rows = body.rows || [];
+  var sh = sheet_();
+  sh.clearContents();
+  sh.appendRow(HEADERS);
+  if(rows.length){
+    var out = rows.map(function(r){
+      return HEADERS.map(function(h){ return r[h]!=null ? r[h] : ''; });
+    });
+    sh.getRange(2,1,out.length,HEADERS.length).setValues(out);
+  }
+  return json_({ ok:true, count:rows.length, saved_at:new Date().toISOString() });
+}</pre>
+
+<h2><span class="n">D.</span> 개인정보 주의</h2>
+<div class="bad">시트에는 <b>이름(마스킹)·위험도·대응상태 등 개인정보 성격의 명단</b>이 담깁니다. “모든 사용자” 액세스는 <b>URL을 아는 사람은 접근 가능</b>하다는 뜻이니, URL은 내부에만 공유하고 시트 공유 범위도 팀 내부로 제한하세요. Google Workspace라면 시트 자체를 조직 내부 공유로 두는 것을 권장합니다.</div>
+
+<div class="foot">문제가 생기면: URL이 <code>/exec</code>로 끝나는지, 배포 액세스가 “모든 사용자”인지, 코드 수정 후 <b>새 배포(또는 배포 관리 → 편집 → 버전 새로 만들기)</b>를 했는지 확인하세요. 미리보기(Artifact)에서는 항상 실패하는 것이 정상입니다.</div>
+</div></div>
