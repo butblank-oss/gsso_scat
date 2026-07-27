@@ -49,15 +49,15 @@ code{background:var(--line2);padding:1px 6px;border-radius:5px;font-family:'Robo
   <li>권한 승인 창이 뜨면 본인 계정으로 <b>허용</b>합니다(“안전하지 않음” 경고가 보이면 <i>고급 → 이동</i>).</li>
   <li>발급된 <b>웹 앱 URL</b>(<code>https://script.google.com/macros/s/…/exec</code>)을 복사합니다.</li>
   <li>대시보드 <b>대상자 관리 탭 → ☁ Google 시트</b> 칸에 URL을 붙여넣습니다(자동 기억됨).</li>
-  <li><b class="k">↑ 시트에 저장</b>을 눌러 현재 466명 명단을 시트로 보냅니다. 이후 팀원은 <b class="k">↓ 시트에서 불러오기</b>로 최신 상태를 받습니다.</li>
+  <li>편집 후 <b class="k">💾 저장</b>을 누르면 로컬에 확정되고(최종수정 시각 기록), 시트 URL이 설정돼 있으면 <b>같은 동작으로 시트에도 전송</b>됩니다. 팀원은 <b class="k">↓ 불러오기</b>로 최신 상태를 받습니다.</li>
 </ol>
 
-<div class="note"><b>자동저장</b> 체크박스를 켜면, 상태·담당자·메모를 수정할 때마다 잠시 후 시트로 자동 전송됩니다. 여러 명이 동시에 쓸 때는 <b>최종 저장이 우선</b>(마지막에 저장한 사람 기준)이니, 담당 구역을 나눠 쓰는 것을 권장합니다.</div>
+<div class="note"><b>저장 방식</b> — 편집(상태·담당자·메모)은 바로 저장되지 않고 "저장 안 됨"으로 표시됩니다. <b>💾 저장</b>을 눌러야 확정되며 그때 <b>최종수정 시각</b>이 기록되고 시트로도 전송됩니다. 여러 명이 동시에 쓸 때는 <b>최종 저장이 우선</b>(마지막에 저장한 사람 기준)이니, 담당 구역을 나눠 쓰고 작업 전 <b>↓ 불러오기</b>로 최신본을 받는 것을 권장합니다.</div>
 
 <h2><span class="n">C.</span> 붙여넣을 코드 (Code.gs)</h2>
 <div class="card"><p style="font-size:13px;color:var(--sub)">저장소 파일 <code>malli-sheets-appsscript.gs</code>와 동일합니다. POST가 오면 시트를 전체 교체하고, GET은 전체 행을 JSON으로 돌려줍니다.</p></div>
 <pre>var SHEET_NAME = '대상자관리';
-var HEADERS = ['id','name','risk','dsl','status','owner','memo'];
+var HEADERS = ['id','name','risk','dsl','status','owner','memo','updated_at'];
 
 function sheet_(){
   var ss = SpreadsheetApp.getActiveSpreadsheet();
