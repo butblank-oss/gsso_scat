@@ -57,7 +57,7 @@ code{background:var(--line2);padding:1px 6px;border-radius:5px;font-family:'Robo
 <h2><span class="n">C.</span> 붙여넣을 코드 (Code.gs)</h2>
 <div class="card"><p style="font-size:13px;color:var(--sub)">저장소 파일 <code>malli-sheets-appsscript.gs</code>와 동일합니다. POST가 오면 시트를 전체 교체하고, GET은 전체 행을 JSON으로 돌려줍니다.</p></div>
 <pre>var SHEET_NAME = '대상자관리';
-var HEADERS = ['id','name','risk','dsl','status','owner','memo','updated_at'];
+var HEADERS = ['id','name','risk','dsl','seg','owner','status','call_result','conversion','reengaged','memo','updated_at'];
 
 function sheet_(){
   var ss = SpreadsheetApp.getActiveSpreadsheet();
