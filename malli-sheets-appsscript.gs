@@ -57,7 +57,7 @@ var SCRIPTS = {
 
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('맬리 TM')
-    .addItem('① 담당자 배분 + 10개 시트 생성', 'buildWorkbook')
+    .addItem('① 담당자별 시트 생성/갱신 (담당자 열 기준)', 'buildWorkbook')
     .addItem('② 현황판 새로고침', 'refreshDashboard')
     .addToUi();
 }
@@ -85,8 +85,10 @@ function readRoster_() {
   var ci = {
     id: colIndex_(head, ['id']),
     name: colIndex_(head, ['이름','name']),
-    risk: colIndex_(head, ['위험도','세그','risk']),
+    risk: colIndex_(head, ['위험도','risk']),
     dsl: colIndex_(head, ['미접속','dsl']),
+    owner: colIndex_(head, ['담당자','owner']),
+    seg: colIndex_(head, ['세그먼트','seg']),
     status: colIndex_(head, ['진행상태','상태','status'])
   };
   if (ci.id < 0 || ci.risk < 0) throw new Error("'원본_명단' 탭에 id/위험도 열이 필요합니다. 어드민 CSV를 붙여넣어 주세요.");
@@ -95,6 +97,8 @@ function readRoster_() {
     var id = String(r[ci.id] || '').trim(); if (!id) return;
     rows.push({ id: id, name: ci.name >= 0 ? r[ci.name] : '', risk: String(r[ci.risk] || '').trim(),
       dsl: ci.dsl >= 0 ? Number(r[ci.dsl]) || 0 : 0,
+      owner: ci.owner >= 0 ? String(r[ci.owner] || '').trim() : '',
+      seg: ci.seg >= 0 ? String(r[ci.seg] || '').trim() : '',
       status: ci.status >= 0 ? String(r[ci.status] || '').trim() : '' });
   });
   return rows;
@@ -134,35 +138,48 @@ function sheetReset_(name) {
 function dv_(list) {
   return SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(true).build();
 }
+// 담당자별 그룹 만들기: 원본_명단에 담당자 열이 있으면 그 값으로 분리(어드민 배분 존중),
+// 없으면 매트릭스로 자동배분(fallback).
+function groupByOwner_(roster) {
+  var hasOwner = roster.some(function (r) { return r.owner; });
+  var groups = {};
+  if (hasOwner) {
+    roster.forEach(function (r) {
+      if (r.status === '제외' || r.risk === '유지') return;   // 제외 대상 스킵
+      var o = (r.owner || '').trim(); if (!o) return;         // 미배정 스킵
+      (groups[o] = groups[o] || []).push({ row: r, seg: r.seg || r.risk });
+    });
+  } else {
+    groups = computeAssignment_(roster);                       // {담당자: [{row,seg}]}
+  }
+  return groups;
+}
 function buildWorkbook() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
   var roster = readRoster_();
-  var byStaff = computeAssignment_(roster);
-  // 스크립트 탭
+  var groups = groupByOwner_(roster);
+  var owners = Object.keys(groups).filter(function (o) { return groups[o] && groups[o].length; }).sort();
+  if (!owners.length) { SpreadsheetApp.getUi().alert("배정된 대상자가 없습니다. '원본_명단'에 담당자 열이 채워져 있는지 확인하세요."); return; }
   buildScriptTab_();
-  // 담당자 탭 10개
-  STAFF.forEach(function (staff) {
-    var sh = sheetReset_('담당자_' + staff);
-    sh.getRange(1, 1).setValue('담당자: ' + staff + '  ·  노란(회색) 칸=입력  ·  통화일시/결과/전환/재접속/진행상태/메모');
+  owners.forEach(function (owner) {
+    var sh = sheetReset_('담당자_' + owner);
+    sh.getRange(1, 1).setValue('담당자: ' + owner + '  ·  회색 칸=입력  ·  통화일시/결과/전환/재접속/진행상태/메모');
     sh.getRange(1, 1, 1, TAB_HEAD.length).merge().setFontWeight('bold').setBackground('#EAF3F2');
     sh.getRange(2, 1, 1, TAB_HEAD.length).setValues([TAB_HEAD]).setFontWeight('bold').setBackground('#F2F0E9');
-    var items = byStaff[staff];
-    if (items.length) {
-      var data = items.map(function (it, i) {
-        return [i + 1, it.row.id, it.row.name, it.seg, it.row.dsl, '', '', '', '', '미착수', ''];
-      });
-      sh.getRange(3, 1, data.length, TAB_HEAD.length).setValues(data);
-      var n = data.length;
-      sh.getRange(3, 7, n).setDataValidation(dv_(CALL_RESULTS));   // 통화결과
-      sh.getRange(3, 8, n).setDataValidation(dv_(CONVERSIONS));    // 핵심전환
-      sh.getRange(3, 9, n).setDataValidation(dv_(REENGAGED));      // 1주후재접속
-      sh.getRange(3, 10, n).setDataValidation(dv_(STATUS));        // 진행상태
-    }
+    var items = groups[owner];
+    var data = items.map(function (it, i) {
+      return [i + 1, it.row.id, it.row.name, it.seg, it.row.dsl, '', '', '', '', (it.row.status || '미착수'), (it.row.memo || '')];
+    });
+    sh.getRange(3, 1, data.length, TAB_HEAD.length).setValues(data);
+    var n = data.length;
+    sh.getRange(3, 7, n).setDataValidation(dv_(CALL_RESULTS));   // 통화결과
+    sh.getRange(3, 8, n).setDataValidation(dv_(CONVERSIONS));    // 핵심전환
+    sh.getRange(3, 9, n).setDataValidation(dv_(REENGAGED));      // 1주후재접속
+    sh.getRange(3, 10, n).setDataValidation(dv_(STATUS));        // 진행상태
     sh.setFrozenRows(2);
     sh.setColumnWidth(2, 60); sh.setColumnWidth(3, 70); sh.setColumnWidth(4, 130); sh.setColumnWidth(11, 220);
   });
   refreshDashboard();
-  SpreadsheetApp.getUi().alert('완료 — 담당자 10개 시트 생성 + 현황판 집계.\n각 담당자 탭에서 입력하세요. 집계는 [맬리 TM → ② 현황판 새로고침].');
+  SpreadsheetApp.getUi().alert('완료 — 담당자 ' + owners.length + '개 시트 생성 + 현황판 집계.\n담당자: ' + owners.join(', ') + '\n각 담당자 탭에서 입력하고, 집계는 [맬리 TM → ② 현황판 새로고침].');
 }
 function buildScriptTab_() {
   var sh = sheetReset_('스크립트');
@@ -179,8 +196,9 @@ function buildScriptTab_() {
 /* ---------- 통합 현황판 ---------- */
 function collectAll_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet(), all = [];
-  STAFF.forEach(function (staff) {
-    var sh = ss.getSheetByName('담당자_' + staff); if (!sh) return;
+  ss.getSheets().forEach(function (sh) {
+    var nm = sh.getName(); if (nm.indexOf('담당자_') !== 0) return;
+    var staff = nm.substring('담당자_'.length);
     var vals = sh.getDataRange().getValues();
     for (var i = 2; i < vals.length; i++) {           // row3~ (0-based 2)
       var r = vals[i]; if (!String(r[1] || '').trim()) continue; // id
@@ -213,7 +231,9 @@ function refreshDashboard() {
   });
   rows.push(['']);
   rows.push(['담당자별 진도 (자동 집계)']); rows.push(['담당자','배정','시도','연결','진행률','전환']);
-  STAFF.forEach(function (staff) {
+  var owners = []; all.forEach(function (x) { if (owners.indexOf(x.owner) < 0) owners.push(x.owner); });
+  owners.sort();
+  owners.forEach(function (staff) {
     var g = all.filter(function (x) { return x.owner === staff; });
     var t = g.filter(tried).length, c = g.filter(conn).length, v = g.filter(conv).length;
     rows.push([staff, g.length, t, c, pctStr_(t, g.length), v]);
