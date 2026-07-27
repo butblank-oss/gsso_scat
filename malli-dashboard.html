@@ -6896,7 +6896,8 @@ const VIEWS = {
         <span class="pill warn">장기이탈</span> 90일+ ·
         <span class="pill good">유지</span> 최근 활동 있음(연락 불필요)<br>
       • <b>사용법</b>: 담당자를 나눠 배정 → 통화/문자 후 <b>대응상태</b>를 미착수→진행중→완료로 바꾸고 <b>메모</b>에 결과 기록. 편집 내용은 이 브라우저에 자동 저장됩니다.<br>
-      • <b>공유·배포</b>: <b>⬇ CSV 내보내기</b>로 엑셀 명단을 받아 팀에 배포하거나 케어콜 리스트로 씁니다(위험도·상태·담당자·메모 포함). ⚠️ 개인정보 명단이므로 다운로드 파일은 내부에서만 취급하세요.
+      • <b>선택·일괄관리</b>: 왼쪽 체크박스로 여러 명을 고른 뒤 <b>대응상태·담당자를 한 번에</b> 적용할 수 있습니다.<br>
+      • <b>공유·배포</b>: <b>⬇ CSV 내보내기</b>로 엑셀 명단을 받아 팀에 배포하고, 팀원이 편집한 파일은 <b>⬆ CSV 불러오기</b>로 이 화면에 다시 반영합니다(id 기준 병합). ⚠️ 개인정보 명단이므로 다운로드 파일은 내부에서만 취급하세요.
     </div>
     <div style="margin-top:14px;border-top:1px solid var(--line-2);padding-top:12px">
       <div style="font-size:12px;color:var(--sub);font-weight:700;margin-bottom:8px">위험도별 대응 계획 — 설문·리워드는 그룹마다 다르게</div>
@@ -6914,10 +6915,24 @@ const VIEWS = {
     <select id="fRisk"><option value="">위험도 전체</option><option>이탈임박</option><option>단기이탈</option><option>장기이탈</option><option>온보딩실패</option><option>유지</option></select>
     <select id="fStatus"><option value="">대응상태 전체</option><option>미착수</option><option>진행중</option><option>완료</option><option>제외</option></select>
     <div class="spacer"></div>
+    <button class="iconbtn" id="wlImport">⬆ CSV 불러오기</button>
+    <input type="file" id="wlFile" accept=".csv,text/csv" style="display:none"/>
     <button class="iconbtn" id="wlExport">⬇ CSV 내보내기</button>
     <button class="iconbtn" id="wlReset">↺ 편집 초기화</button>
   </div>`;
+  // 일괄 관리 바
+  h+=`<div class="toolbar bulkbar" id="wlBulk" style="background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:9px 12px">
+    <b id="wlSelCnt" style="font-size:12.5px">☑ 선택 0명</b>
+    <span style="color:var(--muted);font-size:11.5px">선택한 회원 일괄 적용 →</span>
+    <select id="wlBulkStatus"><option value="">대응상태…</option><option>미착수</option><option>진행중</option><option>완료</option><option>제외</option></select>
+    <button class="iconbtn" id="wlBulkStatusApply">상태 적용</button>
+    <input type="text" id="wlBulkOwner" placeholder="담당자 일괄" style="width:120px"/>
+    <button class="iconbtn" id="wlBulkOwnerApply">담당 배정</button>
+    <div class="spacer"></div>
+    <button class="iconbtn" id="wlSelClear">선택 해제</button>
+  </div>`;
   h+=`<div class="card" style="padding:0"><div class="tw" style="max-height:640px"><table id="wlTbl"><thead><tr>
+    <th style="width:34px;text-align:center"><input type="checkbox" id="wlAll" title="전체 선택"/></th>
     <th data-k="risk">위험도</th><th data-k="name">이름</th><th data-k="age">연령/성별</th><th data-k="prov">기관</th>
     <th class="r" data-k="dsl">미접속(일)</th><th class="r" data-k="tot">총활동</th><th data-k="last_type">마지막유형</th>
     <th data-k="_st">대응상태</th><th data-k="_owner">담당자</th><th data-k="_memo">메모</th></tr></thead><tbody></tbody></table></div></div>`;
@@ -6929,12 +6944,26 @@ const VIEWS = {
 /* ============ Watchlist logic (editable) ============ */
 const LS_KEY='malli_wl_edits_v1';
 let wlEdits = JSON.parse(localStorage.getItem(LS_KEY)||'{}');
+let wlSel = new Set();
 const RISK_PILL={'이탈임박':'bad','장기이탈':'warn','단기이탈':'warn','온보딩실패':'bad','유지':'good'};
 function saveEdits(){localStorage.setItem(LS_KEY,JSON.stringify(wlEdits));}
+// CSV helpers (quote-safe, standard "" escaping)
+function csvCell(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"';}
+function parseCSV(text){
+  text=text.replace(/^﻿/,''); const rows=[]; let f='',row=[],q=false;
+  for(let i=0;i<text.length;i++){const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){f+='"';i++;} else q=false; } else f+=c; }
+    else{ if(c==='"')q=true; else if(c===','){row.push(f);f='';}
+      else if(c==='\n'){row.push(f);rows.push(row);row=[];f='';}
+      else if(c==='\r'){} else f+=c; } }
+  if(f.length||row.length){row.push(f);rows.push(row);}
+  return rows.filter(r=>r.length>1||r[0]!=='');
+}
 function wlRow(r){
   const e=wlEdits[r.id]||{};
   const st=e.status||'미착수', owner=e.owner||'', memo=e.memo||'';
   return `<tr data-id="${r.id}">
+    <td style="text-align:center"><input type="checkbox" class="wlchk" ${wlSel.has(r.id)?'checked':''}/></td>
     <td><span class="pill ${RISK_PILL[r.risk]||'neut'}">${r.risk}</span></td>
     <td>${r.name}</td><td>${r.age||'–'}/${r.sex==='F'?'여':r.sex==='M'||r.sex==='male'?'남':'–'}</td>
     <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.prov}">${r.prov}</td>
@@ -6961,9 +6990,18 @@ function renderWlStats(rows){
 }
 function initWatchlist(){
   const tb=$('#wlTbl tbody');
-  const draw=()=>{const rows=wlFilter(); tb.innerHTML=rows.map(wlRow).join(''); renderWlStats();};
+  const CSV_HDR=['id','이름','연령','성별','기관','미접속일','총활동','마지막유형','위험도','대응상태','담당자','메모'];
+  const updateSel=()=>{
+    $('#wlSelCnt').textContent='☑ 선택 '+wlSel.size+'명';
+    const vis=wlFilter(); const selVis=vis.filter(r=>wlSel.has(r.id)).length;
+    const all=$('#wlAll'); if(all){all.checked=vis.length>0&&selVis===vis.length; all.indeterminate=selVis>0&&selVis<vis.length;}
+    ['wlBulkStatusApply','wlBulkOwnerApply'].forEach(idd=>{const b=$('#'+idd); b.disabled=wlSel.size===0; b.style.opacity=wlSel.size?'':'.45';});
+  };
+  const draw=()=>{const rows=wlFilter(); tb.innerHTML=rows.map(wlRow).join(''); renderWlStats(); updateSel();};
   draw();
   tb.addEventListener('change',e=>{
+    if(e.target.classList.contains('wlchk')){const tr=e.target.closest('tr'); const id=tr.dataset.id;
+      e.target.checked?wlSel.add(id):wlSel.delete(id); tr.style.background=e.target.checked?'var(--brand-soft)':''; updateSel(); return;}
     const tr=e.target.closest('tr'); if(!tr)return; const id=tr.dataset.id, f=e.target.dataset.f; if(!f)return;
     wlEdits[id]=wlEdits[id]||{}; wlEdits[id][f]=e.target.value; saveEdits();
     const dot=tr.querySelector('.savedot'); if(dot){dot.classList.add('on'); setTimeout(()=>dot.classList.remove('on'),700);}
@@ -6971,14 +7009,44 @@ function initWatchlist(){
   });
   tb.addEventListener('input',e=>{if(e.target.dataset.f&&e.target.tagName==='INPUT'){const tr=e.target.closest('tr');wlEdits[tr.dataset.id]=wlEdits[tr.dataset.id]||{};wlEdits[tr.dataset.id][e.target.dataset.f]=e.target.value;saveEdits();}});
   ['#wlSearch','#fRisk','#fStatus'].forEach(s=>$(s).addEventListener('input',draw));
+  // 전체선택 (현재 필터된 행 대상)
+  $('#wlAll').addEventListener('change',e=>{const vis=wlFilter(); vis.forEach(r=>e.target.checked?wlSel.add(r.id):wlSel.delete(r.id)); draw();});
+  // 일괄 적용
+  $('#wlBulkStatusApply').addEventListener('click',()=>{const v=$('#wlBulkStatus').value; if(!v||!wlSel.size)return;
+    wlSel.forEach(id=>{wlEdits[id]=wlEdits[id]||{};wlEdits[id].status=v;}); saveEdits(); draw();});
+  $('#wlBulkOwnerApply').addEventListener('click',()=>{const v=$('#wlBulkOwner').value.trim(); if(!wlSel.size)return;
+    wlSel.forEach(id=>{wlEdits[id]=wlEdits[id]||{};wlEdits[id].owner=v;}); saveEdits(); draw();});
+  $('#wlSelClear').addEventListener('click',()=>{wlSel.clear(); draw();});
+  // 내보내기 (선택 있으면 선택분만, 없으면 필터 전체)
   $('#wlExport').addEventListener('click',()=>{
-    const hdr=['id','이름','연령','성별','기관','미접속일','총활동','마지막유형','위험도','대응상태','담당자','메모'];
-    const lines=[hdr.join(',')].concat(wlFilter().map(r=>{const e=wlEdits[r.id]||{};
-      return [r.id,r.name,r.age,r.sex,r.prov,r.dsl,r.tot,r.last_type,r.risk,e.status||'미착수',e.owner||'',(e.memo||'').replace(/,/g,' ')].map(x=>`"${x}"`).join(',');}));
-    const blob=new Blob(['﻿'+lines.join('\n')],{type:'text/csv'}); const a=el('a');
+    const src=wlSel.size?wlFilter().filter(r=>wlSel.has(r.id)):wlFilter();
+    const lines=[CSV_HDR.map(csvCell).join(',')].concat(src.map(r=>{const e=wlEdits[r.id]||{};
+      return [r.id,r.name,r.age,r.sex,r.prov,r.dsl,r.tot,r.last_type,r.risk,e.status||'미착수',e.owner||'',e.memo||''].map(csvCell).join(',');}));
+    const blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv'}); const a=el('a');
     a.href=URL.createObjectURL(blob); a.download='malli_대상자관리.csv'; a.click();
   });
-  $('#wlReset').addEventListener('click',()=>{if(confirm('편집한 대응상태·담당자·메모를 모두 지웁니다. 계속할까요?')){wlEdits={};saveEdits();draw();}});
+  // 불러오기 (id 기준 병합)
+  $('#wlImport').addEventListener('click',()=>$('#wlFile').click());
+  $('#wlFile').addEventListener('change',e=>{const file=e.target.files[0]; if(!file)return;
+    const rd=new FileReader(); rd.onload=()=>{
+      try{const rows=parseCSV(rd.result); const head=rows.shift()||[];
+        const ci=n=>head.indexOf(n);
+        const iId=ci('id'),iSt=ci('대응상태'),iOw=ci('담당자'),iMe=ci('메모');
+        if(iId<0){alert('id 열을 찾을 수 없습니다. 내보낸 CSV 형식이 맞는지 확인하세요.');return;}
+        const valid=new Set(DATA.watchlist.map(r=>r.id)); let ok=0,miss=0;
+        rows.forEach(r=>{const id=(r[iId]||'').trim(); if(!id)return;
+          if(!valid.has(id)){miss++;return;}
+          const cur=wlEdits[id]||{};
+          if(iSt>=0&&r[iSt]!=null&&r[iSt]!=='')cur.status=r[iSt].trim();
+          if(iOw>=0&&r[iOw]!=null)cur.owner=r[iOw];
+          if(iMe>=0&&r[iMe]!=null)cur.memo=r[iMe];
+          wlEdits[id]=cur; ok++;});
+        saveEdits(); draw(); alert(`불러오기 완료 · ${ok}건 반영`+(miss?` / ${miss}건 미매칭(대상 명단에 없는 id)`:''));
+      }catch(err){alert('CSV를 읽지 못했습니다: '+err.message);}
+      $('#wlFile').value='';
+    }; rd.readAsText(file,'utf-8');
+  });
+  $('#wlReset').addEventListener('click',()=>{if(confirm('편집한 대응상태·담당자·메모를 모두 지웁니다. 계속할까요?')){wlEdits={};wlSel.clear();saveEdits();draw();}});
   // sortable headers
   let sortK=null,asc=true;
   $('#wlTbl thead').addEventListener('click',e=>{const k=e.target.dataset.k; if(!k||k.startsWith('_'))return;
