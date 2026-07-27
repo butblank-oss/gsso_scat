@@ -6897,7 +6897,8 @@ const VIEWS = {
         <span class="pill good">유지</span> 최근 활동 있음(연락 불필요)<br>
       • <b>사용법</b>: 담당자를 나눠 배정 → 통화/문자 후 <b>대응상태</b>를 미착수→진행중→완료로 바꾸고 <b>메모</b>에 결과 기록. 편집 내용은 이 브라우저에 자동 저장됩니다.<br>
       • <b>선택·일괄관리</b>: 왼쪽 체크박스로 여러 명을 고른 뒤 <b>대응상태·담당자를 한 번에</b> 적용할 수 있습니다.<br>
-      • <b>공유·배포</b>: <b>⬇ CSV 내보내기</b>로 엑셀 명단을 받아 팀에 배포하고, 팀원이 편집한 파일은 <b>⬆ CSV 불러오기</b>로 이 화면에 다시 반영합니다(id 기준 병합). ⚠️ 개인정보 명단이므로 다운로드 파일은 내부에서만 취급하세요.
+      • <b>공유·배포</b>: <b>⬇ CSV 내보내기</b>로 엑셀 명단을 받아 팀에 배포하고, 팀원이 편집한 파일은 <b>⬆ CSV 불러오기</b>로 이 화면에 다시 반영합니다(id 기준 병합). ⚠️ 개인정보 명단이므로 다운로드 파일은 내부에서만 취급하세요.<br>
+      • <b>☁ Google 시트 연동(공동 저장)</b>: Apps Script 웹앱 URL을 넣으면 <b>여러 명이 한 시트에 저장·불러오기</b>로 최신 상태를 공유합니다(자동저장 옵션). ⚠️ 이 실시간 연동은 <b>배포된 페이지(butprompter.com)에서만</b> 동작하며, 미리보기(Artifact)는 외부연결이 차단됩니다. 설정법은 함께 드린 "Google 시트 연동 가이드"를 참고하세요.
     </div>
     <div style="margin-top:14px;border-top:1px solid var(--line-2);padding-top:12px">
       <div style="font-size:12px;color:var(--sub);font-weight:700;margin-bottom:8px">위험도별 대응 계획 — 설문·리워드는 그룹마다 다르게</div>
@@ -6926,10 +6927,21 @@ const VIEWS = {
     <span style="color:var(--muted);font-size:11.5px">선택한 회원 일괄 적용 →</span>
     <select id="wlBulkStatus"><option value="">대응상태…</option><option>미착수</option><option>진행중</option><option>완료</option><option>제외</option></select>
     <button class="iconbtn" id="wlBulkStatusApply">상태 적용</button>
-    <input type="text" id="wlBulkOwner" placeholder="담당자 일괄" style="width:120px"/>
+    <input type="text" id="wlBulkOwner" placeholder="담당자 일괄" style="width:110px"/>
     <button class="iconbtn" id="wlBulkOwnerApply">담당 배정</button>
+    <input type="text" id="wlBulkMemo" placeholder="메모 일괄" style="width:130px"/>
+    <button class="iconbtn" id="wlBulkMemoApply">메모 적용</button>
     <div class="spacer"></div>
     <button class="iconbtn" id="wlSelClear">선택 해제</button>
+  </div>`;
+  // Google 시트 연동 바
+  h+=`<div class="toolbar" style="background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:9px 12px">
+    <span style="font-size:12.5px;font-weight:700">☁ Google 시트</span>
+    <input type="text" id="gsUrl" placeholder="Apps Script 웹앱 URL 붙여넣기" style="flex:1;min-width:180px"/>
+    <button class="iconbtn" id="gsLoad">↓ 시트에서 불러오기</button>
+    <button class="iconbtn" id="gsSave">↑ 시트에 저장</button>
+    <label style="font-size:12px;display:flex;align-items:center;gap:5px;color:var(--sub)"><input type="checkbox" id="gsAutoChk"/> 자동저장</label>
+    <span id="gsStat" style="font-size:11.5px;color:var(--muted)"></span>
   </div>`;
   h+=`<div class="card" style="padding:0"><div class="tw" style="max-height:640px"><table id="wlTbl"><thead><tr>
     <th style="width:34px;text-align:center"><input type="checkbox" id="wlAll" title="전체 선택"/></th>
@@ -6947,6 +6959,11 @@ let wlEdits = JSON.parse(localStorage.getItem(LS_KEY)||'{}');
 let wlSel = new Set();
 const RISK_PILL={'이탈임박':'bad','장기이탈':'warn','단기이탈':'warn','온보딩실패':'bad','유지':'good'};
 function saveEdits(){localStorage.setItem(LS_KEY,JSON.stringify(wlEdits));}
+function toast(msg,ok=true){let t=document.getElementById('mToast'); if(!t){t=el('div');t.id='mToast';
+  t.style.cssText='position:fixed;left:50%;bottom:28px;transform:translateX(-50%);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;z-index:9999;box-shadow:0 6px 20px rgba(0,0,0,.28);opacity:0;transition:opacity .2s;pointer-events:none;';
+  document.body.appendChild(t);} t.textContent=msg; t.style.background=ok?'var(--brand)':'var(--bad)'; t.style.opacity='1';
+  clearTimeout(t._h); t._h=setTimeout(()=>{t.style.opacity='0';},1900);}
+const GS_KEY='malli_gs_url';
 // CSV helpers (quote-safe, standard "" escaping)
 function csvCell(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"';}
 function parseCSV(text){
@@ -6995,27 +7012,63 @@ function initWatchlist(){
     $('#wlSelCnt').textContent='☑ 선택 '+wlSel.size+'명';
     const vis=wlFilter(); const selVis=vis.filter(r=>wlSel.has(r.id)).length;
     const all=$('#wlAll'); if(all){all.checked=vis.length>0&&selVis===vis.length; all.indeterminate=selVis>0&&selVis<vis.length;}
-    ['wlBulkStatusApply','wlBulkOwnerApply'].forEach(idd=>{const b=$('#'+idd); b.disabled=wlSel.size===0; b.style.opacity=wlSel.size?'':'.45';});
+    ['wlBulkStatusApply','wlBulkOwnerApply','wlBulkMemoApply'].forEach(idd=>{const b=$('#'+idd); b.disabled=wlSel.size===0; b.style.opacity=wlSel.size?'':'.45';});
   };
   const draw=()=>{const rows=wlFilter(); tb.innerHTML=rows.map(wlRow).join(''); renderWlStats(); updateSel();};
   draw();
+
+  /* ===== Google Sheets 연동 (배포 페이지에서만 동작 · Artifact는 외부연결 차단) ===== */
+  function gsUrl(){return ($('#gsUrl').value||'').trim();}
+  function setGsStat(m,ok){const s=$('#gsStat'); s.textContent=m; s.style.color=ok===false?'var(--bad)':ok===true?'var(--good)':'var(--muted)';}
+  function gsRows(){return DATA.watchlist.map(r=>{const e=wlEdits[r.id]||{};
+    return {id:r.id,name:r.name,risk:r.risk,dsl:r.dsl,status:e.status||'미착수',owner:e.owner||'',memo:e.memo||''};});}
+  async function gsPush(silent){const url=gsUrl(); if(!url){if(!silent)alert('먼저 Apps Script 웹앱 URL을 입력하세요.');return;}
+    try{setGsStat('저장 중…');
+      const res=await fetch(url,{method:'POST',body:JSON.stringify({action:'save',rows:gsRows()})});
+      const d=await res.json();
+      setGsStat('시트 저장됨 · '+new Date().toLocaleTimeString('ko-KR'),true); if(!silent)toast(`시트에 ${d.count??gsRows().length}건 저장됨`);
+    }catch(err){setGsStat('연결 실패 — 배포 페이지에서만 동작(미리보기는 외부연결 차단)',false); if(!silent)toast('시트 연결 실패',false);}
+  }
+  async function gsLoad(){const url=gsUrl(); if(!url){alert('먼저 Apps Script 웹앱 URL을 입력하세요.');return;}
+    try{setGsStat('불러오는 중…');
+      const res=await fetch(url); const d=await res.json(); const rows=d.rows||d||[];
+      const valid=new Set(DATA.watchlist.map(r=>r.id)); let ok=0;
+      rows.forEach(r=>{const id=(r.id||'').trim(); if(!id||!valid.has(id))return;
+        const cur=wlEdits[id]||{};
+        if(r.status)cur.status=r.status; if(r.owner!=null&&r.owner!=='')cur.owner=r.owner; if(r.memo!=null&&r.memo!=='')cur.memo=r.memo;
+        if(Object.keys(cur).length){wlEdits[id]=cur;ok++;}});
+      saveEdits(); draw(); setGsStat('시트에서 불러옴 · '+ok+'건',true); toast(`시트에서 ${ok}건 불러옴`);
+    }catch(err){setGsStat('연결 실패 — 배포 페이지에서만 동작(미리보기는 외부연결 차단)',false); toast('시트 연결 실패',false);}
+  }
+  let _gsT=null;
+  function gsAuto(){if(!$('#gsAutoChk')||!$('#gsAutoChk').checked||!gsUrl())return; clearTimeout(_gsT); _gsT=setTimeout(()=>gsPush(true),1400);}
+  window.gsAuto=gsAuto;
+  // restore config
+  $('#gsUrl').value=localStorage.getItem(GS_KEY)||'';
+  $('#gsAutoChk').checked=localStorage.getItem('malli_gs_auto')==='1';
+  $('#gsUrl').addEventListener('change',()=>localStorage.setItem(GS_KEY,gsUrl()));
+  $('#gsAutoChk').addEventListener('change',e=>localStorage.setItem('malli_gs_auto',e.target.checked?'1':'0'));
+  $('#gsLoad').addEventListener('click',gsLoad);
+  $('#gsSave').addEventListener('click',()=>gsPush(false));
   tb.addEventListener('change',e=>{
     if(e.target.classList.contains('wlchk')){const tr=e.target.closest('tr'); const id=tr.dataset.id;
       e.target.checked?wlSel.add(id):wlSel.delete(id); tr.style.background=e.target.checked?'var(--brand-soft)':''; updateSel(); return;}
     const tr=e.target.closest('tr'); if(!tr)return; const id=tr.dataset.id, f=e.target.dataset.f; if(!f)return;
     wlEdits[id]=wlEdits[id]||{}; wlEdits[id][f]=e.target.value; saveEdits();
     const dot=tr.querySelector('.savedot'); if(dot){dot.classList.add('on'); setTimeout(()=>dot.classList.remove('on'),700);}
-    renderWlStats();
+    renderWlStats(); gsAuto();
   });
-  tb.addEventListener('input',e=>{if(e.target.dataset.f&&e.target.tagName==='INPUT'){const tr=e.target.closest('tr');wlEdits[tr.dataset.id]=wlEdits[tr.dataset.id]||{};wlEdits[tr.dataset.id][e.target.dataset.f]=e.target.value;saveEdits();}});
+  tb.addEventListener('input',e=>{if(e.target.dataset.f&&e.target.tagName==='INPUT'){const tr=e.target.closest('tr');wlEdits[tr.dataset.id]=wlEdits[tr.dataset.id]||{};wlEdits[tr.dataset.id][e.target.dataset.f]=e.target.value;saveEdits();gsAuto();}});
   ['#wlSearch','#fRisk','#fStatus'].forEach(s=>$(s).addEventListener('input',draw));
   // 전체선택 (현재 필터된 행 대상)
   $('#wlAll').addEventListener('change',e=>{const vis=wlFilter(); vis.forEach(r=>e.target.checked?wlSel.add(r.id):wlSel.delete(r.id)); draw();});
   // 일괄 적용
   $('#wlBulkStatusApply').addEventListener('click',()=>{const v=$('#wlBulkStatus').value; if(!v||!wlSel.size)return;
-    wlSel.forEach(id=>{wlEdits[id]=wlEdits[id]||{};wlEdits[id].status=v;}); saveEdits(); draw();});
+    const n=wlSel.size; wlSel.forEach(id=>{wlEdits[id]=wlEdits[id]||{};wlEdits[id].status=v;}); saveEdits(); draw(); toast(`대응상태 '${v}' · ${n}명 저장됨`); gsAuto();});
   $('#wlBulkOwnerApply').addEventListener('click',()=>{const v=$('#wlBulkOwner').value.trim(); if(!wlSel.size)return;
-    wlSel.forEach(id=>{wlEdits[id]=wlEdits[id]||{};wlEdits[id].owner=v;}); saveEdits(); draw();});
+    const n=wlSel.size; wlSel.forEach(id=>{wlEdits[id]=wlEdits[id]||{};wlEdits[id].owner=v;}); saveEdits(); draw(); toast(`담당자 '${v||'(비움)'}' · ${n}명 저장됨`); gsAuto();});
+  $('#wlBulkMemoApply').addEventListener('click',()=>{const v=$('#wlBulkMemo').value; if(!wlSel.size)return;
+    const n=wlSel.size; wlSel.forEach(id=>{wlEdits[id]=wlEdits[id]||{};wlEdits[id].memo=v;}); saveEdits(); draw(); toast(`메모 · ${n}명 저장됨`); gsAuto();});
   $('#wlSelClear').addEventListener('click',()=>{wlSel.clear(); draw();});
   // 내보내기 (선택 있으면 선택분만, 없으면 필터 전체)
   $('#wlExport').addEventListener('click',()=>{
@@ -7041,7 +7094,7 @@ function initWatchlist(){
           if(iOw>=0&&r[iOw]!=null)cur.owner=r[iOw];
           if(iMe>=0&&r[iMe]!=null)cur.memo=r[iMe];
           wlEdits[id]=cur; ok++;});
-        saveEdits(); draw(); alert(`불러오기 완료 · ${ok}건 반영`+(miss?` / ${miss}건 미매칭(대상 명단에 없는 id)`:''));
+        saveEdits(); draw(); gsAuto(); alert(`불러오기 완료 · ${ok}건 반영`+(miss?` / ${miss}건 미매칭(대상 명단에 없는 id)`:''));
       }catch(err){alert('CSV를 읽지 못했습니다: '+err.message);}
       $('#wlFile').value='';
     }; rd.readAsText(file,'utf-8');
