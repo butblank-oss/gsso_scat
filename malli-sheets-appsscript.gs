@@ -13,7 +13,7 @@
  */
 
 var SHEET_NAME = '대상자관리';
-var HEADERS = ['id', 'name', 'risk', 'dsl', 'status', 'owner', 'memo'];
+var HEADERS = ['id', 'name', 'risk', 'dsl', 'status', 'owner', 'memo', 'updated_at'];
 
 function sheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
