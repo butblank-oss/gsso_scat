@@ -903,9 +903,13 @@ const DATA = {
   }
  ],
  "dau_avg": 32.4,
+ "dau_avg_wd": 39.9,
+ "dau_avg_we": 11.9,
  "dau_meta": {
   "base": 466,
-  "days": 30
+  "days": 30,
+  "wd_days": 22,
+  "we_days": 8
  },
  "hours": [
   {
@@ -6733,7 +6737,13 @@ const VIEWS = {
   h+=kpi('한번도 안 씀',(s.never/s.eligible*100).toFixed(1)+'%',`${s.never}명`,'down');
   h+=`</div>`;
   h+=`<div class="sec-title">추이 & 분포</div><div class="grid g21">`;
-  h+=`<div class="card"><h3>일별 활동자수 (DAU) · 최근 30일 평균 <span style="color:var(--brand)">${DATA.dau_avg}명</span></h3><div class="csub">신규 466명 · 콘텐츠 활동 기준(로그인 아님) · 회색점=주말</div>${CH.line(DATA.dau.map(d=>({label:d.date,value:d.n,wd:d.wd})),{unit:'명'})}</div>`;
+  h+=`<div class="card"><h3>일별 활동자수 (DAU) · 최근 30일</h3><div class="csub">신규 466명 · 콘텐츠 활동 기준(로그인 아님) · 회색점=주말</div>
+    <div class="statgrid" style="grid-template-columns:repeat(3,1fr);margin:0 0 12px">
+      <div class="statmini"><div class="l">평일 평균 (월~금)</div><div class="v mono" style="color:var(--brand)">${DATA.dau_avg_wd}명</div></div>
+      <div class="statmini"><div class="l">주말 평균 (토·일)</div><div class="v mono" style="color:var(--muted)">${DATA.dau_avg_we}명</div></div>
+      <div class="statmini"><div class="l">전체 평균</div><div class="v mono">${DATA.dau_avg}명</div></div>
+    </div>${CH.line(DATA.dau.map(d=>({label:d.date,value:d.n,wd:d.wd})),{unit:'명'})}
+    <div class="note">프로그램이 <b>월~금만 제공</b>되므로 실사용 강도는 <b>평일 평균 ${DATA.dau_avg_wd}명</b>으로 보는 것이 맞습니다(주말 ${DATA.dau_avg_we}명은 프로그램 미운영일).</div></div>`;
   const seg=[{label:USAGE_LBL.active30,value:s.active30,color:USAGE_COL.active30},{label:USAGE_LBL.stopped,value:s.stopped,color:USAGE_COL.stopped},{label:USAGE_LBL.never,value:s.never,color:USAGE_COL.never}];
   h+=`<div class="card"><h3>신규참여자 상태 구성</h3><div class="csub">판정가능 ${s.eligible}명</div><div style="display:flex;justify-content:center">${CH.donut(seg)}</div>${legend(seg)}</div>`;
   h+=`</div>`;
