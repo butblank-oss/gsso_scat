@@ -110,6 +110,21 @@ tbody tr:hover{background:var(--surface-2);}
 select,input[type=text],input[type=search]{ font-family:inherit; font-size:12.5px; padding:6px 9px; border:1px solid var(--line); border-radius:7px; background:var(--surface); color:var(--ink);}
 select:focus,input:focus{outline:2px solid var(--brand-soft); border-color:var(--brand);}
 .toolbar{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px;}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px;}
+.chips .grp{font-size:11px;color:var(--sub);font-weight:700;margin:0 2px 0 6px;}
+.chips .grp:first-child{margin-left:0;}
+.fchip{cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--sub);border-radius:20px;padding:3px 11px;font-size:12px;font-weight:600;font-family:inherit;transition:all .12s;}
+.fchip:hover{border-color:var(--brand);color:var(--brand);}
+.fchip.on{background:var(--brand);border-color:var(--brand);color:#fff;}
+.fchip.clear{color:var(--bad);border-style:dashed;}
+th.sortable{cursor:pointer;user-select:none;white-space:nowrap;}
+th.sortable .ar{opacity:.35;font-size:9px;margin-left:2px;}
+th.sortable.act .ar{opacity:1;color:var(--brand);}
+.pager{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;font-size:12.5px;color:var(--sub);}
+.pager button{cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:7px;padding:4px 11px;font-size:12.5px;font-family:inherit;}
+.pager button:disabled{opacity:.4;cursor:default;}
+.pager .sz{cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--sub);border-radius:6px;padding:3px 9px;font-size:12px;font-family:inherit;}
+.pager .sz.on{background:var(--brand);border-color:var(--brand);color:#fff;}
 .toolbar .spacer{flex:1;}
 td select,td input{padding:4px 6px; font-size:12px; width:100%;}
 td input.memo{min-width:120px;}
@@ -6917,16 +6932,14 @@ const VIEWS = {
     </div></div>`;
   h+=`<div class="statgrid" id="wlStats"></div>`;
   h+=`<div class="toolbar">
-    <input type="search" id="wlSearch" placeholder="🔍 이름/기관 검색" style="width:190px"/>
-    <select id="fRisk"><option value="">위험도 전체</option><option>이탈임박</option><option>단기이탈</option><option>장기이탈</option><option>온보딩실패</option><option>유지</option></select>
-    <select id="fStatus"><option value="">진행상태 전체</option><option>미착수</option><option>진행중</option><option>완료</option><option>제외</option></select>
-    <select id="fOwner"><option value="">담당자 전체</option>${STAFF.map(s=>`<option>${s}</option>`).join('')}<option>(미배정)</option></select>
+    <input type="search" id="wlSearch" placeholder="🔍 이름/기관/담당자 검색" style="width:220px"/>
     <div class="spacer"></div>
     <button class="iconbtn" id="wlImport">⬆ CSV 불러오기</button>
     <input type="file" id="wlFile" accept=".csv,text/csv" style="display:none"/>
     <button class="iconbtn" id="wlExport">⬇ CSV 내보내기</button>
     <button class="iconbtn" id="wlReset">↺ 편집 초기화</button>
   </div>`;
+  h+=`<div class="chips" id="wlChips"></div>`;
   // 일괄 관리 바
   h+=`<div class="toolbar bulkbar" id="wlBulk" style="background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:9px 12px">
     <b id="wlSelCnt" style="font-size:12.5px">☑ 선택 0명</b>
@@ -6954,13 +6967,14 @@ const VIEWS = {
     <span id="gsStat" style="font-size:11px;color:var(--muted)"></span>
   </div>`;
   h+=`<div id="wlProgress"></div>`;
+  h+=`<div class="pager" id="wlPager"></div>`;
+  const sc=(k,label,cls)=>`<th class="sortable ${cls||''}" data-sort="${k}">${label}<span class="ar"></span></th>`;
   h+=`<div class="card" style="padding:0"><div class="tw" style="max-height:560px"><table id="wlTbl"><thead><tr>
     <th style="width:34px;text-align:center"><input type="checkbox" id="wlAll" title="전체 선택"/></th>
-    <th data-k="risk">세그먼트(조)</th><th data-k="name">이름</th>
-    <th class="r" data-k="dsl">미접속</th>
-    <th data-k="_owner">담당자</th><th data-k="_st">진행상태</th>
-    <th data-k="_cr">통화결과</th><th data-k="_cv">핵심전환</th><th data-k="_re">1주후재접속</th>
-    <th data-k="_memo">메모</th><th data-k="_upd">최종수정</th></tr></thead><tbody></tbody></table></div></div>`;
+    ${sc('seg','세그먼트(조)')}${sc('name','이름')}${sc('dsl','미접속','r')}
+    ${sc('owner','담당자')}${sc('status','진행상태')}
+    ${sc('call_result','통화결과')}${sc('conversion','핵심전환')}${sc('reengaged','1주후재접속')}
+    ${sc('memo','메모')}${sc('updated_at','최종수정')}</tr></thead><tbody></tbody></table></div></div>`;
   setTimeout(()=>initWatchlist(),0);
   return h;
 }
@@ -6971,6 +6985,17 @@ const LS_KEY='malli_wl_edits_v1';
 let wlEdits = JSON.parse(localStorage.getItem(LS_KEY)||'{}');
 let wlSel = new Set();
 let wlDirty = new Set();   // 저장 안 된 변경 id
+// 필터(복수 선택)·정렬·페이지 상태
+let wlF = { risk:new Set(), status:new Set(), owner:new Set() };
+let wlSortKey='dsl', wlSortAsc=true;
+let wlPage=1, wlPageSize=50;   // 50 기본; Infinity=전체
+function wlVal(r,key){const e=wlEdits[r.id]||{};
+  switch(key){
+    case 'seg':return e.seg||r.risk; case 'name':return r.name||''; case 'dsl':return r.dsl==null?1e9:r.dsl;
+    case 'owner':return e.owner||''; case 'status':return e.status||'미착수';
+    case 'call_result':return e.call_result||''; case 'conversion':return e.conversion||'';
+    case 'reengaged':return e.reengaged||''; case 'memo':return e.memo||''; case 'updated_at':return e.updated_at||'';
+    default:return '';}}
 function stamp(){const d=new Date(),p=n=>String(n).padStart(2,'0');
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;}
 const RISK_PILL={'이탈임박':'bad','장기이탈':'warn','단기이탈':'warn','온보딩실패':'bad','유지':'good'};
@@ -7037,14 +7062,51 @@ function wlRow(r){
   </tr>`;
 }
 function wlFilter(){
-  const q=($('#wlSearch').value||'').trim(), fr=$('#fRisk').value, fs=$('#fStatus').value, fo=($('#fOwner')?$('#fOwner').value:'');
+  const q=(($('#wlSearch')&&$('#wlSearch').value)||'').trim();
   return DATA.watchlist.filter(r=>{
     const e=wlEdits[r.id]||{};
-    if(fr&&r.risk!==fr)return false;
-    if(fs&&(e.status||'미착수')!==fs)return false;
-    if(fo){ if(fo==='(미배정)'){ if(e.owner)return false; } else if(e.owner!==fo)return false; }
-    if(q&&!(r.name.includes(q)||r.prov.includes(q)))return false;
+    if(wlF.risk.size && !wlF.risk.has(r.risk))return false;
+    if(wlF.status.size && !wlF.status.has(e.status||'미착수'))return false;
+    if(wlF.owner.size){ const o=e.owner?e.owner:'(미배정)'; if(!wlF.owner.has(o))return false; }
+    if(q && !((r.name||'').includes(q)||(r.prov||'').includes(q)||(e.owner||'').includes(q)))return false;
     return true;
+  });
+}
+function wlSortRows(rows){
+  if(!wlSortKey)return rows;
+  return rows.slice().sort((a,b)=>{let x=wlVal(a,wlSortKey),y=wlVal(b,wlSortKey),c;
+    if(typeof x==='number'&&typeof y==='number')c=x-y;
+    else{x=String(x);y=String(y); if(x===''&&y!=='')return 1; if(y===''&&x!=='')return -1; c=x.localeCompare(y,'ko');}
+    return c*(wlSortAsc?1:-1);});
+}
+const RISK_ALL=['온보딩실패','이탈임박','단기이탈','장기이탈','유지'];
+const STATUS_ALL=['미착수','진행중','완료','제외'];
+function renderChips(){
+  const box=$('#wlChips'); if(!box)return;
+  const chip=(grp,val,label)=>`<button class="fchip ${wlF[grp].has(val)?'on':''}" data-grp="${grp}" data-val="${val}">${label||val}</button>`;
+  let h=`<span class="grp">위험도</span>`+RISK_ALL.map(v=>chip('risk',v)).join('');
+  h+=`<span class="grp">진행상태</span>`+STATUS_ALL.map(v=>chip('status',v)).join('');
+  h+=`<span class="grp">담당자</span>`+STAFF.map(v=>chip('owner',v)).join('')+chip('owner','(미배정)');
+  const any=wlF.risk.size+wlF.status.size+wlF.owner.size;
+  if(any)h+=`<button class="fchip clear" data-clear="1">✕ 필터 초기화</button>`;
+  box.innerHTML=h;
+}
+function renderPager(total,pages){
+  const box=$('#wlPager'); if(!box)return;
+  const szBtn=(v,label)=>`<button class="sz ${wlPageSize===v?'on':''}" data-size="${v}">${label}</button>`;
+  let h=`<span>표시</span>`+[20,50,100].map(v=>szBtn(v,v)).join('')+szBtn(Infinity,'전체');
+  h+=`<span style="margin-left:8px">총 <b class="mono">${total}</b>건`;
+  if(wlPageSize!==Infinity && pages>1){
+    h+=` · <button data-pg="prev" ${wlPage<=1?'disabled':''}>‹ 이전</button> <b class="mono">${wlPage}</b> / ${pages} <button data-pg="next" ${wlPage>=pages?'disabled':''}>다음 ›</button>`;
+  }
+  h+=`</span>`;
+  box.innerHTML=h;
+}
+function updateSortIndicators(){
+  document.querySelectorAll('#wlTbl thead th.sortable').forEach(th=>{
+    const k=th.dataset.sort, ar=th.querySelector('.ar');
+    if(k===wlSortKey){th.classList.add('act'); ar.textContent=wlSortAsc?'▲':'▼';}
+    else{th.classList.remove('act'); ar.textContent='';}
   });
 }
 function renderWlStats(rows){
@@ -7089,8 +7151,28 @@ function initWatchlist(){
     const all=$('#wlAll'); if(all){all.checked=vis.length>0&&selVis===vis.length; all.indeterminate=selVis>0&&selVis<vis.length;}
     ['wlBulkStatusApply','wlBulkOwnerApply','wlBulkMemoApply'].forEach(idd=>{const b=$('#'+idd); b.disabled=wlSel.size===0; b.style.opacity=wlSel.size?'':'.45';});
   };
-  const draw=()=>{const rows=wlFilter(); tb.innerHTML=rows.map(wlRow).join(''); renderWlStats(); renderProgress(); updateSel(); if(typeof updateSaveUI==='function')updateSaveUI();};
+  const draw=()=>{
+    let rows=wlSortRows(wlFilter());
+    const total=rows.length;
+    const pages=wlPageSize===Infinity?1:Math.max(1,Math.ceil(total/wlPageSize));
+    if(wlPage>pages)wlPage=pages; if(wlPage<1)wlPage=1;
+    const pageRows=wlPageSize===Infinity?rows:rows.slice((wlPage-1)*wlPageSize, (wlPage-1)*wlPageSize+wlPageSize);
+    tb.innerHTML=pageRows.map(wlRow).join('');
+    renderChips(); renderPager(total,pages); renderWlStats(); renderProgress(); updateSel();
+    updateSortIndicators(); if(typeof updateSaveUI==='function')updateSaveUI();
+  };
   draw();
+  // 필터 칩(복수 선택) / 페이지 크기 / 페이지 이동 / 정렬 — 위임 핸들러
+  $('#wlChips').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b)return;
+    if(b.dataset.clear){wlF.risk.clear();wlF.status.clear();wlF.owner.clear();}
+    else{const g=b.dataset.grp,v=b.dataset.val; if(wlF[g].has(v))wlF[g].delete(v); else wlF[g].add(v);}
+    wlPage=1; draw();});
+  $('#wlPager').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b)return;
+    if(b.dataset.size!==undefined){wlPageSize=b.dataset.size==='Infinity'?Infinity:+b.dataset.size; wlPage=1; draw();}
+    else if(b.dataset.pg==='prev'){wlPage--; draw();}
+    else if(b.dataset.pg==='next'){wlPage++; draw();}});
+  $('#wlTbl thead').addEventListener('click',e=>{const th=e.target.closest('th.sortable'); if(!th)return;
+    const k=th.dataset.sort; if(wlSortKey===k)wlSortAsc=!wlSortAsc; else{wlSortKey=k;wlSortAsc=true;} draw();});
   // 담당자 자동배분
   $('#wlAssign').addEventListener('click',()=>{
     if(!confirm('대상 374명(유지 제외)을 10명 담당자에게 세그먼트 매트릭스대로 자동 배분합니다.\n기존 담당자/세그먼트 배정은 덮어씁니다. 계속할까요?'))return;
@@ -7160,7 +7242,7 @@ function initWatchlist(){
     renderWlStats();
   });
   tb.addEventListener('input',e=>{if(e.target.dataset.f&&e.target.tagName==='INPUT'){const tr=e.target.closest('tr');wlEdits[tr.dataset.id]=wlEdits[tr.dataset.id]||{};wlEdits[tr.dataset.id][e.target.dataset.f]=e.target.value;markDirty(tr.dataset.id);}});
-  ['#wlSearch','#fRisk','#fStatus','#fOwner'].forEach(s=>$(s).addEventListener('input',draw));
+  $('#wlSearch').addEventListener('input',()=>{wlPage=1;draw();});
   // 전체선택 (현재 필터된 행 대상)
   $('#wlAll').addEventListener('change',e=>{const vis=wlFilter(); vis.forEach(r=>e.target.checked?wlSel.add(r.id):wlSel.delete(r.id)); draw();});
   // 일괄 적용 → 저장 대기
@@ -7203,12 +7285,6 @@ function initWatchlist(){
   });
   $('#wlReset').addEventListener('click',()=>{if(confirm('편집한 대응상태·담당자·메모·최종수정을 모두 지웁니다. 계속할까요?')){wlEdits={};wlSel.clear();wlDirty.clear();saveEdits();lastSaved='';localStorage.removeItem('malli_wl_saved');draw();}});
   if(!window._wlUnload){window._wlUnload=1; window.addEventListener('beforeunload',ev=>{if(wlDirty.size){ev.preventDefault();ev.returnValue='';}});}
-  // sortable headers
-  let sortK=null,asc=true;
-  $('#wlTbl thead').addEventListener('click',e=>{const k=e.target.dataset.k; if(!k||k.startsWith('_'))return;
-    if(sortK===k)asc=!asc; else{sortK=k;asc=true;}
-    DATA.watchlist.sort((a,b)=>{let x=a[k],y=b[k]; if(x==null)x=asc?1e9:-1e9; if(y==null)y=asc?1e9:-1e9; return (x<y?-1:x>y?1:0)*(asc?1:-1);});
-    draw();});
 }
 /* games sort */
 let gSort='users',gAsc=false;
