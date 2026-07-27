@@ -1,0 +1,6859 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>맬리 브레인 · 운영 어드민 대시보드</title>
+<link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+<style>
+:root{
+  --bg:#F4F5F3; --surface:#FFFFFF; --surface-2:#FAFAF8; --ink:#1B2430; --sub:#6B7280; --muted:#9AA1AC;
+  --line:#E7E4DC; --line-2:#EFEDE6;
+  --brand:#146B6B; --brand-soft:#DCEBE9;
+  --good:#1B9E70; --good-soft:#DEF0E8;
+  --warn:#C48A1F; --warn-soft:#F6EAD1;
+  --bad:#B8453B; --bad-soft:#F5E1DE;
+  --c1:#2a78d6; --c2:#eb6834; --c3:#1baf7a; --c4:#eda100; --c5:#e87ba4; --c6:#4a3aa7;
+  --shadow:0 1px 2px rgba(20,30,45,.04),0 2px 8px rgba(20,30,45,.04);
+  --radius:12px;
+}
+:root[data-theme="dark"]{
+  --bg:#14171A; --surface:#1D2125; --surface-2:#22272B; --ink:#EDEEEC; --sub:#9AA3AD; --muted:#6B7580;
+  --line:#2E353B; --line-2:#272D32;
+  --brand:#4FB3AD; --brand-soft:#123734;
+  --good:#3FC08C; --good-soft:#12332A; --warn:#E0A93A; --warn-soft:#33280F; --bad:#E07065; --bad-soft:#331C1A;
+  --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500; --c5:#d55181; --c6:#9085e9;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 2px 10px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{ background:var(--bg); color:var(--ink); font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic',sans-serif; font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased;}
+.mono{font-family:'Roboto Mono','SF Mono',ui-monospace,monospace; font-variant-numeric:tabular-nums;}
+a{color:var(--brand);}
+
+/* ===== Top bar ===== */
+header{ position:sticky; top:0; z-index:50; background:var(--surface); border-bottom:1px solid var(--line); }
+.top{ max-width:1280px; margin:0 auto; padding:12px 22px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;}
+.brand-mark{ font-weight:800; font-size:16px; letter-spacing:-.01em; display:flex; align-items:center; gap:8px;}
+.brand-mark .dot{ width:26px;height:26px;border-radius:8px;background:var(--brand); color:#fff; display:grid; place-items:center; font-size:15px;}
+.top .spacer{flex:1;}
+.chip{ font-size:11.5px; padding:4px 10px; border-radius:20px; background:var(--surface-2); border:1px solid var(--line); color:var(--sub);}
+.chip b{color:var(--ink);}
+.iconbtn{ cursor:pointer; border:1px solid var(--line); background:var(--surface-2); color:var(--ink); border-radius:8px; padding:6px 12px; font-size:12.5px; font-weight:600; display:inline-flex; gap:6px; align-items:center;}
+.iconbtn:hover{border-color:var(--brand); color:var(--brand);}
+
+/* ===== Tabs ===== */
+nav.tabs{ max-width:1280px; margin:0 auto; padding:0 12px; display:flex; gap:2px; overflow-x:auto; }
+nav.tabs button{ border:0; background:transparent; color:var(--sub); font-family:inherit; font-size:13px; font-weight:600; padding:12px 16px; cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap;}
+nav.tabs button:hover{color:var(--ink);}
+nav.tabs button.active{ color:var(--brand); border-bottom-color:var(--brand);}
+
+/* ===== Layout ===== */
+main{ max-width:1280px; margin:0 auto; padding:22px; }
+.view{display:none;}
+.view.active{display:block; animation:fade .25s ease;}
+@keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+.sec-title{ font-size:12px; font-weight:700; color:var(--sub); text-transform:uppercase; letter-spacing:.06em; margin:26px 0 12px; display:flex; align-items:center; gap:8px;}
+.sec-title:first-child{margin-top:4px;}
+.note{ font-size:11.5px; color:var(--muted); margin-top:8px; line-height:1.55;}
+.banner{ background:var(--warn-soft); border:1px solid var(--warn); border-radius:10px; padding:11px 16px; font-size:12px; color:var(--ink); margin-bottom:20px; display:flex; gap:10px; align-items:flex-start;}
+.banner .i{font-size:15px;}
+
+/* ===== Cards & grid ===== */
+.grid{display:grid; gap:14px;}
+.g5{grid-template-columns:repeat(5,1fr);} .g4{grid-template-columns:repeat(4,1fr);}
+.g3{grid-template-columns:repeat(3,1fr);} .g2{grid-template-columns:repeat(2,1fr);}
+.g21{grid-template-columns:1.4fr 1fr;} .g12{grid-template-columns:1fr 1.4fr;}
+@media(max-width:1000px){ .g5,.g4,.g3,.g21,.g12{grid-template-columns:repeat(2,1fr);} }
+@media(max-width:620px){ .g5,.g4,.g3,.g2,.g21,.g12{grid-template-columns:1fr;} }
+.card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:16px 18px; box-shadow:var(--shadow);}
+.card h3{ margin:0 0 3px; font-size:13.5px; font-weight:700;}
+.card .csub{ font-size:11.5px; color:var(--sub); margin-bottom:12px;}
+
+/* KPI */
+.kpi .l{font-size:11.5px; color:var(--sub); font-weight:600;}
+.kpi .v{font-size:27px; font-weight:800; margin-top:5px; letter-spacing:-.02em;}
+.kpi .d{font-size:11.5px; margin-top:4px; color:var(--sub); font-weight:600;}
+.kpi .d.up{color:var(--good);} .kpi .d.down{color:var(--bad);}
+.kpi .bar{height:5px;border-radius:3px;background:var(--line-2);margin-top:10px;overflow:hidden;}
+.kpi .bar>span{display:block;height:100%;background:var(--brand);border-radius:3px;}
+
+/* ===== Tables ===== */
+table{width:100%; border-collapse:collapse; font-size:12.5px;}
+th,td{padding:9px 8px; text-align:left; border-bottom:1px solid var(--line-2);}
+thead th{ color:var(--sub); font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; position:sticky; top:0; background:var(--surface); cursor:pointer; user-select:none;}
+th.r,td.r{text-align:right;}
+tbody tr:hover{background:var(--surface-2);}
+.tw{max-height:560px; overflow:auto; border:1px solid var(--line); border-radius:10px;}
+
+/* pills / badges */
+.pill{display:inline-flex; align-items:center; gap:4px; padding:2px 9px; border-radius:20px; font-size:10.5px; font-weight:700; white-space:nowrap;}
+.pill.good{background:var(--good-soft); color:var(--good);}
+.pill.warn{background:var(--warn-soft); color:var(--warn);}
+.pill.bad{background:var(--bad-soft); color:var(--bad);}
+.pill.brand{background:var(--brand-soft); color:var(--brand);}
+.pill.neut{background:var(--line-2); color:var(--sub);}
+
+/* legend */
+.legend{display:flex; flex-wrap:wrap; gap:12px; margin-top:12px; font-size:11.5px; color:var(--sub);}
+.legend span{display:inline-flex; align-items:center; gap:6px;}
+.legend i{width:11px;height:11px;border-radius:3px;display:inline-block;}
+
+/* svg chart */
+.chart{width:100%;}
+.chart text{fill:var(--sub); font-size:11px; font-family:inherit;}
+.chart .val{fill:var(--ink); font-weight:700; font-family:'Roboto Mono',monospace;}
+.axis{stroke:var(--line-2); stroke-width:1;}
+.barseg:hover{opacity:.82;}
+
+/* form controls */
+select,input[type=text],input[type=search]{ font-family:inherit; font-size:12.5px; padding:6px 9px; border:1px solid var(--line); border-radius:7px; background:var(--surface); color:var(--ink);}
+select:focus,input:focus{outline:2px solid var(--brand-soft); border-color:var(--brand);}
+.toolbar{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px;}
+.toolbar .spacer{flex:1;}
+td select,td input{padding:4px 6px; font-size:12px; width:100%;}
+td input.memo{min-width:120px;}
+.savedot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--good);margin-left:6px;opacity:0;transition:opacity .3s;}
+.savedot.on{opacity:1;}
+.statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
+@media(max-width:620px){.statgrid{grid-template-columns:repeat(2,1fr);}}
+.statmini{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 13px;}
+.statmini .l{font-size:11px;color:var(--sub);font-weight:600;}
+.statmini .v{font-size:20px;font-weight:800;margin-top:2px;}
+.insight{background:var(--surface-2); border-left:3px solid var(--brand); border-radius:0 8px 8px 0; padding:11px 15px; font-size:12.5px; margin-top:14px; color:var(--ink);}
+.insight b{color:var(--brand);}
+.dual{display:flex;gap:2px;height:26px;border-radius:6px;overflow:hidden;background:var(--line-2);}
+.dual>span{display:flex;align-items:center;justify-content:center;color:#fff;font-size:10.5px;font-weight:700;}
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <div class="brand-mark"><span class="dot">🧠</span> 맬리 브레인 <span style="color:var(--sub);font-weight:600;">운영 어드민</span></div>
+    <div class="spacer"></div>
+    <span class="chip">기준일 <b>2026-07-21</b></span>
+    <span class="chip">모수 <b id="chipN">–</b></span>
+    <button class="iconbtn" id="themeBtn">🌙 <span>다크</span></button>
+  </div>
+  <nav class="tabs" id="tabs"></nav>
+</header>
+<main id="app"></main>
+
+<script>
+const DATA = {
+ "meta": {
+  "ref_date": "2026-07-21",
+  "generated": "2026-07-24 분석",
+  "total_accounts": 2066
+ },
+ "overview": {
+  "users_total": 2066,
+  "users_active": 1975,
+  "users_withdrawn": 88,
+  "users_locked": 3,
+  "grp_no_activity": 370,
+  "grp_churned": 1006,
+  "grp_active": 690,
+  "c26_total": 735,
+  "c26_new": 581,
+  "c26_re": 154
+ },
+ "seg26": {
+  "new": {
+   "eligible": 466,
+   "total": 571,
+   "never": 101,
+   "stopped": 249,
+   "active30": 116,
+   "pending": 105
+  },
+  "re": {
+   "eligible": 149,
+   "total": 149,
+   "never": 4,
+   "stopped": 43,
+   "active30": 102,
+   "pending": 0
+  },
+  "all": {
+   "eligible": 615,
+   "total": 720,
+   "never": 105,
+   "stopped": 292,
+   "active30": 218,
+   "pending": 105
+  }
+ },
+ "cohorts": [
+  {
+   "name": "복수기수 재등록",
+   "total": 98,
+   "eligible": 98,
+   "never": 4,
+   "stopped": 31,
+   "active30": 63
+  },
+  {
+   "name": "1·2·26 재등록",
+   "total": 51,
+   "eligible": 51,
+   "never": 0,
+   "stopped": 12,
+   "active30": 39
+  },
+  {
+   "name": "26년 신규",
+   "total": 571,
+   "eligible": 466,
+   "never": 101,
+   "stopped": 249,
+   "active30": 116
+  },
+  {
+   "name": "2기",
+   "total": 496,
+   "eligible": 496,
+   "never": 67,
+   "stopped": 381,
+   "active30": 48
+  },
+  {
+   "name": "1기",
+   "total": 52,
+   "eligible": 52,
+   "never": 2,
+   "stopped": 49,
+   "active30": 1
+  },
+  {
+   "name": "기타/미소속",
+   "total": 611,
+   "eligible": 582,
+   "never": 134,
+   "stopped": 409,
+   "active30": 39
+  }
+ ],
+ "sensitivity": [
+  {
+   "win": 7,
+   "eligible": 534,
+   "active": 83,
+   "rate": 15.5
+  },
+  {
+   "win": 14,
+   "eligible": 508,
+   "active": 96,
+   "rate": 18.9
+  },
+  {
+   "win": 30,
+   "eligible": 466,
+   "active": 116,
+   "rate": 24.9
+  },
+  {
+   "win": 90,
+   "eligible": 208,
+   "active": 83,
+   "rate": 39.9
+  }
+ ],
+ "stopped_span": {
+  "total": 249,
+  "bins": [
+   {
+    "label": "7일 미만",
+    "n": 146
+   },
+   {
+    "label": "7~13일",
+    "n": 24
+   },
+   {
+    "label": "14~20일",
+    "n": 9
+   },
+   {
+    "label": "21~29일",
+    "n": 8
+   },
+   {
+    "label": "30일 이상",
+    "n": 62
+   }
+  ]
+ },
+ "demo": {
+  "age": [
+   {
+    "label": "0대",
+    "n": 36
+   },
+   {
+    "label": "10대",
+    "n": 8
+   },
+   {
+    "label": "20대",
+    "n": 48
+   },
+   {
+    "label": "30대",
+    "n": 83
+   },
+   {
+    "label": "40대",
+    "n": 69
+   },
+   {
+    "label": "50대",
+    "n": 91
+   },
+   {
+    "label": "60대",
+    "n": 402
+   },
+   {
+    "label": "70대",
+    "n": 667
+   },
+   {
+    "label": "80대",
+    "n": 297
+   },
+   {
+    "label": "90대",
+    "n": 14
+   },
+   {
+    "label": "미상",
+    "n": 260
+   }
+  ],
+  "sex": [
+   {
+    "label": "F",
+    "n": 1294
+   },
+   {
+    "label": "미상",
+    "n": 378
+   },
+   {
+    "label": "M",
+    "n": 303
+   }
+  ],
+  "reg_path": [
+   {
+    "label": "org_linked",
+    "n": 1421
+   },
+   {
+    "label": "self_signup_presumed",
+    "n": 554
+   }
+  ],
+  "provider": [
+   {
+    "label": "인천 남동구 치매안심센터",
+    "n": 1272
+   },
+   {
+    "label": "미소속",
+    "n": 554
+   },
+   {
+    "label": "맬리 재활팀",
+    "n": 107
+   },
+   {
+    "label": "경기도체육회",
+    "n": 33
+   },
+   {
+    "label": "대한 컬링연맹",
+    "n": 9
+   }
+  ]
+ },
+ "last_type": [
+  {
+   "label": "training",
+   "n": 1089
+  },
+  {
+   "label": "없음",
+   "n": 384
+  },
+  {
+   "label": "workout",
+   "n": 254
+  },
+  {
+   "label": "assessment",
+   "n": 95
+  },
+  {
+   "label": "relaxation",
+   "n": 87
+  },
+  {
+   "label": "symptom",
+   "n": 22
+  },
+  {
+   "label": "routine",
+   "n": 18
+  },
+  {
+   "label": "channel",
+   "n": 10
+  }
+ ],
+ "games": [
+  {
+   "name": "기억의 숨바꼭질",
+   "users": 244,
+   "reach": 42.7,
+   "runs": 4985,
+   "complete": 78.4,
+   "entered": 4.1,
+   "stopped": 17.5
+  },
+  {
+   "name": "숨은 헬씨 찾기",
+   "users": 213,
+   "reach": 37.3,
+   "runs": 3194,
+   "complete": 32.2,
+   "entered": 67.1,
+   "stopped": 0.7
+  },
+  {
+   "name": "오늘의 장바구니",
+   "users": 212,
+   "reach": 37.1,
+   "runs": 2246,
+   "complete": 20.2,
+   "entered": 78.5,
+   "stopped": 1.3
+  },
+  {
+   "name": "기찻길 만들기",
+   "users": 194,
+   "reach": 34.0,
+   "runs": 2622,
+   "complete": 82.5,
+   "entered": 6.4,
+   "stopped": 11.1
+  },
+  {
+   "name": "꿀벌의 숫자놀이",
+   "users": 192,
+   "reach": 33.6,
+   "runs": 2617,
+   "complete": 34.4,
+   "entered": 65.2,
+   "stopped": 0.5
+  },
+  {
+   "name": "재밌는 숫자 퍼즐 4X4",
+   "users": 185,
+   "reach": 32.4,
+   "runs": 2215,
+   "complete": 63.2,
+   "entered": 7.0,
+   "stopped": 29.8
+  },
+  {
+   "name": "구슬 옮기기",
+   "users": 172,
+   "reach": 30.1,
+   "runs": 1073,
+   "complete": 71.6,
+   "entered": 13.9,
+   "stopped": 14.5
+  },
+  {
+   "name": "초성 퀴즈",
+   "users": 170,
+   "reach": 29.8,
+   "runs": 2931,
+   "complete": 57.8,
+   "entered": 4.1,
+   "stopped": 38.1
+  },
+  {
+   "name": "양말정리 대작전",
+   "users": 149,
+   "reach": 26.1,
+   "runs": 1894,
+   "complete": 41.0,
+   "entered": 58.3,
+   "stopped": 0.7
+  },
+  {
+   "name": "단어 기억하기",
+   "users": 140,
+   "reach": 24.5,
+   "runs": 1075,
+   "complete": 50.8,
+   "entered": 7.3,
+   "stopped": 41.9
+  },
+  {
+   "name": "숨은 헬씨찾기 비밀작전",
+   "users": 139,
+   "reach": 24.3,
+   "runs": 1664,
+   "complete": 33.3,
+   "entered": 66.5,
+   "stopped": 0.2
+  },
+  {
+   "name": "진짜 색깔 찾기",
+   "users": 132,
+   "reach": 23.1,
+   "runs": 2214,
+   "complete": 26.5,
+   "entered": 72.4,
+   "stopped": 1.1
+  },
+  {
+   "name": "알쏭달쏭 숫자 더하기",
+   "users": 105,
+   "reach": 18.4,
+   "runs": 874,
+   "complete": 62.1,
+   "entered": 6.2,
+   "stopped": 31.7
+  },
+  {
+   "name": "재밌는 숫자 퍼즐 9X9",
+   "users": 91,
+   "reach": 15.9,
+   "runs": 932,
+   "complete": 34.9,
+   "entered": 6.0,
+   "stopped": 59.1
+  },
+  {
+   "name": "이상한 신호",
+   "users": 72,
+   "reach": 12.6,
+   "runs": 585,
+   "complete": 32.8,
+   "entered": 65.6,
+   "stopped": 1.5
+  },
+  {
+   "name": "색깔 맞추기",
+   "users": 71,
+   "reach": 12.4,
+   "runs": 1232,
+   "complete": 91.7,
+   "entered": 3.5,
+   "stopped": 4.8
+  },
+  {
+   "name": "타일 뒤집기",
+   "users": 10,
+   "reach": 1.8,
+   "runs": 23,
+   "complete": 73.9,
+   "entered": 13.0,
+   "stopped": 13.0
+  }
+ ],
+ "games_meta": {
+  "base_users": 571
+ },
+ "content_group": [
+  {
+   "label": "운동",
+   "complete": 84.3,
+   "stopped": 6.1,
+   "entered": 9.6,
+   "runs": 15660
+  },
+  {
+   "label": "게임",
+   "complete": 52.5,
+   "stopped": 14.1,
+   "entered": 33.5,
+   "runs": 32376
+  },
+  {
+   "label": "마음",
+   "complete": 43.8,
+   "stopped": 56.2,
+   "entered": 0.0,
+   "runs": 3724
+  }
+ ],
+ "weekday": [
+  {
+   "label": "월",
+   "n": 812,
+   "pct": 16.3
+  },
+  {
+   "label": "화",
+   "n": 915,
+   "pct": 18.3
+  },
+  {
+   "label": "수",
+   "n": 891,
+   "pct": 17.9
+  },
+  {
+   "label": "목",
+   "n": 825,
+   "pct": 16.5
+  },
+  {
+   "label": "금",
+   "n": 894,
+   "pct": 17.9
+  },
+  {
+   "label": "토",
+   "n": 344,
+   "pct": 6.9
+  },
+  {
+   "label": "일",
+   "n": 309,
+   "pct": 6.2
+  }
+ ],
+ "dau": [
+  {
+   "date": "2026-06-17",
+   "wd": "수",
+   "n": 83
+  },
+  {
+   "date": "2026-06-18",
+   "wd": "목",
+   "n": 80
+  },
+  {
+   "date": "2026-06-19",
+   "wd": "금",
+   "n": 89
+  },
+  {
+   "date": "2026-06-20",
+   "wd": "토",
+   "n": 71
+  },
+  {
+   "date": "2026-06-21",
+   "wd": "일",
+   "n": 52
+  },
+  {
+   "date": "2026-06-22",
+   "wd": "월",
+   "n": 69
+  },
+  {
+   "date": "2026-06-23",
+   "wd": "화",
+   "n": 73
+  },
+  {
+   "date": "2026-06-24",
+   "wd": "수",
+   "n": 70
+  },
+  {
+   "date": "2026-06-25",
+   "wd": "목",
+   "n": 76
+  },
+  {
+   "date": "2026-06-26",
+   "wd": "금",
+   "n": 85
+  },
+  {
+   "date": "2026-06-27",
+   "wd": "토",
+   "n": 68
+  },
+  {
+   "date": "2026-06-28",
+   "wd": "일",
+   "n": 48
+  },
+  {
+   "date": "2026-06-29",
+   "wd": "월",
+   "n": 66
+  },
+  {
+   "date": "2026-06-30",
+   "wd": "화",
+   "n": 64
+  },
+  {
+   "date": "2026-07-01",
+   "wd": "수",
+   "n": 69
+  },
+  {
+   "date": "2026-07-02",
+   "wd": "목",
+   "n": 73
+  },
+  {
+   "date": "2026-07-03",
+   "wd": "금",
+   "n": 66
+  },
+  {
+   "date": "2026-07-04",
+   "wd": "토",
+   "n": 65
+  },
+  {
+   "date": "2026-07-05",
+   "wd": "일",
+   "n": 57
+  },
+  {
+   "date": "2026-07-06",
+   "wd": "월",
+   "n": 75
+  },
+  {
+   "date": "2026-07-07",
+   "wd": "화",
+   "n": 93
+  },
+  {
+   "date": "2026-07-08",
+   "wd": "수",
+   "n": 91
+  },
+  {
+   "date": "2026-07-09",
+   "wd": "목",
+   "n": 73
+  },
+  {
+   "date": "2026-07-10",
+   "wd": "금",
+   "n": 73
+  },
+  {
+   "date": "2026-07-11",
+   "wd": "토",
+   "n": 66
+  },
+  {
+   "date": "2026-07-12",
+   "wd": "일",
+   "n": 45
+  },
+  {
+   "date": "2026-07-13",
+   "wd": "월",
+   "n": 66
+  },
+  {
+   "date": "2026-07-14",
+   "wd": "화",
+   "n": 83
+  },
+  {
+   "date": "2026-07-15",
+   "wd": "수",
+   "n": 65
+  },
+  {
+   "date": "2026-07-16",
+   "wd": "목",
+   "n": 66
+  },
+  {
+   "date": "2026-07-17",
+   "wd": "금",
+   "n": 69
+  },
+  {
+   "date": "2026-07-18",
+   "wd": "토",
+   "n": 70
+  },
+  {
+   "date": "2026-07-19",
+   "wd": "일",
+   "n": 55
+  },
+  {
+   "date": "2026-07-20",
+   "wd": "월",
+   "n": 84
+  },
+  {
+   "date": "2026-07-21",
+   "wd": "화",
+   "n": 97
+  }
+ ],
+ "hours": [
+  {
+   "label": "06~09",
+   "n": 1808,
+   "pct": 14.0
+  },
+  {
+   "label": "09~12",
+   "n": 2567,
+   "pct": 19.8
+  },
+  {
+   "label": "12~18",
+   "n": 4411,
+   "pct": 34.1
+  },
+  {
+   "label": "18~24",
+   "n": 3115,
+   "pct": 24.1
+  },
+  {
+   "label": "00~06",
+   "n": 1033,
+   "pct": 8.0
+  }
+ ],
+ "recperform": [
+  {
+   "label": "활동0",
+   "rec": 36129,
+   "act": 0,
+   "rate": 0.0
+  },
+  {
+   "label": "이탈",
+   "rec": 124493,
+   "act": 3419,
+   "rate": 2.7
+  },
+  {
+   "label": "활성",
+   "rec": 120955,
+   "act": 36386,
+   "rate": 30.1
+  }
+ ],
+ "assess": [
+  {
+   "label": "우울(GDS)",
+   "churn_mean": 12.4,
+   "churn_n": 31,
+   "active_mean": 9.5,
+   "active_n": 1252
+  },
+  {
+   "label": "우울간편(GDS-SF)",
+   "churn_mean": 4.6,
+   "churn_n": 24,
+   "active_mean": 3.0,
+   "active_n": 1309
+  },
+  {
+   "label": "불면증(ISI-K)",
+   "churn_mean": 11.6,
+   "churn_n": 38,
+   "active_mean": 4.0,
+   "active_n": 1310
+  },
+  {
+   "label": "스트레스(PSS)",
+   "churn_mean": 16.6,
+   "churn_n": 37,
+   "active_mean": 14.5,
+   "active_n": 1264
+  },
+  {
+   "label": "음주(AUDIT-K)",
+   "churn_mean": 12.7,
+   "churn_n": 22,
+   "active_mean": 0.8,
+   "active_n": 743
+  },
+  {
+   "label": "주관적기억(SMCQ)",
+   "churn_mean": 2.6,
+   "churn_n": 10,
+   "active_mean": 2.7,
+   "active_n": 822
+  }
+ ],
+ "steps": [
+  {
+   "label": "활동0",
+   "avg": 5323
+  },
+  {
+   "label": "이탈",
+   "avg": 5807
+  },
+  {
+   "label": "활성",
+   "avg": 6245
+  }
+ ],
+ "funnel": {
+  "applied": 1365,
+  "approved": 1227,
+  "signed": 1190,
+  "not_signed": 37
+ },
+ "watchlist": [
+  {
+   "id": "019c78a1-d7e1-7772-a66a-3a034f7a5e19",
+   "name": "박*엽",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 0,
+   "tot": 1185,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019cc0d3-732c-73a7-aaa7-5769a5041798",
+   "name": "정*란",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 0,
+   "tot": 1295,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019cc0d4-fcc8-7eac-b658-144fcce77076",
+   "name": "김*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 0,
+   "tot": 1169,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019cd048-b8d9-737f-bc3f-6c89592ea12e",
+   "name": "김*희",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 0,
+   "tot": 1491,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019cdb8b-b023-7a42-9062-4df0ca079fcf",
+   "name": "유*연 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 0,
+   "tot": 1098,
+   "last_type": "relaxation",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019cfe56-a6ae-7ec2-9893-ba1625b90c09",
+   "name": "정*순",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 0,
+   "tot": 838,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019da876-0fe0-72e1-916f-43d7750d1215",
+   "name": "이*분",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 0,
+   "tot": 1871,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019dada7-41e7-77a3-9d94-3803d712042d",
+   "name": "김*태",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 0,
+   "tot": 584,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019dd241-b040-7faf-abcb-81c7ee405c1c",
+   "name": "김*미 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 0,
+   "tot": 647,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019dd244-717e-78cf-ab24-1df5fafed621",
+   "name": "이*순 ",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 0,
+   "tot": 669,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019dd25e-acbd-7ca1-b934-4dbed226140a",
+   "name": "김*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 0,
+   "tot": 1248,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019ddcba-4dcc-7c35-a0d9-f9c6c81f1a17",
+   "name": "고*옥 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 0,
+   "tot": 1666,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019e0555-48e2-7469-9641-59f85e64f6c6",
+   "name": "양*자 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 0,
+   "tot": 543,
+   "last_type": "relaxation",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eaaa3-945c-78da-b5b2-44e0f98f1c16",
+   "name": "박*재",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 0,
+   "tot": 240,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eaac1-f979-73a9-8db3-e7ac84961c55",
+   "name": "이*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 0,
+   "tot": 318,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eba00-8222-7ce3-abbf-6986799707f9",
+   "name": "임*숙",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 0,
+   "tot": 128,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eba07-b883-798c-977d-c86786818491",
+   "name": "정*복",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 0,
+   "tot": 231,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eba0d-9d3e-7ba1-b9c2-8d81da186227",
+   "name": "김*례",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 0,
+   "tot": 248,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eba83-e5f2-746b-a01a-1ddc81371d7a",
+   "name": "박*희",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 0,
+   "tot": 358,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "7ea957d1-0237-499e-b731-e4f0c3553340",
+   "name": "강*봉",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 1,
+   "tot": 657,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019c4118-1532-763d-a574-84b7097930ae",
+   "name": "최*연",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 1,
+   "tot": 1479,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019c54b4-d861-7efc-ab3c-1436e6c9e088",
+   "name": "정*화",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 1,
+   "tot": 221,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019cd04d-edd7-7d6e-9b38-c966f07f7aad",
+   "name": "김*희",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 1,
+   "tot": 1142,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019cdb49-3193-7b96-8ad4-53d3c464043e",
+   "name": "나*영",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 1,
+   "tot": 543,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019d23ca-ebe2-7e43-9f99-44b5e5a27316",
+   "name": "이*헌",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 1,
+   "tot": 1723,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019db8cb-d261-78a2-a5c6-d331bc3e83fe",
+   "name": "유*순",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 1,
+   "tot": 1784,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019e0009-075b-7dba-a877-2a5daa41e462",
+   "name": "오*순",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 1,
+   "tot": 1298,
+   "last_type": "assessment",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019e0010-da96-700e-8bdc-9a08ef919cad",
+   "name": "조*수",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 1,
+   "tot": 416,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019e0539-dffd-79e5-9d2b-d4e029e8cf22",
+   "name": "박*선",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 1,
+   "tot": 57,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019e1fe7-bc56-7cd5-8a50-8dc0db8812d5",
+   "name": "김*심",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 1,
+   "tot": 741,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019e2566-263d-7d95-9546-a313f4f9bf21",
+   "name": "윤*숙 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 1,
+   "tot": 92,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eaab6-a91c-7185-9e91-f1b30ee35fa4",
+   "name": "전*례",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 1,
+   "tot": 124,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eaac1-a38c-7ab7-88f0-af7782ade254",
+   "name": "전*순",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 1,
+   "tot": 1570,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eaac9-076e-71bf-8318-22a40ac7daf1",
+   "name": "신*숙",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 1,
+   "tot": 728,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019bd99a-1ff5-774f-b72d-80afa13733be",
+   "name": "안*옥",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 2,
+   "tot": 222,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019bd9a2-3a0d-707a-9885-6e69047f53f7",
+   "name": "이*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 2,
+   "tot": 369,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019c1ce4-cc0d-7f34-85ff-2d0a87333d6c",
+   "name": "홍*자",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 2,
+   "tot": 253,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019e0537-ec25-7aaf-9162-acf282e128da",
+   "name": "김*희",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 2,
+   "tot": 31,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019e054b-4ea9-78fe-8072-c10d5ee8e5b0",
+   "name": "최*선 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 2,
+   "tot": 289,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eaadd-26fc-70fa-a312-f8c6ce9c32c8",
+   "name": "김*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 2,
+   "tot": 606,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eaaf4-eea1-73dc-863f-1da9220e4854",
+   "name": "조*옥",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 2,
+   "tot": 524,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019c984b-9a8a-7c64-bc36-e6bdbcd497a3",
+   "name": "박*구",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 3,
+   "tot": 996,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019cdb8f-4473-7bc4-8653-8c215524e463",
+   "name": "유*의",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 3,
+   "tot": 356,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019dd257-b3fc-7076-b74b-4a9408ef29f1",
+   "name": "배*분",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 3,
+   "tot": 305,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019e000c-78eb-744c-b082-d7da475d11f6",
+   "name": "신*금 ",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 3,
+   "tot": 767,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eaaaf-1985-7b98-ae31-517c6de0072a",
+   "name": "장*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 3,
+   "tot": 85,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eba0b-11f5-72a4-af13-65209b6ec613",
+   "name": "정*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 3,
+   "tot": 248,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eba59-4b0c-7b67-ad44-fc62af8552ab",
+   "name": "유*희",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 3,
+   "tot": 37,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019bfd1e-c7fb-72b3-8baf-bca06dea4c02",
+   "name": "김*오",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 4,
+   "tot": 157,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019c789f-7c4e-7259-b19c-116fece21d89",
+   "name": "박*심",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 4,
+   "tot": 92,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019dd212-2928-79bd-adb9-bc289cd528c3",
+   "name": "윤*희 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 4,
+   "tot": 141,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019dd254-0aa1-7047-a264-a33398ae789b",
+   "name": "양*자 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 4,
+   "tot": 71,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019c4fc5-2afb-7745-bb6c-7b82e4d9e48a",
+   "name": "이*옥 ",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 5,
+   "tot": 158,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019dd20f-52dd-7406-93ea-ea8ba18e5070",
+   "name": "김*순",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 5,
+   "tot": 25,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019dd258-1608-7205-8789-5b4aa67e1af1",
+   "name": "김*진 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 6,
+   "tot": 380,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019e0008-57b3-7e66-b9a5-3aa92e9eebb7",
+   "name": "신*자",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 6,
+   "tot": 1060,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019e0018-4405-7bc8-b10a-a1ce98528fea",
+   "name": "황*임",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 6,
+   "tot": 103,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019e0569-5374-740b-bf52-9dbae3c4671c",
+   "name": "서*희 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 6,
+   "tot": 26,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019cc0d4-5e1a-7bba-8f12-0a305a395bba",
+   "name": "최*자",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 7,
+   "tot": 251,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019cdb76-8831-78cc-abe7-0d500e4e020a",
+   "name": "강*숙",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 7,
+   "tot": 787,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019cdb8a-674d-7ea4-8cf8-37ed45ae5a72",
+   "name": "황*옥 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 7,
+   "tot": 519,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eaadd-6f6b-7eb2-9d72-4d8442062e16",
+   "name": "박*현 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 7,
+   "tot": 163,
+   "last_type": "assessment",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eba52-8047-7585-83b8-37a3cdf38e8b",
+   "name": "김*자",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 7,
+   "tot": 41,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019cc0da-c5b1-78c1-9d48-be9f356978f2",
+   "name": "고*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 8,
+   "tot": 153,
+   "last_type": "relaxation",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eaaea-739b-7c51-8891-2373cae5ed85",
+   "name": "박*영",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 8,
+   "tot": 100,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019c31dd-53dc-7991-9267-78d035d8b561",
+   "name": "김*수",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 9,
+   "tot": 33,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019df83b-9b48-74fc-b00b-654845ac3ea4",
+   "name": "윤*훈",
+   "age": "30대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 9,
+   "tot": 74,
+   "last_type": "relaxation",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019e24fc-4494-7cbb-b31c-e41f4c7f174f",
+   "name": "민*순",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 9,
+   "tot": 81,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019c4540-a5e3-769a-9b93-a9499af5df86",
+   "name": "김*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 10,
+   "tot": 63,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019cdb6c-4d5f-77d3-b807-fa19c4fcba06",
+   "name": "김*애 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 10,
+   "tot": 805,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019db957-a502-7a00-97d2-68c01d263af2",
+   "name": "홍*자",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 10,
+   "tot": 18,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019cc0a0-3064-798a-915b-27c5d97c3048",
+   "name": "김*선",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 11,
+   "tot": 82,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019e1fbd-d5b1-743d-a5e6-f065c91367f4",
+   "name": "안*호 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 11,
+   "tot": 4,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eaa9e-b7cf-748f-9d55-b6282c94c98e",
+   "name": "김*일",
+   "age": "80대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 11,
+   "tot": 24,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019bd9af-d959-7f71-9480-f8378aab130e",
+   "name": "임*규",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 12,
+   "tot": 3,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019c312e-a03e-7aea-99ba-b60ec0acdadb",
+   "name": "김*숙",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 12,
+   "tot": 1076,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eaabf-35c4-7c06-97e4-a43bcae7fec2",
+   "name": "최*순",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 12,
+   "tot": 25,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019da895-ccd9-7985-937c-4eb40b9826ec",
+   "name": "이*자",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 13,
+   "tot": 203,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019c2626-8d9d-7b56-82db-bfa8b293d3f1",
+   "name": "김*숙",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 14,
+   "tot": 14,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019c746d-fc0d-7b02-98b7-2b567a36d9d1",
+   "name": "이*현 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 14,
+   "tot": 152,
+   "last_type": "assessment",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019cd049-016d-7e48-8d42-c1c988d02742",
+   "name": "강*순",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 14,
+   "tot": 187,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019e0536-2a1c-7395-b6a8-05f79023caac",
+   "name": "이*숙 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 14,
+   "tot": 3,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eaae3-711a-74c2-8339-e7bf37012b00",
+   "name": "양*화",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 14,
+   "tot": 67,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eb9a8-cbff-765f-9e72-cdaab1efaf2e",
+   "name": "윤*미",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 14,
+   "tot": 182,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019dd243-c94b-7bbd-b7a3-fcbf0cc4bfd5",
+   "name": "성*권 ",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 16,
+   "tot": 106,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eab00-15fa-7017-a777-91ee7045c2f8",
+   "name": "오*자",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 16,
+   "tot": 128,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eba4b-eb5f-797d-a2d0-8abbb0cd04ca",
+   "name": "윤*주",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 16,
+   "tot": 24,
+   "last_type": "relaxation",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019e0557-ef55-764c-82d0-de6378c0ed70",
+   "name": "박*자",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 17,
+   "tot": 182,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eba7b-5d58-7ebd-bdfd-10d248fba4ea",
+   "name": "조*영 ",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 17,
+   "tot": 11,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019c5038-a244-74d9-a72b-7961d68156f2",
+   "name": "이*택",
+   "age": "50대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 18,
+   "tot": 13,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019dd25c-6afa-752e-b588-554d85447310",
+   "name": "류*숙 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 18,
+   "tot": 56,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019e0014-6668-7334-aea8-7612ff1c3bbe",
+   "name": "박*애",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 18,
+   "tot": 71,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019bfd2e-1133-79fa-b355-814d501e080d",
+   "name": "이*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 21,
+   "tot": 843,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019cd014-31f1-79f9-a6f6-a0bece92f52c",
+   "name": "조*애",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 21,
+   "tot": 860,
+   "last_type": "relaxation",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eba13-25cf-7116-85c1-83c1a42446c9",
+   "name": "이*화",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 21,
+   "tot": 32,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eba19-7334-73b7-9e45-2efd39000c16",
+   "name": "김*순",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 21,
+   "tot": 138,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019c1bda-6ff8-7634-a640-c8686d01c540",
+   "name": "송*숙",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 22,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019e1feb-6e96-725f-a305-1d62b4311efd",
+   "name": "신*배",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 22,
+   "tot": 56,
+   "last_type": "relaxation",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019c2737-d45d-74c1-bb61-9d24d3f4f704",
+   "name": "임*순 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 23,
+   "tot": 14,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019dada8-975f-7266-8c9a-eee2ffb593e4",
+   "name": "정*화 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 23,
+   "tot": 104,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019c31e3-4b8d-743d-ae0d-d653c2e4227d",
+   "name": "이*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 24,
+   "tot": 54,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019cdb53-444f-7cbf-8fb6-5107f8738a43",
+   "name": "박*석",
+   "age": "80대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 25,
+   "tot": 109,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019cdb84-3a8b-7684-988f-0cc378903f22",
+   "name": "권*자",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 25,
+   "tot": 13,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019e000f-da48-7bcb-8005-91becd8e405c",
+   "name": "김*순 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 25,
+   "tot": 75,
+   "last_type": "relaxation",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019e1ffb-2bb5-773b-886f-938c20146eff",
+   "name": "조*자 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 25,
+   "tot": 50,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eaa9e-ad90-790f-9073-9c3362acaeb3",
+   "name": "황*례",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 27,
+   "tot": 34,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019cbc87-bceb-7d9b-9e33-091881c63021",
+   "name": "이*섭",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 28,
+   "tot": 26,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eaaa7-9255-70df-b687-371397d99870",
+   "name": "이*숙",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 28,
+   "tot": 57,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eaaa9-768d-7489-8262-c65b5552aa73",
+   "name": "손*숙",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 28,
+   "tot": 190,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eaaba-09b8-7784-b299-de06b0f34ee0",
+   "name": "장*숙",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 28,
+   "tot": 22,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019eab09-b908-7570-9c82-3800afb642c3",
+   "name": "김*숙",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 28,
+   "tot": 12,
+   "last_type": "channel",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019be41c-de56-711c-b733-13654b6c85a3",
+   "name": "전*순",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 29,
+   "tot": 247,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019e0564-f015-77b3-b3b9-94143071c629",
+   "name": "김*심",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 29,
+   "tot": 46,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019e1592-0788-76c4-9a03-c6f26a5aa077",
+   "name": "안*호",
+   "age": "40대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 29,
+   "tot": 4,
+   "last_type": "workout",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019e1ff1-7942-78fc-b62b-3048fb482db8",
+   "name": "장*자 ",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 29,
+   "tot": 84,
+   "last_type": "relaxation",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019cdb7d-eeda-767f-8007-10f1b2334996",
+   "name": "고*숙",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 30,
+   "tot": 3,
+   "last_type": "training",
+   "usage": "active30",
+   "risk": "유지"
+  },
+  {
+   "id": "019c4fbb-5b7e-77cc-b2bc-ad13e5b7c5f4",
+   "name": "배*점 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 31,
+   "tot": 61,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e1feb-a224-7d6c-a131-1bafbd8d90cf",
+   "name": "조*근",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 31,
+   "tot": 30,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019c1be5-5731-79fe-84d2-58d64d6f58d6",
+   "name": "한*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 32,
+   "tot": 334,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba40-ba2e-76f5-82e0-3ae8574584a5",
+   "name": "김*순",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 32,
+   "tot": 12,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eaaa2-08e8-75be-8e0f-e8e9fe6f39f9",
+   "name": "박*돈 ",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 34,
+   "tot": 11,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba86-4219-7bd4-8d23-e895925ccdcd",
+   "name": "이*숙",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 34,
+   "tot": 39,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019c789e-b803-7efc-8bfa-2c0325666675",
+   "name": "정*숙 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 35,
+   "tot": 151,
+   "last_type": "routine",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e0522-ff06-73ab-9e84-dc04bea8ad3e",
+   "name": "허*회",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 35,
+   "tot": 170,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e052c-3eb2-7913-80e5-2300c005ea51",
+   "name": "조*아 ",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 35,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e055d-4784-7049-be86-08406d830dfb",
+   "name": "배*숙 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 35,
+   "tot": 12,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba3b-648e-7374-b245-1764dadacd0f",
+   "name": "조*순",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 35,
+   "tot": 11,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba4a-0053-7ec0-a515-a3591cf959d8",
+   "name": "김*순",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 35,
+   "tot": 32,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba70-76a1-7dd3-9746-e70d70438597",
+   "name": "김*기",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 35,
+   "tot": 6,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba88-21fa-7dec-aba7-90d9bd8ae01c",
+   "name": "유*애",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 35,
+   "tot": 5,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019c2622-32fb-74db-af7a-fd5095fce214",
+   "name": "김*숙",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 36,
+   "tot": 514,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019dd274-bb09-74a7-b9bd-bf3c01251ebb",
+   "name": "임*윤",
+   "age": "30대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 36,
+   "tot": 11,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba15-9137-756c-a312-055e619b1f99",
+   "name": "최*경",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 36,
+   "tot": 14,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba19-d879-7aeb-94db-3cc75bf6e594",
+   "name": "유*숙",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 36,
+   "tot": 10,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba45-2f84-71f0-9f94-89d20cb9bb7c",
+   "name": "횡*숙",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 36,
+   "tot": 19,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019db8f6-18f9-76ce-b3af-377fe7523f61",
+   "name": "최*숙 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 37,
+   "tot": 166,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba03-c016-7a2a-bfbd-13110c86b023",
+   "name": "김*숙",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 37,
+   "tot": 32,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba80-5637-73bb-90e8-34789e90880d",
+   "name": "유*화",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 37,
+   "tot": 9,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba81-e886-75c5-b4fb-65a40e26566c",
+   "name": "김*영",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 37,
+   "tot": 68,
+   "last_type": "assessment",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba88-8c2a-78b9-b9ad-854443fa21e5",
+   "name": "윤*숙",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 37,
+   "tot": 29,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019bfd0a-8c84-7ed4-ad43-2ec1cb520931",
+   "name": "공*선",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 38,
+   "tot": 22,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019dada7-dcf1-7704-bc2e-fb93d68274cf",
+   "name": "문*자",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 38,
+   "tot": 88,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e001c-9961-77e4-9f25-181e91f6d017",
+   "name": "함*근",
+   "age": "60대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 38,
+   "tot": 45,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eaaab-a21e-7c77-a3df-07bb504be098",
+   "name": "이*자",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 38,
+   "tot": 12,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eaaf2-fab3-7d01-8b8f-0b01dbd54ba0",
+   "name": "권*관",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 38,
+   "tot": 16,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba02-ee14-7776-86f6-1d4f66511bbd",
+   "name": "전*희",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 38,
+   "tot": 10,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba57-0547-7089-b1bd-c45519e0cf30",
+   "name": "전*남",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 38,
+   "tot": 28,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019c4a31-ad3c-729e-aeda-e88fa865f9ee",
+   "name": "이*아",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 39,
+   "tot": 167,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e053e-d00c-7164-ac36-5c0132a1bf2d",
+   "name": "윤*자",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 39,
+   "tot": 68,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eaaab-5c96-7dba-b594-9b66d7412907",
+   "name": "김*자",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 40,
+   "tot": 203,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eaab8-b11b-7b50-a7c8-da35e111ccbf",
+   "name": "이*례",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 40,
+   "tot": 10,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba47-4df3-7b85-8a58-efdd512c78a8",
+   "name": "이*회",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 40,
+   "tot": 9,
+   "last_type": "channel",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019dd25b-e031-702a-bc82-97706dc9be3c",
+   "name": "곽*숙 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 41,
+   "tot": 26,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba4f-0ee1-7dad-a497-d9fe39ed486f",
+   "name": "김*라",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 41,
+   "tot": 40,
+   "last_type": "assessment",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e0564-64df-7fa7-99e7-af5446ff457a",
+   "name": "김*경 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 42,
+   "tot": 112,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eb9fe-cb82-7150-a5f7-2836198f89ff",
+   "name": "이*애",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 42,
+   "tot": 5,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eb9ff-8d1f-7a74-98e5-783a8248ac46",
+   "name": "유*희 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 42,
+   "tot": 4,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba03-be77-7cc7-900f-01852eadbfc8",
+   "name": "정*선",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 42,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba11-7d5c-7e33-a6d6-6f347182d838",
+   "name": "천*순",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 42,
+   "tot": 4,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba12-2927-7be4-b62d-14e81ba02cea",
+   "name": "오*순",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 42,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba16-2c82-7f91-b60f-288665e44216",
+   "name": "박*정",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 42,
+   "tot": 1,
+   "last_type": "routine",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba24-9b85-71e2-8b8d-f0846b254707",
+   "name": "김*희",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 42,
+   "tot": 2,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba33-2d5d-795f-b97c-af31a4941292",
+   "name": "조*희",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 42,
+   "tot": 12,
+   "last_type": "assessment",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba3e-9cd6-7728-9c0b-aeeb3df8066e",
+   "name": "김*희",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 42,
+   "tot": 7,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba3f-4d2c-732e-b1b5-63edc14f5ffb",
+   "name": "전*숙",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 42,
+   "tot": 30,
+   "last_type": "assessment",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba4d-bb66-7357-b17e-7de00e4ff13b",
+   "name": "김*녀",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 42,
+   "tot": 6,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba50-b049-78a0-a47b-cf313eb772e7",
+   "name": "김*호",
+   "age": "50대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 42,
+   "tot": 5,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba58-2010-7c46-a918-e7af227eae7b",
+   "name": "김*희",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 42,
+   "tot": 6,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba78-70ca-7ca0-98b2-6ab247fd0538",
+   "name": "이*학",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 42,
+   "tot": 12,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eba7b-ee7f-7b9d-977c-8cf3a14a3055",
+   "name": "김*분",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 42,
+   "tot": 4,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e0533-2f59-7258-a671-f4986cde6ace",
+   "name": "정*선",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 43,
+   "tot": 56,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eaab2-e3fd-7942-9200-7b0eb392f900",
+   "name": "김*택",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 43,
+   "tot": 5,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019c4a56-1d04-71ca-84f3-c2bb322bcb2e",
+   "name": "윤*여",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 44,
+   "tot": 353,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eaab1-24d0-7d02-9248-6b7b394ae122",
+   "name": "안*아",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 44,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eaae9-e21a-701f-9d8f-3d89e113435b",
+   "name": "유*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 44,
+   "tot": 8,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019cdb77-f051-72a7-8f16-eb286d9e2bbf",
+   "name": "이*준 ",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 45,
+   "tot": 79,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e0545-e832-77c3-a85e-baa92bad8c40",
+   "name": "김*숙 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 45,
+   "tot": 12,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e1ffa-b21c-7497-b16d-23cbd296e132",
+   "name": "황*환",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 45,
+   "tot": 6,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eaaa4-7ea2-72b0-a462-7d96c7603734",
+   "name": "박*영 ",
+   "age": "80대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 45,
+   "tot": 8,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eaaa7-17be-7128-bd5a-a8e17b170091",
+   "name": "섬*서",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 45,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eaaaa-9666-7c1d-b4ac-6c3cdeb0d26d",
+   "name": "박*자",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 45,
+   "tot": 2,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eaab3-577f-70f3-8537-d845692c32ef",
+   "name": " *분화 ",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 45,
+   "tot": 2,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eaab5-4670-748f-8169-67b18ea28643",
+   "name": "고*임",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 45,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eaaba-b8d0-7c52-a838-4c7a00a4497d",
+   "name": "김*분",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 45,
+   "tot": 2,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eaac1-1760-72ee-b7fb-9d7df292ecf9",
+   "name": "곽*숙 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 45,
+   "tot": 7,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eaac6-17ab-7936-be17-08aa00f41acb",
+   "name": "장*주",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 45,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eaac7-7630-79e0-a1be-6317736454e8",
+   "name": "김*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 45,
+   "tot": 3,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eaace-338c-7719-a5a9-2d1b34d96081",
+   "name": "김*녀",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 45,
+   "tot": 6,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eaad2-2dbc-770c-a390-cb8c7c074ecb",
+   "name": "심*복 ",
+   "age": "80대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 45,
+   "tot": 7,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eaad4-b578-75a9-bc66-698d188e33b9",
+   "name": "박*원",
+   "age": "80대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 45,
+   "tot": 2,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eaadb-5c75-7b8d-985d-e76b8418cb2e",
+   "name": "이*원",
+   "age": "80대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 45,
+   "tot": 3,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eaae1-51ff-700b-aeef-ef3fcf440d5c",
+   "name": "김*수",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 45,
+   "tot": 9,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eaae3-dbc3-7b38-a7d3-282ecf1d5b3c",
+   "name": "양*동",
+   "age": "80대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 45,
+   "tot": 24,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eaaf3-fdab-7610-9ab2-211f9853c2e8",
+   "name": "홍*애 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 45,
+   "tot": 7,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eaaf8-f1c3-7e3b-bd6d-0b78f0681f3a",
+   "name": "윤*운",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 45,
+   "tot": 1,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eaafb-0ef3-7fe7-807f-6b9e0f628090",
+   "name": "박*성",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 45,
+   "tot": 11,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019eaafb-1bad-7a08-a6e0-ece3c9ed4691",
+   "name": "송*연 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 45,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019c31d8-4b27-72c7-8ff9-d9471a1a08f0",
+   "name": "오*숙",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 49,
+   "tot": 606,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019c54b3-a0df-78ab-a478-a7a14c96569f",
+   "name": "구*숙",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 53,
+   "tot": 14,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019db8db-b758-7288-9518-5df0d0ca4d03",
+   "name": "노*섭 ",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 54,
+   "tot": 58,
+   "last_type": "assessment",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e1fe4-1530-7ca4-bf1a-4597f3bbd07a",
+   "name": "한*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 55,
+   "tot": 37,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e0567-00a7-7da9-ac08-a31cb0659796",
+   "name": "김*해 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 56,
+   "tot": 34,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e1fc5-787f-7a95-b340-3bf8efe24aa0",
+   "name": "이*삼",
+   "age": "80대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 56,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e2002-6bc2-7e47-9311-22611f22840f",
+   "name": "원*안 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 57,
+   "tot": 10,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e1fc9-b17f-750a-af62-822c734fb4a9",
+   "name": "이*옥",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 58,
+   "tot": 27,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e1fcf-8a44-716c-8c00-9c146cf9fc78",
+   "name": "허*숙 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 58,
+   "tot": 13,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019c54b5-a958-7b64-a48c-65ef24efcef6",
+   "name": "박*순 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 59,
+   "tot": 34,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e0005-af71-78a9-bc26-9e9862a7ffd1",
+   "name": "박*숙 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 59,
+   "tot": 25,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e0544-224f-71da-9384-354e0842b1a9",
+   "name": "김*석",
+   "age": "60대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 59,
+   "tot": 17,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019bd990-cb6a-730f-91c1-c800980919ae",
+   "name": "김*지",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 60,
+   "tot": 58,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019bfcf1-1f01-705b-aa59-1487e6239d9f",
+   "name": "이*주",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 60,
+   "tot": 218,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019c4fc7-ede7-7baa-8ad4-944b36e3683c",
+   "name": "김*경 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 63,
+   "tot": 65,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019c78a1-71ad-763a-907f-33046516ae4a",
+   "name": "김*자",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 63,
+   "tot": 45,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e1fcf-5a13-7610-a3c9-808bae95f973",
+   "name": "황*숙 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 63,
+   "tot": 3,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019c4fc1-a3f2-7737-b21a-9b453cb97086",
+   "name": "김*자 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 64,
+   "tot": 39,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019cdb86-8eb1-7c34-aaae-b25667006ad5",
+   "name": "김*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 64,
+   "tot": 13,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019bd9a6-6354-76d5-a57c-5097ddadb48e",
+   "name": "박*숙",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 65,
+   "tot": 269,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019cdb75-2d2b-765c-9d68-d64477fb12d4",
+   "name": "정*진 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 65,
+   "tot": 455,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019db901-6727-7b93-b0d9-c707e34c6efe",
+   "name": "박*용",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 65,
+   "tot": 36,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e2002-1319-7e3d-9a65-d123fa13aa05",
+   "name": "이*심",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 65,
+   "tot": 18,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019c78a5-aac4-726f-b1fd-d181fd20d0e7",
+   "name": "이*순 ",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 66,
+   "tot": 20,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019cdb97-5c80-747b-a319-381634176635",
+   "name": "최*중",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 66,
+   "tot": 250,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e2013-2553-7093-b91b-aad6f997ccf4",
+   "name": "박*옥 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 66,
+   "tot": 6,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e3e13-a353-7e97-aee2-9feedb0b7eb1",
+   "name": "곽*희",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 66,
+   "tot": 12,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019bfcf5-6428-79d9-a868-94b66462fc20",
+   "name": "손*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 67,
+   "tot": 147,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019cdb92-5ded-7bea-a1b9-1b3e5becca79",
+   "name": "조*순",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 67,
+   "tot": 28,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019cdb9b-45b7-76d2-bf5e-49dadb4bd02f",
+   "name": "오*진 ",
+   "age": "80대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 67,
+   "tot": 3,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019dadac-f77f-79bb-b5f2-74f1f211c784",
+   "name": "서*순",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 67,
+   "tot": 29,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e2010-ec8e-7f24-b719-cb437ddd8202",
+   "name": "이*례",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 67,
+   "tot": 1,
+   "last_type": "channel",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e2002-771a-7dd0-b3e6-5291176edd09",
+   "name": "백*기",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 68,
+   "tot": 9,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e1fd3-ee32-7853-90d5-bf17962593d8",
+   "name": "이*선 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 70,
+   "tot": 10,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e2005-0625-7dfb-a8fd-5ab61b3e6b6a",
+   "name": "최*영",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 70,
+   "tot": 5,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e1fe1-8f00-7cac-bfb9-c90789c24170",
+   "name": "김*자",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 71,
+   "tot": 26,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e1ff6-229c-7d54-b52a-a18433f61918",
+   "name": "이*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 71,
+   "tot": 2,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019cdb64-54aa-759e-8e7a-4d32b26e8fa6",
+   "name": "김*아제 ",
+   "age": "60대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 72,
+   "tot": 27,
+   "last_type": "channel",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019cdb93-f876-7e14-919d-2e4202ee8f95",
+   "name": "박*정 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 72,
+   "tot": 163,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e0017-97ff-7021-9995-80fb5afef2e5",
+   "name": "김*순 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 72,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e055d-a13e-7b2f-b8b6-987c737af024",
+   "name": "송*희 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 72,
+   "tot": 13,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e1fce-adbc-7012-a6a1-71e67fde1f4e",
+   "name": "김*응",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 72,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e1fd5-134f-78f4-9314-710d67b59e47",
+   "name": "홍*임 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 72,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e1fde-3fff-701a-aaf7-bed2240677cf",
+   "name": "정*림",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 72,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e1fe3-e79d-7263-9e60-270d09f14a59",
+   "name": "이*석",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 72,
+   "tot": 4,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e1fea-cd28-766d-8f52-0d65b06cd26a",
+   "name": "이*숙",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 72,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e1ff0-3331-7b81-9ece-b9f02167e7be",
+   "name": "박*운",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 72,
+   "tot": 5,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e1ff9-1659-7f4b-82e8-79fd2f591aa2",
+   "name": "김*순",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 72,
+   "tot": 3,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e2000-0620-747c-a0e0-fa11ed6447a1",
+   "name": "정*자 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 72,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e200a-979a-70cb-9768-50bb43cc2255",
+   "name": "이*옥 ",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 72,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e200e-650e-7f2b-9c85-e31f8b1d7dbe",
+   "name": "이*옥",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 72,
+   "tot": 8,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e0538-e6be-744e-816e-1ce234dcba57",
+   "name": "엄*숙 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 73,
+   "tot": 29,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e0564-5d47-75a7-91e0-04132c9ca7c1",
+   "name": "정*희 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 73,
+   "tot": 7,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e053b-fb0e-759f-84df-fea833064da6",
+   "name": "유*자 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 74,
+   "tot": 1,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e0553-51d6-704d-a0b4-a49824f084b7",
+   "name": "이*득",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 75,
+   "tot": 2,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019dd25a-c570-717f-b7a6-dc02d88284f1",
+   "name": "전*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 76,
+   "tot": 92,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e052a-91f8-7bf1-a9ad-3fefdf53188a",
+   "name": "김*숙",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 76,
+   "tot": 2,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019c31e0-abc0-77bd-a402-a0852fa7533e",
+   "name": "박*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 77,
+   "tot": 17,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e0519-cbb7-7bd4-948f-a079177b5b82",
+   "name": "김*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 77,
+   "tot": 4,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e0522-db4f-7713-950c-da8620622c5d",
+   "name": "인*자 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 77,
+   "tot": 2,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e0524-fe8e-7589-8884-e460177daa1a",
+   "name": "최*섭 ",
+   "age": "80대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 77,
+   "tot": 8,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e052e-e5f1-7cc6-9bda-493dea160902",
+   "name": "김*자",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 77,
+   "tot": 10,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e052f-6c0a-791c-8389-e875f9f60de2",
+   "name": "김*수 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 77,
+   "tot": 2,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e052f-e682-7600-a125-76c319df18f0",
+   "name": "황*화",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 77,
+   "tot": 4,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e0533-49bd-706e-8128-751e42e520b5",
+   "name": "권*조",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 77,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e053b-2e6b-76d0-b406-25094b7e18cf",
+   "name": "홍*분 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 77,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e053f-2b61-7fde-8b4b-2c5392447e4f",
+   "name": "백*옥 ",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 77,
+   "tot": 4,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e0558-04a1-77b5-940b-93bac6ce469d",
+   "name": "장*자 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 77,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e0560-0be7-7ae9-926d-2b26f423184b",
+   "name": "이*순",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 77,
+   "tot": 1,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019c78a1-d9e9-70e8-bad8-a0d14e6349bb",
+   "name": "서*자",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 78,
+   "tot": 9,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019e000b-63ba-7b35-be47-fdcf7a018fb0",
+   "name": "이*수 ",
+   "age": "80대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 78,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019db8c8-3458-723a-9b51-075796b5cbf5",
+   "name": "김*향",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 80,
+   "tot": 34,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019c1bdc-ebd4-7e60-94dc-74294a0078e9",
+   "name": "정*순",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 81,
+   "tot": 53,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019dd24c-9344-7c6c-ba0f-86b86c3ee74f",
+   "name": "이*임 ",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 81,
+   "tot": 3,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019cf52f-849d-7a54-a97b-5e8258bfd81f",
+   "name": "김*숙 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 84,
+   "tot": 34,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019dd260-984b-75e6-b653-fcb13840756a",
+   "name": "양*옥 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 84,
+   "tot": 2,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019db915-a617-781a-a379-cc4c41b54f51",
+   "name": "허*숙",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 85,
+   "tot": 46,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019dd6c8-0f15-7b7b-b9ec-1a8e3a8e0cba",
+   "name": "김*경",
+   "age": "60대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 85,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019dd255-3c03-7b0b-9b19-c92b337525bf",
+   "name": "김*임 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 86,
+   "tot": 27,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019dd6db-411e-782b-aa16-aa5cf3bd4645",
+   "name": "박*규 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 86,
+   "tot": 2,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019c4fc4-ea63-7963-837e-2c3c8120d4a3",
+   "name": "김*길 ",
+   "age": "80대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 87,
+   "tot": 17,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019dd255-fb1c-7f9f-b902-189d12441020",
+   "name": "손*례 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 87,
+   "tot": 2,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "단기이탈"
+  },
+  {
+   "id": "019c273e-2df4-7bcd-87a1-2c195bd321a8",
+   "name": "이*숙",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 90,
+   "tot": 17,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019dada0-3c6f-7b46-bed9-396b805cef4d",
+   "name": "이*진",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 90,
+   "tot": 38,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019db8cc-30b6-7696-93a3-471a11f693f4",
+   "name": "탁*옥 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 91,
+   "tot": 8,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019db8cf-0212-78ec-b59b-909627fdb9d5",
+   "name": "민*순",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 91,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019db8d5-676f-7f29-968c-b5dca909dfdf",
+   "name": "여*숙",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 91,
+   "tot": 19,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019db8db-50e9-72f7-9b6d-5a7328445a0b",
+   "name": "김*위",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 91,
+   "tot": 21,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019cdb73-b1c7-713e-940d-d7c64cb0442e",
+   "name": "이*금 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 92,
+   "tot": 3,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019dadb5-3d31-70d1-9f42-b1e5736a692d",
+   "name": "권*옥",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 92,
+   "tot": 6,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019db8d5-e232-7027-b8a9-6cd8a9e36719",
+   "name": "신*희 ",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 92,
+   "tot": 8,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019db8de-ca17-7967-b55c-32975638cd3c",
+   "name": "이*원",
+   "age": "80대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 92,
+   "tot": 6,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019db8eb-1363-739b-9584-29a89eaf60a8",
+   "name": "엄*주 ",
+   "age": "80대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 92,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019db8f5-24c8-791e-8f4b-b9d76e790a0b",
+   "name": "윤*빈 ",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 92,
+   "tot": 2,
+   "last_type": "channel",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019db908-7d52-7070-a3df-5c68c2e42379",
+   "name": "문*희 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 92,
+   "tot": 1,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019dad9c-90dc-7c5f-b762-e29ea9fe52fb",
+   "name": "이*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 94,
+   "tot": 5,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019dad9d-9e7b-7b78-8b53-d53b5fd5f1a5",
+   "name": "신*복",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 94,
+   "tot": 2,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019dada2-7484-70f2-876f-1b559ea1e528",
+   "name": "황*학",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 94,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019dae4d-c4a5-7706-86dc-4c9a428fc160",
+   "name": "임*방",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 94,
+   "tot": 19,
+   "last_type": "assessment",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019cda42-1e10-7554-a2fc-76f3e0a3c088",
+   "name": "손*자 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 95,
+   "tot": 83,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019cdb97-6220-7160-a0f2-93c12989728d",
+   "name": "봉*숙",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 97,
+   "tot": 39,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c78a2-2903-7f2c-8d0f-5ef4f1757787",
+   "name": "박*녀",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 98,
+   "tot": 39,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019cf4dd-67cc-704b-bf99-574b808d9aab",
+   "name": "양*이",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 99,
+   "tot": 82,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c1bdf-5f19-7a45-ab91-c9203f701200",
+   "name": "최*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 106,
+   "tot": 6,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c2754-9a7b-782c-8f76-4e8a62b14fb2",
+   "name": "조*현",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 109,
+   "tot": 16,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c261d-0dbc-729a-a2d0-0a9f03d885a7",
+   "name": "최*순",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 114,
+   "tot": 260,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019d23c5-9630-7f7b-b082-7880370afc7f",
+   "name": "이*아",
+   "age": "40대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 121,
+   "tot": 4,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c4fc0-1b46-7ac8-8e99-1e1314f6e7a4",
+   "name": "조*애 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 123,
+   "tot": 23,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019cdb80-f54f-7574-9377-b9e60c2de92c",
+   "name": "이*인",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 123,
+   "tot": 23,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019cdb92-76ad-7384-8660-432305498796",
+   "name": "정*분",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 124,
+   "tot": 16,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019bd9c5-19ab-7d20-9e1f-77ddd49a99da",
+   "name": "김*자",
+   "age": "90대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 125,
+   "tot": 141,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c2624-9df5-77c8-a599-04966239f951",
+   "name": "이*애",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 126,
+   "tot": 11,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c31df-cfbd-74a6-9d7d-46ee43bbee05",
+   "name": "김*순",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 126,
+   "tot": 2,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019cdb85-52ba-78c6-a7ad-0a025b423a47",
+   "name": "권*봉 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 126,
+   "tot": 5,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019cf4fa-ab2c-7274-a437-0669ba364b03",
+   "name": "홍*천",
+   "age": "80대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 127,
+   "tot": 3,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c78a4-af21-771a-9063-3790964a3730",
+   "name": "손*희",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 129,
+   "tot": 200,
+   "last_type": "relaxation",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019cdb98-9975-7ad9-b90c-149ccfaacfdb",
+   "name": "김*순",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 130,
+   "tot": 15,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019cdb49-c341-71bf-93f3-315281b12751",
+   "name": "김*자",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 131,
+   "tot": 2,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019cdb6c-f043-7ca0-942f-f0fa5a44385b",
+   "name": "김*순 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 133,
+   "tot": 6,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019cdb5d-ee1c-7fe3-bf06-128ccf1670d2",
+   "name": "김*옥 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 134,
+   "tot": 16,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019cdb62-df7e-7dc4-b926-e14f563e6898",
+   "name": "조*섭",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 134,
+   "tot": 5,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c2630-3d6d-7ff7-9d94-11f31a1d8e1a",
+   "name": "정*남",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 135,
+   "tot": 9,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019cdb49-0b20-78ea-89ee-6ce7f73d8367",
+   "name": "김*례",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 135,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019cdb4f-2c1f-7164-9c81-8d92ac4d5ac7",
+   "name": "김*순",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 135,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019cdb51-43d1-7e7a-85da-9bae5b1684b1",
+   "name": "오*애",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 135,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019cdb61-1d61-778c-a7a1-42f86ba11a45",
+   "name": "박*원 ",
+   "age": "60대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 135,
+   "tot": 2,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019cdb7b-0647-7692-bcd6-9e9731c07038",
+   "name": "박*건 ",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 135,
+   "tot": 3,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019cdb8a-752e-77d8-9573-6aff432c4be5",
+   "name": "김*태 ",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 135,
+   "tot": 6,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019cdb91-8a90-7887-9659-25204d1d88e1",
+   "name": "이*화 ",
+   "age": "80대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 135,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019cdb94-edb9-7cde-a0ea-51d506faff25",
+   "name": "정*자 ",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 135,
+   "tot": 2,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019cdb9f-bf7e-7c1f-af1c-f343ece70761",
+   "name": "이*옥 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 135,
+   "tot": 3,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c746c-3724-7429-b1b7-d016e543101e",
+   "name": "이*애",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 136,
+   "tot": 5,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c2736-f9c1-7772-b998-ee5c7d74c85d",
+   "name": "강*숙",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 137,
+   "tot": 84,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c273b-fb50-7e99-b134-9cd591755009",
+   "name": "조*숙 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 137,
+   "tot": 45,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c54b4-9ebf-7c2c-ba2b-8b7b879da7d9",
+   "name": "장*희",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 140,
+   "tot": 4,
+   "last_type": "workout",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c78a1-ab6a-7254-b8e8-cbe55778dac7",
+   "name": "이*순",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 142,
+   "tot": 34,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c78a4-a8ad-77a3-a39a-230ab841a426",
+   "name": "이*열",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 142,
+   "tot": 4,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c31e6-e747-79cd-8f17-8a1788fdca12",
+   "name": "최*선",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 143,
+   "tot": 3,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c4115-2ea5-79d6-b837-99b9d523c484",
+   "name": "김*기",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 143,
+   "tot": 16,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c4fbb-94e9-7f67-b03c-45beed61b243",
+   "name": "이*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 143,
+   "tot": 5,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c78a5-4899-7a96-b89b-e7fb4772d00e",
+   "name": "이*지",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 143,
+   "tot": 15,
+   "last_type": "assessment",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019bd9ab-9b5a-7047-81c7-870368101321",
+   "name": "노*희",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 145,
+   "tot": 2,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c746b-b5c5-73f9-8421-79765fcce282",
+   "name": "김*준",
+   "age": "60대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 150,
+   "tot": 2,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c746c-b0e9-742b-b5fb-b20db4dbddfd",
+   "name": "김*호",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 154,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c7469-48e3-76e6-94a9-718ca70ab77c",
+   "name": "김*환 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 155,
+   "tot": 2,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c3368-d07b-7c34-aa13-d56309eb5865",
+   "name": "하*해",
+   "age": "50대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 157,
+   "tot": 11,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c4fc0-eb27-7a91-a8cf-a409a8908b5c",
+   "name": "김*단",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 161,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c4fbd-c1d7-7ffe-a731-b0de21c43ced",
+   "name": "이*숙",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 162,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c4fc0-3ab9-7a90-8c0f-bf1cdd22daf7",
+   "name": "장*수",
+   "age": "80대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 162,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c318b-7f7b-78d5-86fa-67fea5157c53",
+   "name": "이*관",
+   "age": "60대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 166,
+   "tot": 11,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c318b-98e9-7d8d-ac14-f9a73e2caad5",
+   "name": "강*정",
+   "age": "50대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 166,
+   "tot": 9,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c1bd8-f4c1-7289-8746-fb88426d272c",
+   "name": "장*연",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 168,
+   "tot": 17,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c2739-0930-7733-9d6f-1f9d9ac5a7fb",
+   "name": "정*옥1950",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 168,
+   "tot": 9,
+   "last_type": "assessment",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c31dd-0d02-79d8-938b-92833be5c1fd",
+   "name": "주*애",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 168,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c31de-929b-7389-b4a2-2226f894d22a",
+   "name": "변*순",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 168,
+   "tot": 2,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c31e5-62f2-7e76-8a7f-94151be0dcc4",
+   "name": "이*경",
+   "age": "50대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 168,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c273a-8852-759a-b986-38a4cdf988c3",
+   "name": "이*희",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 170,
+   "tot": 4,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019bfcef-7840-7e20-8796-fb41b633804c",
+   "name": "조*희",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 171,
+   "tot": 19,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019bfcf6-8243-75b3-a47a-ae87694ea467",
+   "name": "김*자",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 171,
+   "tot": 6,
+   "last_type": "assessment",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019bfcf8-8911-786b-9721-4ad90852eb5d",
+   "name": "정*숙",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 171,
+   "tot": 2,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c1bde-9d89-79b4-945c-fe947e8e202c",
+   "name": "이*래",
+   "age": "80대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 171,
+   "tot": 6,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c1bd4-bbf6-7fc2-840e-d5f17ad63da7",
+   "name": "안*종",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 172,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c1bdf-1152-720d-8f13-5450717c3412",
+   "name": "김*휴",
+   "age": "80대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 172,
+   "tot": 5,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c1bec-8b96-7f11-9aad-351069d724ce",
+   "name": "박*임 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 172,
+   "tot": 8,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019c1bef-cfa4-7ed5-95bd-df4620b9a1ab",
+   "name": "김*헌",
+   "age": "60대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 172,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019bfcf4-9144-7638-a3ed-e0313ddf757e",
+   "name": "박*순",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 178,
+   "tot": 1,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019bd98b-f25b-7dff-b203-d86d85f5ed44",
+   "name": "차*인",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 185,
+   "tot": 3,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019bd994-e539-7238-98cd-e24116393783",
+   "name": "김*자",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": 185,
+   "tot": 6,
+   "last_type": "training",
+   "usage": "stopped",
+   "risk": "장기이탈"
+  },
+  {
+   "id": "019bd99e-e059-758f-b10b-3b33eaa1e922",
+   "name": "송*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019bd9a9-4a4d-71e0-bb62-8aca88d22335",
+   "name": "정*옥",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019bfcef-7e7d-7cb8-9a6e-8167c4050122",
+   "name": "이*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019bfcf7-4319-7d61-8d51-e56c1a186371",
+   "name": "강*영",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019bfcfb-4fee-7b93-bc9f-0ed77c384a79",
+   "name": "우*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019bfd02-0eef-76eb-9f13-74aa4aa12c97",
+   "name": "오*덕",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019bfd0e-a069-701b-a5bd-0fcb3cfe5ab3",
+   "name": "최*자",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019c1bd6-c5b9-724c-9092-4ec955f14382",
+   "name": "권*남",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019c1be8-416d-79ae-b3e0-d25c09cbc466",
+   "name": "박*복",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019c1beb-c2dd-74da-81b2-12d4ec03a341",
+   "name": "봉*임 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019c2635-f197-7899-8db3-b73fd702d880",
+   "name": "박*두",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019c2744-37f3-7791-bc12-3fc63785a1b7",
+   "name": "김*옥",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019c31d8-7ae4-7640-9219-f758cda4348c",
+   "name": "조*순",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019c31d9-b3c9-75d4-bad3-83378dd0234b",
+   "name": "김*남",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019c31e1-9e94-7c35-81b4-198b54513544",
+   "name": "박*덕",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019c31e5-c6dc-774d-869a-2cc533730968",
+   "name": "박*완",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019c31e7-745e-77ae-87e8-7b6853584ad5",
+   "name": "박*경",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019c31e9-25e6-7085-80ac-9349753cd954",
+   "name": "조*례",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019c4a5a-f1d9-7f6d-8571-d693937bb15f",
+   "name": "박*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019c4fbc-e9fc-7698-a621-8ee54ba07b3e",
+   "name": "원*희",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019c4fc4-fb81-70c9-b9a3-73f964e91932",
+   "name": "지*순",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019c4fc6-ac0b-7688-9447-9bde33f5c604",
+   "name": "유*옥 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019c4fc8-0250-7f0c-947c-e27daaf194fc",
+   "name": "진*화",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019c54b4-7130-7c8f-bc03-6cc57f7adf78",
+   "name": "방*숙 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019c54b6-f9b8-72a0-8830-c1dc015299c9",
+   "name": "남*화",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019c54b8-a0df-7c47-9778-c37cd4c3d827",
+   "name": "신*순 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019c54ba-2cbf-75a6-b314-8227167f824b",
+   "name": "이*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019c54be-f4bc-76e7-a8b3-82641ec11738",
+   "name": "권*숙",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019c7465-69da-7f2f-870f-9445d18254f3",
+   "name": "황*흥 ",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019c7467-505e-7048-a8a0-50375d3e2d64",
+   "name": "박*숙",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019c746e-1b53-742f-ae1e-abc2d4ee6501",
+   "name": "유*인",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019c746e-8d64-7864-a763-447e8eea66d1",
+   "name": "이*원",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019c746f-6a55-7d4a-ad3a-cab1e82897a8",
+   "name": "이*연",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019c789e-6cbf-7a43-bce5-c27f4a0953f6",
+   "name": "고*호 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019cc0e0-c157-71e0-8106-1d3e3b5daa8e",
+   "name": "김*숙 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019cdb41-f88f-7ed4-83d8-a5056c45ee2d",
+   "name": "조*경 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019cdb47-9d35-7dd6-ba2a-abc78f3ec2e8",
+   "name": "홍*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019cdb4b-4f1a-73d7-bef4-1eb6a5786f40",
+   "name": "최*순",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019cdb57-bfa4-79e3-a4df-9b0ccf9a4b9c",
+   "name": "전*희 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019cdb5d-f500-771e-9f7a-cd5a8f8c7170",
+   "name": "맹*임 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019cdb6c-c567-7b40-ad0f-7a262605354c",
+   "name": "김*영 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019cdb71-17d3-7ae2-a701-0fcded5ce2a2",
+   "name": "유*균",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019cdb82-7ab7-7ec4-a1e8-d88e370d2a9c",
+   "name": "한*환 ",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019cdb83-2331-73ee-bcc3-4ff8cd0c4fed",
+   "name": "차*임 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019cdb87-49f9-7910-b7f0-17a68a9e2459",
+   "name": "박*확",
+   "age": "60대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019cdb8d-e82e-71ef-bfca-55a0709801c6",
+   "name": "최*희",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019cdb9c-6683-7c1e-94ea-f54ade105c30",
+   "name": "김*욱",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019dada8-5f15-7a45-b52d-6a27cfa6c6db",
+   "name": "박*숙 ",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019dadad-b7ab-7508-9d68-cb0fb546fc65",
+   "name": "지*숙 ",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019dadb2-4f37-7e6b-bb76-4f94c0bfc29c",
+   "name": "정*순",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019db8e7-4f7d-7260-90d4-8f555518d29f",
+   "name": "김*숙",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019db8ef-e988-7682-beec-594c7f60bafa",
+   "name": "이*분",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019db8f0-c6ab-7c4a-99f5-cc34136afced",
+   "name": "최*애",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019db8fb-cd37-7252-9192-c15aaa707602",
+   "name": "박*진",
+   "age": "80대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019db907-69ba-7d72-a484-6e2d524e98e3",
+   "name": "하*수",
+   "age": "80대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019dd210-e0fd-73e5-8aec-d914c90014e5",
+   "name": "김*자",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019dd210-f9ba-7059-90ab-6dc8794e9377",
+   "name": "허*진",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019dd248-8ee4-7116-aa9d-01ae2fd3b2d8",
+   "name": "윤*자",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019dd24c-a51c-7029-947a-6bb58014499b",
+   "name": "나*용",
+   "age": "90대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019dd25d-c3da-7ed8-b8c0-83949dea5b74",
+   "name": "윤*순",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019dd264-4353-7b5e-a39b-8817dd339916",
+   "name": "김*임",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019dd6ef-1091-7939-9266-f6a2ccbf9a16",
+   "name": "전*자 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019e0527-c88d-7d17-a6da-c925ce8a21b6",
+   "name": "김*미",
+   "age": "50대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019e0537-94b9-7f44-acc4-eedd387d1751",
+   "name": "이*도",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019e053c-4537-714f-b9fe-3fc733916397",
+   "name": "도*옥 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019e053f-23b6-7298-810f-2e0eb9cdb4fb",
+   "name": "경*범",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019e055b-156c-739f-bbd1-1c861d73982e",
+   "name": "김*영",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019e0561-1180-799e-89c6-16277dd58799",
+   "name": "정*진 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019e0561-680f-7fb6-94f9-2849938a03cf",
+   "name": "장*순 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019e0563-1d98-79f8-bfe7-58db05ae8f3a",
+   "name": "정*옥 ",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019e1fbd-54da-7f9d-a8e3-3f3fd91ec0ff",
+   "name": "장*인 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019e1fbf-13e7-768b-a569-763c05d3b6d2",
+   "name": "최*우",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019e1fc2-7912-7f0a-b98e-36deb94bddd3",
+   "name": "박*자 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019e1fd2-5369-7057-849f-b9e337ef4b0c",
+   "name": "이*오 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019e1fd7-62d1-76b3-b003-05d191427138",
+   "name": "양*희",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019e1fd8-a3d3-7ecf-b2a0-8dc8be1f8429",
+   "name": "이*매 ",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019e1fdb-1945-7ade-b228-a61c82eb3ff7",
+   "name": "유*자 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019e1ff4-fd35-7d1c-b717-884955bb7056",
+   "name": "김*옥 ",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019eaaa1-d0ee-72ce-8e82-3de09a0da5e5",
+   "name": "이*숙",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019eaaa3-929d-7589-a519-80fd0acccbd1",
+   "name": "박*희",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019eaaad-737d-7050-bcdd-6616e30e99a1",
+   "name": "구*희",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019eaaaf-c162-7fe6-bb23-372f783e5ba1",
+   "name": "임*자 ",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019eaab0-409d-7178-a034-0ffa39ad861d",
+   "name": "유*순",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019eaab1-5969-7dc5-88fa-b1c5d09ccc2d",
+   "name": "이*래",
+   "age": "80대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019eaab6-3a53-730c-978d-11e142f0f0d9",
+   "name": "박*녀",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019eaab7-7a56-71a6-834e-a4ed7dbce448",
+   "name": "황*순 ",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019eaab8-2a6e-7a51-b1a7-2a1ab0c356e4",
+   "name": "김*순",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019eaabe-9a6a-712f-971a-f928ae3a603d",
+   "name": "홍*선",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019eaac1-ced1-7efd-b373-c19dcb6e0071",
+   "name": "조*제 ",
+   "age": "80대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019eaac6-1ce7-7d58-980b-d7ee2900283b",
+   "name": "최*선",
+   "age": "80대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019eaacb-a103-7598-83e8-b9a98dae0c59",
+   "name": "이*억 ",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019eaada-f41b-7bcd-b7f7-5250f1b3d4d9",
+   "name": "신*수",
+   "age": "80대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019eaae6-3f6c-7bf7-b46d-376c486771fe",
+   "name": "황*환 ",
+   "age": "80대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019eab01-bdb1-75ff-a9c3-1b172d10de7f",
+   "name": "최*숙",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019eba14-cc48-7815-bfd9-380c660c4ae9",
+   "name": "이*숙",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019eba16-5a63-76b9-8a5a-e7a9b6a2673d",
+   "name": "박*숙",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019eba19-deb0-7bf5-8896-fb423e404407",
+   "name": "전*순",
+   "age": "80대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019eba1c-cc3e-71b2-8a3d-a86682d34502",
+   "name": "최*선",
+   "age": "50대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019eba54-96df-799d-9a9a-2eea331dc32f",
+   "name": "정*선",
+   "age": "70대",
+   "sex": "M",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019eba5c-8633-78a2-9d2f-00b0bd72c5ee",
+   "name": "김*미",
+   "age": "60대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  },
+  {
+   "id": "019eba82-53aa-76c2-9da1-df52b768078f",
+   "name": "김*순",
+   "age": "70대",
+   "sex": "F",
+   "prov": "인천 남동구 치매안심센터",
+   "dsl": null,
+   "tot": 0,
+   "last_type": "-",
+   "usage": "never",
+   "risk": "온보딩실패"
+  }
+ ],
+ "watchlist_meta": {
+  "n": 466
+ }
+};
+const KRW = n => n.toLocaleString('ko-KR');
+const $ = (s,r=document)=>r.querySelector(s);
+const el = (t,c,h)=>{const e=document.createElement(t); if(c)e.className=c; if(h!=null)e.innerHTML=h; return e;};
+
+/* ============ SVG chart helpers (dependency-free) ============ */
+const CH = {
+  // horizontal bars: items [{label,value,color?,sub?}], opts{fmt,maxLabel}
+  hbar(items,{fmt=(v)=>v, unit='', max=null, h=null, showVal=true}={}){
+    const W=560, rowH=30, padL=Math.max(...items.map(i=>i.label.length))*7+14, padR=54;
+    const H=(h||items.length*rowH)+8; const mx=max||Math.max(...items.map(i=>i.value),1);
+    const bw=W-padL-padR;
+    let s=`<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img">`;
+    items.forEach((it,i)=>{
+      const y=i*rowH+6, w=Math.max(2,bw*it.value/mx), col=it.color||'var(--brand)';
+      s+=`<text x="${padL-8}" y="${y+18}" text-anchor="end">${it.label}</text>`;
+      s+=`<rect class="barseg" x="${padL}" y="${y+5}" width="${w}" height="16" rx="4" fill="${col}"><title>${it.label}: ${fmt(it.value)}${unit}</title></rect>`;
+      if(showVal) s+=`<text class="val" x="${padL+w+7}" y="${y+18}">${fmt(it.value)}${unit}</text>`;
+    });
+    return s+'</svg>';
+  },
+  // vertical bars
+  vbar(items,{fmt=(v)=>v,unit='',colorFn=null,max=null}={}){
+    const W=560,H=210,padB=34,padT=18,padL=8,padR=8;
+    const mx=max||Math.max(...items.map(i=>i.value),1); const bw=(W-padL-padR)/items.length;
+    let s=`<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">`;
+    s+=`<line class="axis" x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}"/>`;
+    items.forEach((it,i)=>{
+      const x=padL+i*bw, bh=(H-padB-padT)*it.value/mx, col=colorFn?colorFn(it,i):'var(--brand)';
+      const w=bw*0.62, ox=x+(bw-w)/2;
+      s+=`<rect class="barseg" x="${ox}" y="${H-padB-bh}" width="${w}" height="${Math.max(1,bh)}" rx="4" fill="${col}"><title>${it.label}: ${fmt(it.value)}${unit}</title></rect>`;
+      s+=`<text class="val" x="${x+bw/2}" y="${H-padB-bh-6}" text-anchor="middle" style="font-size:10px">${fmt(it.value)}${unit}</text>`;
+      s+=`<text x="${x+bw/2}" y="${H-padB+16}" text-anchor="middle">${it.label}</text>`;
+    });
+    return s+'</svg>';
+  },
+  // line
+  line(items,{fmt=(v)=>v,unit=''}={}){
+    const W=680,H=230,padB=40,padT=18,padL=30,padR=12;
+    const mx=Math.max(...items.map(i=>i.value),1); const n=items.length;
+    const xw=(W-padL-padR)/(n-1||1);
+    const X=i=>padL+i*xw, Y=v=>H-padB-(H-padB-padT)*v/mx;
+    let pts=items.map((it,i)=>`${X(i)},${Y(it.value)}`).join(' ');
+    let s=`<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">`;
+    [0,.5,1].forEach(f=>{const y=padT+(H-padB-padT)*(1-f); s+=`<line class="axis" x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}"/><text x="4" y="${y+4}" style="font-size:9px">${Math.round(mx*f)}</text>`;});
+    s+=`<polyline fill="none" stroke="var(--brand)" stroke-width="2.5" points="${pts}"/>`;
+    s+=`<polygon fill="var(--brand-soft)" opacity=".55" points="${padL},${H-padB} ${pts} ${X(n-1)},${H-padB}"/>`;
+    items.forEach((it,i)=>{
+      const wk=(it.wd==='토'||it.wd==='일');
+      s+=`<circle class="barseg" cx="${X(i)}" cy="${Y(it.value)}" r="${wk?3.5:3}" fill="${wk?'var(--muted)':'var(--brand)'}"><title>${it.label}(${it.wd||''}): ${fmt(it.value)}${unit}</title></circle>`;
+      if(i%Math.ceil(n/9)===0||i===n-1) s+=`<text x="${X(i)}" y="${H-padB+16}" text-anchor="middle" style="font-size:9px">${it.label.slice(5)}</text>`;
+    });
+    return s+'</svg>';
+  },
+  // donut items [{label,value,color}]
+  donut(items,{fmt=(v)=>v,center=''}={}){
+    const total=items.reduce((a,b)=>a+b.value,0); const R=70,r=44,cx=90,cy=90;
+    let a=-Math.PI/2, s=`<svg class="chart" viewBox="0 0 180 180" style="max-width:200px">`;
+    items.forEach(it=>{
+      const ang=it.value/total*Math.PI*2, a2=a+ang;
+      const x1=cx+R*Math.cos(a),y1=cy+R*Math.sin(a),x2=cx+R*Math.cos(a2),y2=cy+R*Math.sin(a2);
+      const xi1=cx+r*Math.cos(a2),yi1=cy+r*Math.sin(a2),xi2=cx+r*Math.cos(a),yi2=cy+r*Math.sin(a);
+      const big=ang>Math.PI?1:0;
+      s+=`<path class="barseg" d="M${x1},${y1} A${R},${R} 0 ${big} 1 ${x2},${y2} L${xi1},${yi1} A${r},${r} 0 ${big} 0 ${xi2},${yi2} Z" fill="${it.color}"><title>${it.label}: ${fmt(it.value)} (${(it.value/total*100).toFixed(1)}%)</title></path>`;
+      a=a2;
+    });
+    s+=`<text x="90" y="86" text-anchor="middle" class="val" style="font-size:22px">${center||KRW(total)}</text>`;
+    s+=`<text x="90" y="104" text-anchor="middle" style="font-size:10px">명</text>`;
+    return s+'</svg>';
+  },
+  // 100% stacked horizontal for one row: segs [{value,color,label}]
+  stack100(segs){
+    const total=segs.reduce((a,b)=>a+b.value,0)||1;
+    let s='<div class="dual">';
+    segs.forEach(g=>{const w=g.value/total*100; if(w<0.5)return; s+=`<span style="flex:${g.value};background:${g.color}" title="${g.label}: ${g.value} (${w.toFixed(1)}%)">${w>9?w.toFixed(0)+'%':''}</span>`;});
+    return s+'</div>';
+  }
+};
+function legend(items){return `<div class="legend">${items.map(i=>`<span><i style="background:${i.color}"></i>${i.label}</span>`).join('')}</div>`;}
+
+/* ============ Views ============ */
+const USAGE_COL={never:'var(--bad)',stopped:'var(--warn)',active30:'var(--good)'};
+const USAGE_LBL={never:'한번도 안 씀',stopped:'쓰다가 멈춤',active30:'꾸준히 사용중'};
+
+function kpi(l,v,d,dcls,barpct){
+  return `<div class="card kpi"><div class="l">${l}</div><div class="v">${v}</div>${d?`<div class="d ${dcls||''}">${d}</div>`:''}${barpct!=null?`<div class="bar"><span style="width:${barpct}%"></span></div>`:''}</div>`;
+}
+
+const VIEWS = {
+/* ---------- 개요 ---------- */
+'개요':()=>{
+  const o=DATA.overview, s=DATA.seg26.new;
+  const actRate=(s.active30/s.eligible*100).toFixed(1);
+  let h=`<div class="banner"><span class="i">ℹ️</span><div>본 대시보드는 추출 데이터(2025-07-21~2026-07-21)를 <b>가공한 스냅샷</b>입니다. 지표는 원본 CSV(S1~S8)에서 직접 집계했으며, 실시간 운영에는 일 단위 배치 연동이 필요합니다. 판정은 <b>가입 30일 경과자</b> 기준, 최근 30일 활동 여부로 분류합니다.</div></div>`;
+  h+=`<div class="sec-title">핵심 지표 — 26년기수 신규참여자</div>`;
+  h+=`<div class="grid g5">`;
+  h+=kpi('26년기수 참여자',KRW(o.c26_total)+'명',`신규 ${o.c26_new} · 재등록 ${o.c26_re}`);
+  h+=kpi('신규 판정가능',KRW(s.eligible)+'명',`가입 30일↑ · 대기 ${s.pending}명`);
+  h+=kpi('꾸준히 사용중',actRate+'%',`${s.active30}명 · 목표 30%`, s.active30/s.eligible>0.3?'up':'down', actRate);
+  h+=kpi('쓰다가 멈춤',(s.stopped/s.eligible*100).toFixed(1)+'%',`${s.stopped}명`,'down');
+  h+=kpi('한번도 안 씀',(s.never/s.eligible*100).toFixed(1)+'%',`${s.never}명`,'down');
+  h+=`</div>`;
+  h+=`<div class="sec-title">전체 서비스 규모</div><div class="grid g4">`;
+  h+=kpi('정상(활성) 계정',KRW(o.users_active)+'명',`탈퇴 ${o.users_withdrawn} · 잠김 ${o.users_locked}`);
+  h+=kpi('활동0 (가입 후 0건)',KRW(o.grp_no_activity)+'명',(o.grp_no_activity/o.users_total*100).toFixed(0)+'%','down');
+  h+=kpi('이탈 (90일+ 무활동)',KRW(o.grp_churned)+'명',(o.grp_churned/o.users_total*100).toFixed(0)+'%','down');
+  h+=kpi('활성 (90일 내 활동)',KRW(o.grp_active)+'명',(o.grp_active/o.users_total*100).toFixed(0)+'%','up');
+  h+=`</div>`;
+  h+=`<div class="sec-title">추이 & 분포</div><div class="grid g21">`;
+  h+=`<div class="card"><h3>일별 활동자수 (DAU)</h3><div class="csub">26년 신규 · 최근 ${DATA.dau.length}일 · 회색점=주말</div>${CH.line(DATA.dau.map(d=>({label:d.date,value:d.n,wd:d.wd})),{unit:'명'})}</div>`;
+  const seg=[{label:USAGE_LBL.active30,value:s.active30,color:USAGE_COL.active30},{label:USAGE_LBL.stopped,value:s.stopped,color:USAGE_COL.stopped},{label:USAGE_LBL.never,value:s.never,color:USAGE_COL.never}];
+  h+=`<div class="card"><h3>신규참여자 상태 구성</h3><div class="csub">판정가능 ${s.eligible}명</div><div style="display:flex;justify-content:center">${CH.donut(seg)}</div>${legend(seg)}</div>`;
+  h+=`</div>`;
+  h+=`<div class="insight"><b>요점</b> — 신규참여자 판정가능자의 <b>${actRate}%만</b> 최근 30일 활동이 있습니다. 반면 "쓰다가 멈춤"이 절반(${(s.stopped/s.eligible*100).toFixed(0)}%)으로, 이 그룹을 어떻게 다루느냐가 핵심입니다(→ 이탈·리텐션 탭).</div>`;
+  return h;
+},
+/* ---------- 기수·세그먼트 ---------- */
+'기수·세그먼트':()=>{
+  let h=`<div class="sec-title">기수별 사용 현황</div>`;
+  h+=`<div class="card"><h3>기수별 상태 분포 (판정가능·상호배타)</h3><div class="csub">최근 30일 기준 · 오른쪽 100% 막대는 그룹 내 비율</div>`;
+  h+=`<table><thead><tr><th>기수 구분</th><th class="r">인원</th><th class="r">판정가능</th><th class="r">꾸준사용</th><th style="width:38%">구성</th></tr></thead><tbody>`;
+  DATA.cohorts.forEach(c=>{
+    const rate=(c.active30/c.eligible*100).toFixed(1);
+    const segs=[{value:c.active30,color:USAGE_COL.active30,label:'꾸준'},{value:c.stopped,color:USAGE_COL.stopped,label:'멈춤'},{value:c.never,color:USAGE_COL.never,label:'안씀'}];
+    h+=`<tr><td><b>${c.name}</b></td><td class="r mono">${c.total}</td><td class="r mono">${c.eligible}</td><td class="r mono"><span class="pill ${rate>=25?'good':rate>=10?'warn':'bad'}">${rate}%</span></td><td>${CH.stack100(segs)}</td></tr>`;
+  });
+  h+=`</tbody></table>${legend([{label:'꾸준히 사용중',color:USAGE_COL.active30},{label:'쓰다가 멈춤',color:USAGE_COL.stopped},{label:'한번도 안 씀',color:USAGE_COL.never}])}</div>`;
+  h+=`<div class="insight">순서: <b>복수기수 재등록 &gt; 26년 신규 &gt; 2기 &gt; 미소속</b>. 재등록자는 꾸준사용률이 압도적이라 이미 충성고객으로 분류하고 마케팅 스펙에서 제외합니다. 기수 구조 없이 혼자 가입한 <b>미소속</b>이 가장 취약합니다.</div>`;
+
+  h+=`<div class="sec-title">신규 vs 재등록 (26년기수)</div><div class="grid g3">`;
+  ['new','re','all'].forEach(k=>{
+    const s=DATA.seg26[k]; const nm={new:'신규참여자',re:'재등록자',all:'26년 전체'}[k];
+    const segs=[{label:'꾸준',value:s.active30,color:USAGE_COL.active30},{label:'멈춤',value:s.stopped,color:USAGE_COL.stopped},{label:'안씀',value:s.never,color:USAGE_COL.never}];
+    h+=`<div class="card"><h3>${nm}</h3><div class="csub">전체 ${s.total} · 판정가능 ${s.eligible}</div><div style="display:flex;justify-content:center">${CH.donut(segs,{center:(s.active30/s.eligible*100).toFixed(0)+'%'})}</div><div style="text-align:center;font-size:11px;color:var(--sub)">꾸준사용률</div></div>`;
+  });
+  h+=`</div>`;
+
+  h+=`<div class="sec-title">판정 윈도우 민감도 (신규참여자)</div><div class="card"><h3>창 길이별 "꾸준사용" 판정 비교</h3><div class="csub">30일을 표준으로 채택</div>`;
+  h+=CH.hbar(DATA.sensitivity.map(x=>({label:`최근 ${x.win}일`,value:x.rate,color:x.win===30?'var(--brand)':'var(--muted)'})),{unit:'%',max:50});
+  h+=`<div class="note">7일은 너무 빡빡(주기적 사용 서비스), 90일은 최신기수 판단 곤란. 30일이 균형점입니다.</div></div>`;
+  return h;
+},
+/* ---------- 이탈·리텐션 ---------- */
+'이탈·리텐션':()=>{
+  const sp=DATA.stopped_span; const early=sp.bins[0].n; const real=sp.bins[4].n;
+  let h=`<div class="sec-title">"쓰다가 멈춤" 해부 — 언제 멈췄나</div>`;
+  h+=`<div class="statgrid">`;
+  h+=`<div class="statmini"><div class="l">멈춤 그룹</div><div class="v mono">${sp.total}명</div></div>`;
+  h+=`<div class="statmini"><div class="l">초기이탈 (7일 미만)</div><div class="v mono" style="color:var(--bad)">${early}명</div></div>`;
+  h+=`<div class="statmini"><div class="l">진성이탈 (30일+)</div><div class="v mono" style="color:var(--warn)">${real}명</div></div>`;
+  h+=`<div class="statmini"><div class="l">초기이탈 비중</div><div class="v mono">${(early/sp.total*100).toFixed(0)}%</div></div>`;
+  h+=`</div>`;
+  h+=`<div class="card"><h3>사용 기간 분포 (가입~마지막활동)</h3>`;
+  h+=CH.hbar(sp.bins.map((b,i)=>({label:b.label,value:b.n,color:i===0?'var(--bad)':i===4?'var(--warn)':'var(--muted)'})),{unit:'명'});
+  h+=`</div>`;
+  h+=`<div class="grid g2" style="margin-top:14px">`;
+  h+=`<div class="card"><h3>🔴 초기이탈 ${early}명 (7일 미만)</h3><div class="csub">사실상 "당일체험형"</div><p style="font-size:12.5px;color:var(--sub);margin:0">원인 진단이 우선. 리워드 필요성 자체가 불확실 → <b>A/B 테스트 제안</b>: 그룹A(리워드형·영양제 안내) vs 그룹B(사용지원형·재설치 지원콜)로 재접속률 비교.</p></div>`;
+  h+=`<div class="card"><h3>🟡 진성이탈 ${real}명 (30일+)</h3><div class="csub">사용법·습관 검증된 사람들</div><p style="font-size:12.5px;color:var(--sub);margin:0">콘텐츠 피로·동기 소진 쪽. "왜 한 달이나 쓰다 멈췄나" 확인 + <b>영양제 리워드 + 짧은 설문</b>을 전원 제시(A/B 없이).</p></div>`;
+  h+=`</div>`;
+
+  h+=`<div class="sec-title">추천 대비 실수행률 (그룹별)</div><div class="card"><h3>추천받은 활동 중 실제 수행 비율</h3><div class="csub">실사용률의 진짜 분모</div>`;
+  h+=CH.hbar(DATA.recperform.map(r=>({label:r.label,value:r.rate,color:r.label==='활성'?'var(--good)':r.label==='이탈'?'var(--warn)':'var(--bad)'})),{unit:'%',max:40});
+  h+=`<div class="note">활성 유저조차 추천의 30%만 수행 — 이게 정상 수준의 실사용률입니다.</div></div>`;
+  return h;
+},
+/* ---------- 콘텐츠·게임 ---------- */
+'콘텐츠·게임':()=>{
+  let h=`<div class="sec-title">콘텐츠 유형별 완료 패턴</div><div class="card"><h3>운동 / 게임 / 마음</h3><div class="csub">26년 신규 로그 기준 · 완료(100)/중단(50)/진입만(0)</div>`;
+  h+=`<table><thead><tr><th>유형</th><th class="r">실행수</th><th style="width:55%">완료 · 중단 · 진입만</th></tr></thead><tbody>`;
+  DATA.content_group.forEach(c=>{
+    const segs=[{value:c.complete,color:'var(--good)',label:'완료'},{value:c.stopped,color:'var(--warn)',label:'중단'},{value:c.entered,color:'var(--bad)',label:'진입만'}];
+    h+=`<tr><td><b>${c.label}</b></td><td class="r mono">${KRW(c.runs)}</td><td>${CH.stack100(segs)}</td></tr>`;
+  });
+  h+=`</tbody></table>${legend([{label:'완료',color:'var(--good)'},{label:'중단',color:'var(--warn)'},{label:'진입만',color:'var(--bad)'}])}`;
+  h+=`<div class="note">마음 콘텐츠는 중도포기가 압도적. 운동은 완료율 최고. (완료신호 유실 이슈로 운동·마음은 소폭 과소집계)</div></div>`;
+
+  h+=`<div class="sec-title">게임별 참여도 (17종)</div><div class="card"><div class="toolbar"><h3 style="margin:0">게임 랭킹</h3><div class="csub" style="margin:0 0 0 8px">도달율=신규 ${DATA.games_meta.base_users}명 중 1회+ 이용 · 헤더 클릭 정렬</div></div>`;
+  h+=`<div class="tw"><table id="gtbl"><thead><tr>
+    <th data-k="name">게임명</th><th class="r" data-k="users">이용자</th><th class="r" data-k="reach">도달율</th>
+    <th class="r" data-k="runs">총실행</th><th class="r" data-k="complete">완료율</th><th class="r" data-k="entered">진입만</th>
+    <th class="r" data-k="stopped">중단율</th><th data-k="pat">패턴</th></tr></thead><tbody></tbody></table></div>`;
+  h+=`<div class="note" id="gnote"></div></div>`;
+  setTimeout(()=>renderGames(),0);
+
+  h+=`<div class="sec-title">참여 타이밍</div><div class="grid g2">`;
+  h+=`<div class="card"><h3>요일별 활동 비중</h3><div class="csub">고유 user×date · 주말 급감</div>${CH.vbar(DATA.weekday.map(w=>({label:w.label,value:w.pct})),{unit:'%',colorFn:(it)=>(it.label==='토'||it.label==='일')?'var(--muted)':'var(--brand)'})}</div>`;
+  const hmax=DATA.hours.reduce((a,b)=>b.pct>a.pct?b:a,DATA.hours[0]);
+  h+=`<div class="card"><h3>시간대별 접속 비중</h3><div class="csub">오후(12~18시) 최다 · 알림은 정오~오후 발송 유리</div>${CH.vbar(DATA.hours.map(x=>({label:x.label,value:x.pct})),{unit:'%',colorFn:(it)=>it.label===hmax.label?'var(--brand)':'var(--brand-soft)',max:40})}<div class="note">고유 user×date×시간대 기준. 참고: 원본 회신문서(부록 No.8)의 "아침 6~9시 집중"은 다른 집계 방식으로, 원시 S8 재집계에서는 재현되지 않아 실측값으로 대체했습니다.</div></div>`;
+  h+=`</div>`;
+  return h;
+},
+/* ---------- 건강·인구 ---------- */
+'건강·인구':()=>{
+  const d=DATA.demo;
+  let h=`<div class="sec-title">인구 구성 (활성 계정)</div><div class="grid g2">`;
+  h+=`<div class="card"><h3>연령대 분포</h3>${CH.hbar(d.age.map(a=>({label:a.label,value:a.n})),{unit:'명'})}</div>`;
+  const sexc={F:'var(--c5)','미상':'var(--muted)',M:'var(--c1)'};
+  h+=`<div class="card"><h3>성별</h3><div style="display:flex;justify-content:center">${CH.donut(d.sex.map(x=>({label:x.label,value:x.n,color:sexc[x.label]||'var(--muted)'})))}</div>${legend(d.sex.map(x=>({label:x.label+' '+x.n,color:sexc[x.label]||'var(--muted)'})))}</div>`;
+  h+=`</div>`;
+  h+=`<div class="grid g2" style="margin-top:14px">`;
+  h+=`<div class="card"><h3>등록 경로 (대리지표)</h3><div class="csub">기관연결 여부로 대리</div>${CH.hbar(d.reg_path.map(x=>({label:x.label==='org_linked'?'기관연결(오프라인추정)':'자가가입추정',value:x.n})),{unit:'명'})}</div>`;
+  h+=`<div class="card"><h3>기관(보건소) 상위</h3>${CH.hbar(d.provider.slice(0,7).map(x=>({label:x.label.length>14?x.label.slice(0,13)+'…':x.label,value:x.n})),{unit:'명'})}</div>`;
+  h+=`</div>`;
+
+  h+=`<div class="sec-title">검사 점수 — 이탈군 vs 활성군</div><div class="card"><h3>완료 검사(progress=100) 평균 점수</h3><div class="csub">표본 작지만 방향 일관 · 마케팅 아닌 케어콜 연계 근거</div>`;
+  h+=`<table><thead><tr><th>검사</th><th class="r">이탈군 평균 (n)</th><th class="r">활성군 평균 (n)</th><th>비교</th></tr></thead><tbody>`;
+  DATA.assess.forEach(a=>{
+    const worse=a.churn_mean!=null&&a.active_mean!=null&&a.churn_mean>a.active_mean;
+    h+=`<tr><td><b>${a.label}</b></td><td class="r mono">${a.churn_mean??'–'} <span style="color:var(--muted)">(${a.churn_n})</span></td><td class="r mono">${a.active_mean??'–'} <span style="color:var(--muted)">(${a.active_n})</span></td><td>${worse?'<span class="pill bad">이탈군 더 나쁨</span>':'<span class="pill neut">–</span>'}</td></tr>`;
+  });
+  h+=`</tbody></table><div class="note">⚠️ 2025-11~2026-01 점수 공백(앱 회귀 버그) 존재. 점수 있는 완료건만 집계.</div></div>`;
+
+  h+=`<div class="sec-title">보조 지표</div><div class="grid g2">`;
+  h+=`<div class="card"><h3>그룹별 일평균 걸음수</h3><div class="csub">차이 크지 않음 → 이탈 주원인 아님</div>${CH.hbar(DATA.steps.map(s=>({label:s.label,value:s.avg,color:s.label==='활성'?'var(--good)':s.label==='이탈'?'var(--warn)':'var(--bad)'})),{unit:'보',fmt:KRW})}</div>`;
+  const f=DATA.funnel;
+  h+=`<div class="card"><h3>가입 전 온보딩 퍼널</h3><div class="csub">보건소 신청 → 앱 가입</div>${CH.hbar([{label:'신청',value:f.applied},{label:'승인',value:f.approved},{label:'앱가입',value:f.signed}],{unit:'명'})}<div class="note">승인자의 ${(f.signed/f.approved*100).toFixed(0)}%가 실제 가입 — 미가입 ${f.not_signed}명(상한).</div></div>`;
+  h+=`</div>`;
+  return h;
+},
+/* ---------- 대상자 관리 (편집) ---------- */
+'대상자 관리':()=>{
+  let h=`<div class="banner"><span class="i">✏️</span><div><b>편집 가능 영역</b> — 대응상태·담당자·메모를 직접 수정하면 이 브라우저에 자동 저장됩니다(localStorage). CSV로 내보내 공유하세요. 대상: 26년 신규 판정가능 <b>${DATA.watchlist_meta.n}명</b>.</div></div>`;
+  h+=`<div class="statgrid" id="wlStats"></div>`;
+  h+=`<div class="toolbar">
+    <input type="search" id="wlSearch" placeholder="🔍 이름/기관 검색" style="width:190px"/>
+    <select id="fRisk"><option value="">위험도 전체</option><option>이탈임박</option><option>단기이탈</option><option>장기이탈</option><option>온보딩실패</option><option>유지</option></select>
+    <select id="fStatus"><option value="">대응상태 전체</option><option>미착수</option><option>진행중</option><option>완료</option><option>제외</option></select>
+    <div class="spacer"></div>
+    <button class="iconbtn" id="wlExport">⬇ CSV 내보내기</button>
+    <button class="iconbtn" id="wlReset">↺ 편집 초기화</button>
+  </div>`;
+  h+=`<div class="card" style="padding:0"><div class="tw" style="max-height:640px"><table id="wlTbl"><thead><tr>
+    <th data-k="risk">위험도</th><th data-k="name">이름</th><th data-k="age">연령/성별</th><th data-k="prov">기관</th>
+    <th class="r" data-k="dsl">미접속(일)</th><th class="r" data-k="tot">총활동</th><th data-k="last_type">마지막유형</th>
+    <th data-k="_st">대응상태</th><th data-k="_owner">담당자</th><th data-k="_memo">메모</th></tr></thead><tbody></tbody></table></div></div>`;
+  setTimeout(()=>initWatchlist(),0);
+  return h;
+}
+};
+
+/* ============ Watchlist logic (editable) ============ */
+const LS_KEY='malli_wl_edits_v1';
+let wlEdits = JSON.parse(localStorage.getItem(LS_KEY)||'{}');
+const RISK_PILL={'이탈임박':'bad','장기이탈':'warn','단기이탈':'warn','온보딩실패':'bad','유지':'good'};
+function saveEdits(){localStorage.setItem(LS_KEY,JSON.stringify(wlEdits));}
+function wlRow(r){
+  const e=wlEdits[r.id]||{};
+  const st=e.status||'미착수', owner=e.owner||'', memo=e.memo||'';
+  return `<tr data-id="${r.id}">
+    <td><span class="pill ${RISK_PILL[r.risk]||'neut'}">${r.risk}</span></td>
+    <td>${r.name}</td><td>${r.age||'–'}/${r.sex==='F'?'여':r.sex==='M'||r.sex==='male'?'남':'–'}</td>
+    <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.prov}">${r.prov}</td>
+    <td class="r mono">${r.dsl==null?'–':r.dsl}</td><td class="r mono">${r.tot}</td><td>${r.last_type}</td>
+    <td><select data-f="status">${['미착수','진행중','완료','제외'].map(o=>`<option ${o===st?'selected':''}>${o}</option>`).join('')}</select><span class="savedot"></span></td>
+    <td><input type="text" data-f="owner" value="${owner.replace(/"/g,'&quot;')}" placeholder="담당"/></td>
+    <td><input class="memo" type="text" data-f="memo" value="${memo.replace(/"/g,'&quot;')}" placeholder="메모"/></td>
+  </tr>`;
+}
+function wlFilter(){
+  const q=($('#wlSearch').value||'').trim(), fr=$('#fRisk').value, fs=$('#fStatus').value;
+  return DATA.watchlist.filter(r=>{
+    if(fr&&r.risk!==fr)return false;
+    if(fs&&((wlEdits[r.id]||{}).status||'미착수')!==fs)return false;
+    if(q&&!(r.name.includes(q)||r.prov.includes(q)))return false;
+    return true;
+  });
+}
+function renderWlStats(rows){
+  const cnt={미착수:0,진행중:0,완료:0,제외:0};
+  DATA.watchlist.forEach(r=>{cnt[(wlEdits[r.id]||{}).status||'미착수']++;});
+  $('#wlStats').innerHTML=[['미착수','bad'],['진행중','warn'],['완료','good'],['제외','neut']]
+    .map(([k])=>`<div class="statmini"><div class="l">${k}</div><div class="v mono">${cnt[k]}</div></div>`).join('');
+}
+function initWatchlist(){
+  const tb=$('#wlTbl tbody');
+  const draw=()=>{const rows=wlFilter(); tb.innerHTML=rows.map(wlRow).join(''); renderWlStats();};
+  draw();
+  tb.addEventListener('change',e=>{
+    const tr=e.target.closest('tr'); if(!tr)return; const id=tr.dataset.id, f=e.target.dataset.f; if(!f)return;
+    wlEdits[id]=wlEdits[id]||{}; wlEdits[id][f]=e.target.value; saveEdits();
+    const dot=tr.querySelector('.savedot'); if(dot){dot.classList.add('on'); setTimeout(()=>dot.classList.remove('on'),700);}
+    renderWlStats();
+  });
+  tb.addEventListener('input',e=>{if(e.target.dataset.f&&e.target.tagName==='INPUT'){const tr=e.target.closest('tr');wlEdits[tr.dataset.id]=wlEdits[tr.dataset.id]||{};wlEdits[tr.dataset.id][e.target.dataset.f]=e.target.value;saveEdits();}});
+  ['#wlSearch','#fRisk','#fStatus'].forEach(s=>$(s).addEventListener('input',draw));
+  $('#wlExport').addEventListener('click',()=>{
+    const hdr=['id','이름','연령','성별','기관','미접속일','총활동','마지막유형','위험도','대응상태','담당자','메모'];
+    const lines=[hdr.join(',')].concat(wlFilter().map(r=>{const e=wlEdits[r.id]||{};
+      return [r.id,r.name,r.age,r.sex,r.prov,r.dsl,r.tot,r.last_type,r.risk,e.status||'미착수',e.owner||'',(e.memo||'').replace(/,/g,' ')].map(x=>`"${x}"`).join(',');}));
+    const blob=new Blob(['﻿'+lines.join('\n')],{type:'text/csv'}); const a=el('a');
+    a.href=URL.createObjectURL(blob); a.download='malli_대상자관리.csv'; a.click();
+  });
+  $('#wlReset').addEventListener('click',()=>{if(confirm('편집한 대응상태·담당자·메모를 모두 지웁니다. 계속할까요?')){wlEdits={};saveEdits();draw();}});
+  // sortable headers
+  let sortK=null,asc=true;
+  $('#wlTbl thead').addEventListener('click',e=>{const k=e.target.dataset.k; if(!k||k.startsWith('_'))return;
+    if(sortK===k)asc=!asc; else{sortK=k;asc=true;}
+    DATA.watchlist.sort((a,b)=>{let x=a[k],y=b[k]; if(x==null)x=asc?1e9:-1e9; if(y==null)y=asc?1e9:-1e9; return (x<y?-1:x>y?1:0)*(asc?1:-1);});
+    draw();});
+}
+/* games sort */
+let gSort='users',gAsc=false;
+function renderGames(){
+  const tb=$('#gtbl tbody'); const rows=[...DATA.games].sort((a,b)=>{const x=a[gSort],y=b[gSort];return (x<y?-1:x>y?1:0)*(gAsc?1:-1);});
+  tb.innerHTML=rows.map(g=>{
+    let pat='';
+    if(g.entered>=55) pat='<span class="pill warn">미리보기 후 이탈</span>';
+    else if(g.stopped>=38) pat='<span class="pill bad">완주 실패(난이도)</span>';
+    else if(g.complete>=70) pat='<span class="pill good">건강</span>';
+    else pat='<span class="pill neut">–</span>';
+    return `<tr><td>${g.name}</td><td class="r mono">${g.users}</td><td class="r mono">${g.reach}%</td><td class="r mono">${KRW(g.runs)}</td><td class="r mono">${g.complete}%</td><td class="r mono">${g.entered}%</td><td class="r mono">${g.stopped}%</td><td>${pat}</td></tr>`;
+  }).join('');
+  $('#gnote').innerHTML='실제 1위는 <b>기억의 숨바꼭질</b>(도달·완료 모두 우수). <b>숫자퍼즐 9X9</b>는 중단율 최고(난이도), <b>양말정리·오늘의 장바구니</b>는 진입만율 높음(UI 이탈).';
+}
+document.addEventListener('click',e=>{const th=e.target.closest('#gtbl thead th'); if(!th)return; const k=th.dataset.k; if(!k||k==='pat')return; if(gSort===k)gAsc=!gAsc; else{gSort=k;gAsc=(k==='name');} renderGames();});
+
+/* ============ Router ============ */
+const ORDER=['개요','기수·세그먼트','이탈·리텐션','콘텐츠·게임','건강·인구','대상자 관리'];
+const ICON={'개요':'📊','기수·세그먼트':'👥','이탈·리텐션':'📉','콘텐츠·게임':'🎮','건강·인구':'🩺','대상자 관리':'✏️'};
+function route(name){
+  $('#app').innerHTML=`<div class="view active">${VIEWS[name]()}</div>`;
+  [...$('#tabs').children].forEach(b=>b.classList.toggle('active',b.dataset.n===name));
+  location.hash=encodeURIComponent(name);
+}
+function build(){
+  $('#tabs').innerHTML=ORDER.map(n=>`<button data-n="${n}">${ICON[n]} ${n}</button>`).join('');
+  [...$('#tabs').children].forEach(b=>b.onclick=()=>route(b.dataset.n));
+  $('#chipN').textContent=KRW(DATA.overview.users_total)+'명';
+  const init=decodeURIComponent(location.hash.slice(1)); route(ORDER.includes(init)?init:'개요');
+}
+$('#themeBtn').onclick=()=>{
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  document.documentElement.setAttribute('data-theme',dark?'light':'dark');
+  $('#themeBtn').innerHTML=dark?'🌙 <span>다크</span>':'☀️ <span>라이트</span>';
+  localStorage.setItem('malli_theme',dark?'light':'dark');
+};
+if(localStorage.getItem('malli_theme')==='dark'){document.documentElement.setAttribute('data-theme','dark');$('#themeBtn').innerHTML='☀️ <span>라이트</span>';}
+build();
+</script>
+</body>
+</html>
