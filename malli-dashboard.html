@@ -6950,6 +6950,7 @@ const VIEWS = {
     <span style="font-size:12px;font-weight:700">☁ 시트</span>
     <input type="text" id="gsUrl" placeholder="Apps Script 웹앱 URL" style="flex:1;min-width:150px"/>
     <button class="iconbtn" id="gsLoad">↓ 불러오기</button>
+    <label style="font-size:12px;display:flex;align-items:center;gap:5px;color:var(--sub)"><input type="checkbox" id="gsAuto"/> 🔄 자동새로고침</label>
     <span id="gsStat" style="font-size:11px;color:var(--muted)"></span>
   </div>`;
   h+=`<div id="wlProgress"></div>`;
@@ -7140,6 +7141,13 @@ function initWatchlist(){
   $('#gsUrl').value=localStorage.getItem(GS_KEY)||'';
   $('#gsUrl').addEventListener('change',()=>localStorage.setItem(GS_KEY,gsUrl()));
   $('#gsLoad').addEventListener('click',gsLoad);
+  // 자동 새로고침(모니터링): 30초마다 시트에서 불러옴 · 미저장 편집이 있으면 건너뜀(덮어쓰기 방지)
+  $('#gsAuto').checked=localStorage.getItem('malli_gs_autoref')==='1';
+  if(window._gsPoll){clearInterval(window._gsPoll);window._gsPoll=null;}
+  const startPoll=()=>{if(window._gsPoll)clearInterval(window._gsPoll);
+    window._gsPoll=setInterval(()=>{ if($('#gsAuto')&&$('#gsAuto').checked&&gsUrl()&&!wlDirty.size) gsLoad(); },30000);};
+  $('#gsAuto').addEventListener('change',e=>{localStorage.setItem('malli_gs_autoref',e.target.checked?'1':'0'); if(e.target.checked)startPoll();});
+  if($('#gsAuto').checked)startPoll();
   $('#wlSaveBtn').addEventListener('click',saveCommit);
   updateSaveUI();
   // 편집 = 저장 대기(명시적 저장 필요)

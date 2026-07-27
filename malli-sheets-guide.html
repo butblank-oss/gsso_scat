@@ -48,21 +48,36 @@ code{background:var(--line2);padding:1px 6px;border-radius:5px;font-family:'Robo
   <li>설정 — <b>실행:</b> <code>나(본인)</code>, <b>액세스 권한:</b> <code>모든 사용자</code> 로 두고 <b class="k">배포</b>.</li>
   <li>권한 승인 창이 뜨면 본인 계정으로 <b>허용</b>합니다(“안전하지 않음” 경고가 보이면 <i>고급 → 이동</i>).</li>
   <li>발급된 <b>웹 앱 URL</b>(<code>https://script.google.com/macros/s/…/exec</code>)을 복사합니다.</li>
-  <li>대시보드 <b>대상자 관리 탭 → ☁ Google 시트</b> 칸에 URL을 붙여넣습니다(자동 기억됨).</li>
-  <li>편집 후 <b class="k">💾 저장</b>을 누르면 로컬에 확정되고(최종수정 시각 기록), 시트 URL이 설정돼 있으면 <b>같은 동작으로 시트에도 전송</b>됩니다. 팀원은 <b class="k">↓ 불러오기</b>로 최신 상태를 받습니다.</li>
+  <li>대시보드 <b>대상자 관리 탭 → ☁ 시트</b> 칸에 URL을 붙여넣습니다(자동 기억됨).</li>
+  <li><b>(최초 1회 시딩)</b> 대시보드에서 <b class="k">👥 담당자 자동배분</b> → <b class="k">💾 저장</b>. 배정된 명단(담당자·세그먼트)이 시트 <code>대상자관리</code> 탭에 한글 헤더로 채워집니다.</li>
 </ol>
 
-<div class="note"><b>저장 방식</b> — 편집(상태·담당자·메모)은 바로 저장되지 않고 "저장 안 됨"으로 표시됩니다. <b>💾 저장</b>을 눌러야 확정되며 그때 <b>최종수정 시각</b>이 기록되고 시트로도 전송됩니다. 여러 명이 동시에 쓸 때는 <b>최종 저장이 우선</b>(마지막에 저장한 사람 기준)이니, 담당 구역을 나눠 쓰고 작업 전 <b>↓ 불러오기</b>로 최신본을 받는 것을 권장합니다.</div>
+<h2><span class="n">B-2.</span> 운영 방식 (권장: 시트 입력 · 어드민 모니터링)</h2>
+<div class="card"><p style="margin:0 0 8px">10명이 동시에 쓰기 때문에, <b>입력은 Google 시트에서, 관리자는 어드민에서 모니터링</b>하는 방식을 권장합니다.</p>
+<ol class="steps">
+  <li><b>직원 10명</b>: 시트 <code>대상자관리</code> 탭에서 <b>담당자 열로 필터</b>(데이터 → 필터 보기)해 본인 대상자만 봅니다. 통화하며 <b>통화결과 · 핵심전환 · 1주후재접속 · 메모</b> 칸을 채웁니다. 세그먼트별 대본은 대시보드 "이탈·리텐션/대상자 관리" 또는 보고 대본을 참고.</li>
+  <li><b>관리자</b>: 어드민 대상자 관리 탭에서 <b class="k">↓ 불러오기</b>를 누르거나 <b class="k">🔄 자동새로고침</b>을 켜면(30초 주기) 시트 최신 입력이 반영되어 <b>세그먼트별/담당자별 진도, A/B 재접속 비교</b>가 자동 계산됩니다.</li>
+</ol>
+<div class="note">⚠️ 어드민의 자동새로고침은 <b>미저장 편집이 있으면 건너뜁니다</b>(직원 입력을 덮어쓰지 않도록). 관리자가 어드민에서 직접 수정·저장하면 <b>시트를 전체 교체</b>하므로, 동시 편집 중에는 관리자는 <b>보기 전용</b>으로 쓰는 것을 권장합니다.</div>
+</div>
 
 <h2><span class="n">C.</span> 붙여넣을 코드 (Code.gs)</h2>
-<div class="card"><p style="font-size:13px;color:var(--sub)">저장소 파일 <code>malli-sheets-appsscript.gs</code>와 동일합니다. POST가 오면 시트를 전체 교체하고, GET은 전체 행을 JSON으로 돌려줍니다.</p></div>
+<div class="card"><p style="font-size:13px;color:var(--sub)">저장소 파일 <code>malli-sheets-appsscript.gs</code>와 동일합니다. 시트는 <b>한글 헤더</b>(사람이 읽기 쉬움)로 두고, 이 스크립트가 어드민 키와 자동 매핑합니다.</p></div>
 <pre>var SHEET_NAME = '대상자관리';
-var HEADERS = ['id','name','risk','dsl','seg','owner','status','call_result','conversion','reengaged','memo','updated_at'];
+var FIELDS = [
+  { key:'id', label:'id' }, { key:'name', label:'이름' },
+  { key:'risk', label:'위험도' }, { key:'dsl', label:'미접속일' },
+  { key:'seg', label:'세그먼트' }, { key:'owner', label:'담당자' },
+  { key:'status', label:'진행상태' }, { key:'call_result', label:'통화결과' },
+  { key:'conversion', label:'핵심전환' }, { key:'reengaged', label:'1주후재접속' },
+  { key:'memo', label:'메모' }, { key:'updated_at', label:'최종수정' }
+];
+var LABELS = FIELDS.map(function(f){ return f.label; });
 
 function sheet_(){
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sh = ss.getSheetByName(SHEET_NAME);
-  if(!sh){ sh = ss.insertSheet(SHEET_NAME); sh.appendRow(HEADERS); }
+  if(!sh){ sh = ss.insertSheet(SHEET_NAME); sh.appendRow(LABELS); }
   return sh;
 }
 function json_(obj){
@@ -72,10 +87,13 @@ function json_(obj){
 function doGet(e){
   var sh = sheet_();
   var values = sh.getDataRange().getValues();
-  var head = values.shift() || HEADERS;
+  var head = values.shift() || LABELS;
+  var colOf = {}; head.forEach(function(h,i){ colOf[String(h).trim()] = i; });
   var rows = values
-    .filter(function(r){ return String(r[0]||'').trim() !== ''; })
-    .map(function(r){ var o={}; head.forEach(function(h,i){o[h]=r[i];}); return o; });
+    .filter(function(r){ return String(r[colOf['id']]||'').trim() !== ''; })
+    .map(function(r){ var o={};
+      FIELDS.forEach(function(f){ var i=colOf[f.label]; o[f.key]=(i!=null&&r[i]!=null)?r[i]:''; });
+      return o; });
   return json_({ ok:true, rows:rows });
 }
 function doPost(e){
@@ -84,12 +102,12 @@ function doPost(e){
   var rows = body.rows || [];
   var sh = sheet_();
   sh.clearContents();
-  sh.appendRow(HEADERS);
+  sh.appendRow(LABELS);
   if(rows.length){
     var out = rows.map(function(r){
-      return HEADERS.map(function(h){ return r[h]!=null ? r[h] : ''; });
+      return FIELDS.map(function(f){ return r[f.key]!=null ? r[f.key] : ''; });
     });
-    sh.getRange(2,1,out.length,HEADERS.length).setValues(out);
+    sh.getRange(2,1,out.length,LABELS.length).setValues(out);
   }
   return json_({ ok:true, count:rows.length, saved_at:new Date().toISOString() });
 }</pre>
