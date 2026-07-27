@@ -86,22 +86,26 @@ function readRoster_() {
     id: colIndex_(head, ['id']),
     name: colIndex_(head, ['이름','name']),
     risk: colIndex_(head, ['위험도','세그','risk']),
-    dsl: colIndex_(head, ['미접속','dsl'])
+    dsl: colIndex_(head, ['미접속','dsl']),
+    status: colIndex_(head, ['진행상태','상태','status'])
   };
   if (ci.id < 0 || ci.risk < 0) throw new Error("'원본_명단' 탭에 id/위험도 열이 필요합니다. 어드민 CSV를 붙여넣어 주세요.");
   var rows = [];
   vals.forEach(function (r) {
     var id = String(r[ci.id] || '').trim(); if (!id) return;
     rows.push({ id: id, name: ci.name >= 0 ? r[ci.name] : '', risk: String(r[ci.risk] || '').trim(),
-      dsl: ci.dsl >= 0 ? Number(r[ci.dsl]) || 0 : 0 });
+      dsl: ci.dsl >= 0 ? Number(r[ci.dsl]) || 0 : 0,
+      status: ci.status >= 0 ? String(r[ci.status] || '').trim() : '' });
   });
   return rows;
 }
 
 /* ---------- 배분 ---------- */
 function computeAssignment_(roster) {
+  // 제외: 진행상태가 '제외'인 사람과 위험도가 '유지'인 사람은 배정 대상에서 뺀다
+  var pool = roster.filter(function (r) { return r.status !== '제외' && r.risk !== '유지'; });
   var cmp = function (a, b) { return a.dsl - b.dsl || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0); };
-  var pick = function (risk) { return roster.filter(function (r) { return r.risk === risk; }).sort(cmp); };
+  var pick = function (risk) { return pool.filter(function (r) { return r.risk === risk; }).sort(cmp); };
   var short = pick('단기이탈');
   var A = short.filter(function (_, i) { return i % 2 === 0; });
   var B = short.filter(function (_, i) { return i % 2 === 1; });
