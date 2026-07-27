@@ -6899,7 +6899,9 @@ const VIEWS = {
         <span class="pill warn">장기이탈</span> 90일+ ·
         <span class="pill good">유지</span> 최근 활동 있음(연락 불필요)<br>
       • <b>사용법</b>: 담당자를 나눠 배정 → 통화/문자 후 <b>대응상태</b>를 미착수→진행중→완료로 바꾸고 <b>메모</b>에 결과 기록. 수정하면 "저장 안 됨"으로 표시되고, <b>💾 저장</b>을 눌러야 확정됩니다(그때 <b>최종수정 시각</b>이 기록됨).<br>
-      • <b>선택·일괄관리</b>: 왼쪽 체크박스로 여러 명을 고른 뒤 <b>대응상태·담당자를 한 번에</b> 적용할 수 있습니다.<br>
+      • <b>담당자 자동배분</b>: <b>👥 담당자 자동배분</b>을 누르면 대상 374명(유지 제외)이 직원 10명에게 세그먼트 매트릭스대로 배분되고, 단기이탈은 A(리워드)/B(사용지원)로 분할됩니다. 담당자별로 필터해 각자 작업합니다.<br>
+      • <b>TM·설문 결과 기록</b>: 통화할 때마다 <b>통화결과·핵심전환·1주후재접속</b>을 선택하고 메모를 남기면, 위의 <b>세그먼트별/담당자별 진도</b>와 <b>A/B 비교</b>가 자동 계산됩니다.<br>
+      • <b>선택·일괄관리</b>: 왼쪽 체크박스로 여러 명을 고른 뒤 <b>진행상태·담당자를 한 번에</b> 적용할 수 있습니다.<br>
       • <b>공유·배포</b>: <b>⬇ CSV 내보내기</b>로 엑셀 명단을 받아 팀에 배포하고, 팀원이 편집한 파일은 <b>⬆ CSV 불러오기</b>로 이 화면에 다시 반영합니다(id 기준 병합). ⚠️ 개인정보 명단이므로 다운로드 파일은 내부에서만 취급하세요.<br>
       • <b>☁ Google 시트 연동(공동 저장)</b>: Apps Script 웹앱 URL을 넣으면 <b>여러 명이 한 시트에 저장·불러오기</b>로 최신 상태를 공유합니다(자동저장 옵션). ⚠️ 이 실시간 연동은 <b>배포된 페이지(butprompter.com)에서만</b> 동작하며, 미리보기(Artifact)는 외부연결이 차단됩니다. 설정법은 함께 드린 "Google 시트 연동 가이드"를 참고하세요.
     </div>
@@ -6917,7 +6919,8 @@ const VIEWS = {
   h+=`<div class="toolbar">
     <input type="search" id="wlSearch" placeholder="🔍 이름/기관 검색" style="width:190px"/>
     <select id="fRisk"><option value="">위험도 전체</option><option>이탈임박</option><option>단기이탈</option><option>장기이탈</option><option>온보딩실패</option><option>유지</option></select>
-    <select id="fStatus"><option value="">대응상태 전체</option><option>미착수</option><option>진행중</option><option>완료</option><option>제외</option></select>
+    <select id="fStatus"><option value="">진행상태 전체</option><option>미착수</option><option>진행중</option><option>완료</option><option>제외</option></select>
+    <select id="fOwner"><option value="">담당자 전체</option>${STAFF.map(s=>`<option>${s}</option>`).join('')}<option>(미배정)</option></select>
     <div class="spacer"></div>
     <button class="iconbtn" id="wlImport">⬆ CSV 불러오기</button>
     <input type="file" id="wlFile" accept=".csv,text/csv" style="display:none"/>
@@ -6939,6 +6942,8 @@ const VIEWS = {
   </div>`;
   // 저장 + Google 시트 연동 바
   h+=`<div class="toolbar savebar" style="background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:9px 12px">
+    <button class="iconbtn" id="wlAssign">👥 담당자 자동배분</button>
+    <span style="color:var(--line);margin:0 2px">|</span>
     <button class="iconbtn" id="wlSaveBtn">💾 저장</button>
     <span id="wlSaveStat" style="font-size:12px;color:var(--muted)"></span>
     <span style="color:var(--line);margin:0 4px">|</span>
@@ -6947,11 +6952,14 @@ const VIEWS = {
     <button class="iconbtn" id="gsLoad">↓ 불러오기</button>
     <span id="gsStat" style="font-size:11px;color:var(--muted)"></span>
   </div>`;
-  h+=`<div class="card" style="padding:0"><div class="tw" style="max-height:640px"><table id="wlTbl"><thead><tr>
+  h+=`<div id="wlProgress"></div>`;
+  h+=`<div class="card" style="padding:0"><div class="tw" style="max-height:560px"><table id="wlTbl"><thead><tr>
     <th style="width:34px;text-align:center"><input type="checkbox" id="wlAll" title="전체 선택"/></th>
-    <th data-k="risk">위험도</th><th data-k="name">이름</th><th data-k="age">연령/성별</th><th data-k="prov">기관</th>
-    <th class="r" data-k="dsl">미접속(일)</th><th class="r" data-k="tot">총활동</th><th data-k="last_type">마지막유형</th>
-    <th data-k="_st">대응상태</th><th data-k="_owner">담당자</th><th data-k="_memo">메모</th><th data-k="_upd">최종수정</th></tr></thead><tbody></tbody></table></div></div>`;
+    <th data-k="risk">세그먼트(조)</th><th data-k="name">이름</th>
+    <th class="r" data-k="dsl">미접속</th>
+    <th data-k="_owner">담당자</th><th data-k="_st">진행상태</th>
+    <th data-k="_cr">통화결과</th><th data-k="_cv">핵심전환</th><th data-k="_re">1주후재접속</th>
+    <th data-k="_memo">메모</th><th data-k="_upd">최종수정</th></tr></thead><tbody></tbody></table></div></div>`;
   setTimeout(()=>initWatchlist(),0);
   return h;
 }
@@ -6965,6 +6973,29 @@ let wlDirty = new Set();   // 저장 안 된 변경 id
 function stamp(){const d=new Date(),p=n=>String(n).padStart(2,'0');
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;}
 const RISK_PILL={'이탈임박':'bad','장기이탈':'warn','단기이탈':'warn','온보딩실패':'bad','유지':'good'};
+// TM 운영: 담당자 10명 + 세그먼트별 배정 매트릭스(설정_배정 워크북과 동일)
+const STAFF=['김다희','김도영','김성정','김소리','김철순','노준성','박유라','안성호','윤종훈','이용혁'];
+const SEG_ORDER=['온보딩실패','이탈임박','단기이탈-A(리워드)','단기이탈-B(사용지원)','장기이탈'];
+const MATRIX={'온보딩실패':[11,10,10,10,10,10,10,10,10,10],'이탈임박':[3,3,3,3,2,2,2,2,2,2],
+  '단기이탈-A(리워드)':[9,9,8,8,8,8,8,8,8,8],'단기이탈-B(사용지원)':[9,8,8,8,8,8,8,8,8,8],'장기이탈':[9,9,9,9,9,9,8,8,8,8]};
+const CALL_RESULTS=['','연결성공','부재중','결번·오류','거절'];
+const CONVERSIONS=['','첫콘텐츠실행완료','재사용시도함','재사용안함','리워드안내함','사용지원제공함','3기재등록동의','3기재등록거부','재통화예정','기타'];
+const REENGAGED=['','Y(재접속)','N(미재접속)','미확인'];
+// 세그먼트(조) 결정: 유지 제외, 단기이탈은 A/B 인터리브 분할, 결과는 wlEdits[id].seg에 저장
+function computeAssignment(){
+  const key=r=>[(r.dsl==null?0:r.dsl), r.id];
+  const cmp=(a,b)=>{const ka=key(a),kb=key(b);return ka[0]-kb[0]||(ka[1]<kb[1]?-1:ka[1]>kb[1]?1:0);};
+  const short=DATA.watchlist.filter(r=>r.risk==='단기이탈').sort(cmp);
+  const A=short.filter((_,i)=>i%2===0), B=short.filter((_,i)=>i%2===1);
+  const buckets={'온보딩실패':DATA.watchlist.filter(r=>r.risk==='온보딩실패').sort(cmp),
+    '이탈임박':DATA.watchlist.filter(r=>r.risk==='이탈임박').sort(cmp),
+    '단기이탈-A(리워드)':A,'단기이탈-B(사용지원)':B,
+    '장기이탈':DATA.watchlist.filter(r=>r.risk==='장기이탈').sort(cmp)};
+  const out={};
+  SEG_ORDER.forEach(seg=>{const rows=buckets[seg],cnt=MATRIX[seg];let idx=0;
+    cnt.forEach((n,si)=>{for(let k=0;k<n&&idx<rows.length;k++){out[rows[idx].id]={owner:STAFF[si],seg:seg};idx++;}});});
+  return out;
+}
 function saveEdits(){localStorage.setItem(LS_KEY,JSON.stringify(wlEdits));}
 function toast(msg,ok=true){let t=document.getElementById('mToast'); if(!t){t=el('div');t.id='mToast';
   t.style.cssText='position:fixed;left:50%;bottom:28px;transform:translateX(-50%);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;z-index:9999;box-shadow:0 6px 20px rgba(0,0,0,.28);opacity:0;transition:opacity .2s;pointer-events:none;';
@@ -6983,26 +7014,34 @@ function parseCSV(text){
   if(f.length||row.length){row.push(f);rows.push(row);}
   return rows.filter(r=>r.length>1||r[0]!=='');
 }
+function segShort(s){return {'단기이탈-A(리워드)':'단기A·리워드','단기이탈-B(사용지원)':'단기B·지원'}[s]||s;}
+function segPill(r,e){const seg=e.seg||r.risk; const base=seg.startsWith('단기')?'단기이탈':seg;
+  return `<span class="pill ${RISK_PILL[base]||'neut'}">${segShort(seg)}</span>`;}
+function opt(list,cur){return list.map(o=>`<option ${o===cur?'selected':''}>${o||'—'}</option>`).join('');}
 function wlRow(r){
   const e=wlEdits[r.id]||{};
-  const st=e.status||'미착수', owner=e.owner||'', memo=e.memo||'';
+  const st=e.status||'미착수';
   return `<tr data-id="${r.id}">
     <td style="text-align:center"><input type="checkbox" class="wlchk" ${wlSel.has(r.id)?'checked':''}/></td>
-    <td><span class="pill ${RISK_PILL[r.risk]||'neut'}">${r.risk}</span></td>
-    <td>${r.name}</td><td>${r.age||'–'}/${r.sex==='F'?'여':r.sex==='M'||r.sex==='male'?'남':'–'}</td>
-    <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.prov}">${r.prov}</td>
-    <td class="r mono">${r.dsl==null?'–':r.dsl}</td><td class="r mono">${r.tot}</td><td>${r.last_type}</td>
-    <td><select data-f="status">${['미착수','진행중','완료','제외'].map(o=>`<option ${o===st?'selected':''}>${o}</option>`).join('')}</select>${wlDirty.has(r.id)?'<span class="dirtydot" title="저장 안 됨">●</span>':''}</td>
-    <td><input type="text" data-f="owner" value="${owner.replace(/"/g,'&quot;')}" placeholder="담당"/></td>
-    <td><input class="memo" type="text" data-f="memo" value="${memo.replace(/"/g,'&quot;')}" placeholder="메모"/></td>
+    <td>${segPill(r,e)}</td>
+    <td>${r.name} <span style="color:var(--muted);font-size:11px">${r.age||''}${r.sex==='F'?'·여':r.sex==='M'||r.sex==='male'?'·남':''}</span></td>
+    <td class="r mono">${r.dsl==null?'–':r.dsl}</td>
+    <td><input type="text" data-f="owner" value="${(e.owner||'').replace(/"/g,'&quot;')}" placeholder="담당" style="width:74px"/></td>
+    <td><select data-f="status">${opt(['미착수','진행중','완료','제외'],st)}</select>${wlDirty.has(r.id)?'<span class="dirtydot" title="저장 안 됨">●</span>':''}</td>
+    <td><select data-f="call_result">${opt(CALL_RESULTS,e.call_result||'')}</select></td>
+    <td><select data-f="conversion">${opt(CONVERSIONS,e.conversion||'')}</select></td>
+    <td><select data-f="reengaged">${opt(REENGAGED,e.reengaged||'')}</select></td>
+    <td><input class="memo" type="text" data-f="memo" value="${(e.memo||'').replace(/"/g,'&quot;')}" placeholder="메모"/></td>
     <td class="mono" style="font-size:11px;color:var(--muted);white-space:nowrap">${e.updated_at||'–'}</td>
   </tr>`;
 }
 function wlFilter(){
-  const q=($('#wlSearch').value||'').trim(), fr=$('#fRisk').value, fs=$('#fStatus').value;
+  const q=($('#wlSearch').value||'').trim(), fr=$('#fRisk').value, fs=$('#fStatus').value, fo=($('#fOwner')?$('#fOwner').value:'');
   return DATA.watchlist.filter(r=>{
+    const e=wlEdits[r.id]||{};
     if(fr&&r.risk!==fr)return false;
-    if(fs&&((wlEdits[r.id]||{}).status||'미착수')!==fs)return false;
+    if(fs&&(e.status||'미착수')!==fs)return false;
+    if(fo){ if(fo==='(미배정)'){ if(e.owner)return false; } else if(e.owner!==fo)return false; }
     if(q&&!(r.name.includes(q)||r.prov.includes(q)))return false;
     return true;
   });
@@ -7013,9 +7052,35 @@ function renderWlStats(rows){
   $('#wlStats').innerHTML=[['미착수','bad'],['진행중','warn'],['완료','good'],['제외','neut']]
     .map(([k])=>`<div class="statmini"><div class="l">${k}</div><div class="v mono">${cnt[k]}</div></div>`).join('');
 }
+const CONV_POSITIVE=new Set(['첫콘텐츠실행완료','재사용시도함','리워드안내함','사용지원제공함','3기재등록동의']);
+function renderProgress(){
+  const box=$('#wlProgress'); if(!box)return;
+  const assigned=DATA.watchlist.filter(r=>(wlEdits[r.id]||{}).seg).length;
+  if(!assigned){box.innerHTML=`<div class="card" style="margin-bottom:14px"><div class="csub" style="margin:0">👥 <b>담당자 자동배분</b>을 실행하면 여기 세그먼트·담당자별 진도와 A/B 비교가 표시됩니다. (대상 374명을 10명에게 배정)</div></div>`;return;}
+  // seg stats
+  const seg={}; SEG_ORDER.forEach(s=>seg[s]={n:0,try:0,conn:0,conv:0});
+  const own={}; STAFF.forEach(s=>own[s]={n:0,try:0,conn:0});
+  let abA={try:0,re:0}, abB={try:0,re:0};
+  DATA.watchlist.forEach(r=>{const e=wlEdits[r.id]||{}; if(!e.seg)return;
+    const s=seg[e.seg]; s.n++; const tried=!!(e.call_result); if(tried)s.try++;
+    if(e.call_result==='연결성공')s.conn++; if(CONV_POSITIVE.has(e.conversion))s.conv++;
+    if(e.owner&&own[e.owner]){own[e.owner].n++; if(tried)own[e.owner].try++; if(e.call_result==='연결성공')own[e.owner].conn++;}
+    if(e.seg==='단기이탈-A(리워드)'){if(tried)abA.try++; if((e.reengaged||'').startsWith('Y'))abA.re++;}
+    if(e.seg==='단기이탈-B(사용지원)'){if(tried)abB.try++; if((e.reengaged||'').startsWith('Y'))abB.re++;}
+  });
+  const pc=(a,b)=>b?Math.round(100*a/b):0;
+  let h=`<div class="grid g2" style="margin-bottom:14px">`;
+  h+=`<div class="card"><h3 style="margin:0 0 8px">세그먼트별 진도</h3><table style="font-size:12px"><thead><tr><th>세그먼트</th><th class="r">배정</th><th class="r">시도</th><th class="r">연결</th><th class="r">전환</th><th class="r">연결률</th></tr></thead><tbody>`;
+  SEG_ORDER.forEach(s=>{const d=seg[s];h+=`<tr><td>${segShort(s)}</td><td class="r mono">${d.n}</td><td class="r mono">${d.try}</td><td class="r mono">${d.conn}</td><td class="r mono">${d.conv}</td><td class="r mono">${pc(d.conn,d.try)}%</td></tr>`;});
+  h+=`</tbody></table><div class="note" style="margin-top:8px">A/B(1주후 재접속): 리워드 ${abA.re}/${abA.try} (${pc(abA.re,abA.try)}%) vs 사용지원 ${abB.re}/${abB.try} (${pc(abB.re,abB.try)}%)</div></div>`;
+  h+=`<div class="card"><h3 style="margin:0 0 8px">담당자별 진도</h3><div class="tw" style="max-height:230px"><table style="font-size:12px"><thead><tr><th>담당자</th><th class="r">배정</th><th class="r">시도</th><th class="r">연결</th><th class="r">진행률</th></tr></thead><tbody>`;
+  STAFF.forEach(s=>{const d=own[s];h+=`<tr><td>${s}</td><td class="r mono">${d.n}</td><td class="r mono">${d.try}</td><td class="r mono">${d.conn}</td><td class="r mono">${pc(d.try,d.n)}%</td></tr>`;});
+  h+=`</tbody></table></div></div></div>`;
+  box.innerHTML=h;
+}
 function initWatchlist(){
   const tb=$('#wlTbl tbody');
-  const CSV_HDR=['id','이름','연령','성별','기관','미접속일','총활동','마지막유형','위험도','대응상태','담당자','메모','최종수정'];
+  const CSV_HDR=['id','이름','연령','성별','기관','미접속일','위험도','세그먼트','담당자','진행상태','통화결과','핵심전환','1주후재접속','메모','최종수정'];
   let lastSaved=localStorage.getItem('malli_wl_saved')||'';
   const updateSel=()=>{
     $('#wlSelCnt').textContent='☑ 선택 '+wlSel.size+'명';
@@ -7023,8 +7088,15 @@ function initWatchlist(){
     const all=$('#wlAll'); if(all){all.checked=vis.length>0&&selVis===vis.length; all.indeterminate=selVis>0&&selVis<vis.length;}
     ['wlBulkStatusApply','wlBulkOwnerApply','wlBulkMemoApply'].forEach(idd=>{const b=$('#'+idd); b.disabled=wlSel.size===0; b.style.opacity=wlSel.size?'':'.45';});
   };
-  const draw=()=>{const rows=wlFilter(); tb.innerHTML=rows.map(wlRow).join(''); renderWlStats(); updateSel(); if(typeof updateSaveUI==='function')updateSaveUI();};
+  const draw=()=>{const rows=wlFilter(); tb.innerHTML=rows.map(wlRow).join(''); renderWlStats(); renderProgress(); updateSel(); if(typeof updateSaveUI==='function')updateSaveUI();};
   draw();
+  // 담당자 자동배분
+  $('#wlAssign').addEventListener('click',()=>{
+    if(!confirm('대상 374명(유지 제외)을 10명 담당자에게 세그먼트 매트릭스대로 자동 배분합니다.\n기존 담당자/세그먼트 배정은 덮어씁니다. 계속할까요?'))return;
+    const a=computeAssignment(); let n=0;
+    Object.keys(a).forEach(id=>{wlEdits[id]=wlEdits[id]||{}; wlEdits[id].owner=a[id].owner; wlEdits[id].seg=a[id].seg; markDirty(id); n++;});
+    draw(); toast(`${n}명 담당자·세그먼트 배분 완료 (저장 필요)`);
+  });
 
   /* ===== 저장 모델(명시적 저장) ===== */
   function markDirty(id){wlDirty.add(id); updateSaveUI();}
@@ -7043,7 +7115,8 @@ function initWatchlist(){
   function gsUrl(){return ($('#gsUrl').value||'').trim();}
   function setGsStat(m,ok){const s=$('#gsStat'); s.textContent=m; s.style.color=ok===false?'var(--bad)':ok===true?'var(--good)':'var(--muted)';}
   function gsRows(){return DATA.watchlist.map(r=>{const e=wlEdits[r.id]||{};
-    return {id:r.id,name:r.name,risk:r.risk,dsl:r.dsl,status:e.status||'미착수',owner:e.owner||'',memo:e.memo||'',updated_at:e.updated_at||''};});}
+    return {id:r.id,name:r.name,risk:r.risk,dsl:r.dsl,seg:e.seg||'',owner:e.owner||'',status:e.status||'미착수',
+      call_result:e.call_result||'',conversion:e.conversion||'',reengaged:e.reengaged||'',memo:e.memo||'',updated_at:e.updated_at||''};});}
   async function gsPush(silent){const url=gsUrl(); if(!url){if(!silent)alert('먼저 Apps Script 웹앱 URL을 입력하세요.');return;}
     try{setGsStat('시트 전송 중…');
       const res=await fetch(url,{method:'POST',body:JSON.stringify({action:'save',rows:gsRows()})});
@@ -7057,8 +7130,9 @@ function initWatchlist(){
       const valid=new Set(DATA.watchlist.map(r=>r.id)); let ok=0;
       rows.forEach(r=>{const id=(r.id||'').trim(); if(!id||!valid.has(id))return;
         const cur=wlEdits[id]||{};
-        if(r.status)cur.status=r.status; if(r.owner!=null&&r.owner!=='')cur.owner=r.owner; if(r.memo!=null&&r.memo!=='')cur.memo=r.memo;
-        if(r.updated_at)cur.updated_at=r.updated_at;
+        if(r.seg)cur.seg=r.seg; if(r.status)cur.status=r.status; if(r.owner!=null&&r.owner!=='')cur.owner=r.owner;
+        if(r.call_result)cur.call_result=r.call_result; if(r.conversion)cur.conversion=r.conversion; if(r.reengaged)cur.reengaged=r.reengaged;
+        if(r.memo!=null&&r.memo!=='')cur.memo=r.memo; if(r.updated_at)cur.updated_at=r.updated_at;
         if(Object.keys(cur).length){wlEdits[id]=cur;ok++;}});
       saveEdits(); wlDirty.clear(); draw(); setGsStat('시트에서 불러옴 · '+ok+'건',true); toast(`시트에서 ${ok}건 불러옴`);
     }catch(err){setGsStat('시트 연결 실패 — 배포 페이지에서만 동작',false); toast('시트 연결 실패(배포 페이지에서 사용)',false);}
@@ -7078,7 +7152,7 @@ function initWatchlist(){
     renderWlStats();
   });
   tb.addEventListener('input',e=>{if(e.target.dataset.f&&e.target.tagName==='INPUT'){const tr=e.target.closest('tr');wlEdits[tr.dataset.id]=wlEdits[tr.dataset.id]||{};wlEdits[tr.dataset.id][e.target.dataset.f]=e.target.value;markDirty(tr.dataset.id);}});
-  ['#wlSearch','#fRisk','#fStatus'].forEach(s=>$(s).addEventListener('input',draw));
+  ['#wlSearch','#fRisk','#fStatus','#fOwner'].forEach(s=>$(s).addEventListener('input',draw));
   // 전체선택 (현재 필터된 행 대상)
   $('#wlAll').addEventListener('change',e=>{const vis=wlFilter(); vis.forEach(r=>e.target.checked?wlSel.add(r.id):wlSel.delete(r.id)); draw();});
   // 일괄 적용 → 저장 대기
@@ -7094,7 +7168,7 @@ function initWatchlist(){
     if(wlDirty.size && confirm(`저장되지 않은 변경 ${wlDirty.size}건이 있습니다. 저장 후 내보낼까요?`)) saveCommit();
     const src=wlSel.size?wlFilter().filter(r=>wlSel.has(r.id)):wlFilter();
     const lines=[CSV_HDR.map(csvCell).join(',')].concat(src.map(r=>{const e=wlEdits[r.id]||{};
-      return [r.id,r.name,r.age,r.sex,r.prov,r.dsl,r.tot,r.last_type,r.risk,e.status||'미착수',e.owner||'',e.memo||'',e.updated_at||''].map(csvCell).join(',');}));
+      return [r.id,r.name,r.age,r.sex,r.prov,r.dsl,r.risk,e.seg||'',e.owner||'',e.status||'미착수',e.call_result||'',e.conversion||'',e.reengaged||'',e.memo||'',e.updated_at||''].map(csvCell).join(',');}));
     const blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv'}); const a=el('a');
     a.href=URL.createObjectURL(blob); a.download='malli_대상자관리.csv'; a.click();
   });
@@ -7104,16 +7178,15 @@ function initWatchlist(){
     const rd=new FileReader(); rd.onload=()=>{
       try{const rows=parseCSV(rd.result); const head=rows.shift()||[];
         const ci=n=>head.indexOf(n);
-        const iId=ci('id'),iSt=ci('대응상태'),iOw=ci('담당자'),iMe=ci('메모'),iUp=ci('최종수정');
+        const iId=ci('id'),iSeg=ci('세그먼트'),iOw=ci('담당자'),iSt=ci('진행상태'),iCr=ci('통화결과'),iCv=ci('핵심전환'),iRe=ci('1주후재접속'),iMe=ci('메모'),iUp=ci('최종수정');
         if(iId<0){alert('id 열을 찾을 수 없습니다. 내보낸 CSV 형식이 맞는지 확인하세요.');return;}
         const valid=new Set(DATA.watchlist.map(r=>r.id)); let ok=0,miss=0;
         rows.forEach(r=>{const id=(r[iId]||'').trim(); if(!id)return;
           if(!valid.has(id)){miss++;return;}
-          const cur=wlEdits[id]||{};
-          if(iSt>=0&&r[iSt]!=null&&r[iSt]!=='')cur.status=r[iSt].trim();
-          if(iOw>=0&&r[iOw]!=null)cur.owner=r[iOw];
-          if(iMe>=0&&r[iMe]!=null)cur.memo=r[iMe];
-          if(iUp>=0&&r[iUp])cur.updated_at=r[iUp];
+          const cur=wlEdits[id]||{}; const g=i=>i>=0&&r[i]!=null?r[i]:undefined;
+          if(g(iSeg))cur.seg=r[iSeg].trim(); if(g(iOw)!=null)cur.owner=r[iOw]; if(g(iSt))cur.status=r[iSt].trim();
+          if(g(iCr))cur.call_result=r[iCr].trim(); if(g(iCv))cur.conversion=r[iCv].trim(); if(g(iRe))cur.reengaged=r[iRe].trim();
+          if(g(iMe)!=null)cur.memo=r[iMe]; if(g(iUp))cur.updated_at=r[iUp];
           wlEdits[id]=cur; ok++;});
         saveEdits(); wlDirty.clear(); draw(); alert(`불러오기 완료 · ${ok}건 반영`+(miss?` / ${miss}건 미매칭(대상 명단에 없는 id)`:''));
       }catch(err){alert('CSV를 읽지 못했습니다: '+err.message);}
