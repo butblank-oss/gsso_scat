@@ -128,6 +128,28 @@ th.sortable.act .ar{opacity:1;color:var(--brand);}
 .pager button:disabled{opacity:.4;cursor:default;}
 .pager .sz{cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--sub);border-radius:6px;padding:3px 9px;font-size:12px;font-family:inherit;}
 .pager .sz.on{background:var(--brand);border-color:var(--brand);color:#fff;}
+/* 실행방안 카드 */
+.planboard{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:16px;}
+.plancard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:2px;}
+.plancard.adopted{border-color:var(--good);box-shadow:0 0 0 1px var(--good) inset,var(--shadow);}
+.plancard .phead{display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;}
+.plancard .phead h3{margin:0;font-size:15px;font-weight:800;flex:1;min-width:120px;}
+.plancard .psum{font-size:12.5px;color:var(--sub);margin:2px 0 10px;line-height:1.5;}
+.plancard .psec{border-top:1px solid var(--line-2);padding:9px 0 2px;}
+.plancard .psecl{font-size:11px;font-weight:700;color:var(--brand);text-transform:none;letter-spacing:.02em;margin-bottom:3px;}
+.plancard .psecb{font-size:12.5px;white-space:pre-wrap;line-height:1.6;color:var(--ink);}
+.plancard .pfoot{margin-top:10px;font-size:11px;color:var(--muted);}
+.plancard .pacts{display:flex;gap:5px;flex-wrap:wrap;}
+.pbtn{cursor:pointer;border:1px solid var(--line);background:var(--surface-2);color:var(--sub);border-radius:7px;padding:3px 9px;font-size:11.5px;font-weight:600;font-family:inherit;}
+.pbtn:hover{border-color:var(--brand);color:var(--brand);}
+.pbtn.danger:hover{border-color:var(--bad);color:var(--bad);}
+.pbtn.primary{background:var(--brand);border-color:var(--brand);color:#fff;}
+.plancard textarea,.plancard input.pti{width:100%;font-family:inherit;font-size:12.5px;border:1px solid var(--line);border-radius:7px;padding:6px 8px;background:var(--surface);color:var(--ink);}
+.plancard textarea{min-height:52px;resize:vertical;line-height:1.5;}
+.plancard input.pti{font-weight:700;font-size:14px;}
+.pedit-sec{margin:7px 0;}
+.pedit-sec .rowl{display:flex;gap:6px;align-items:center;margin-bottom:4px;}
+.pedit-sec .rowl input{flex:1;font-weight:700;font-size:12px;padding:4px 7px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);}
 .toolbar .spacer{flex:1;}
 td select,td input{padding:4px 6px; font-size:12px; width:100%;}
 td input.memo{min-width:120px;}
@@ -6998,6 +7020,21 @@ const VIEWS = {
     ${sc('memo','메모')}${sc('updated_at','최종수정')}</tr></thead><tbody></tbody></table></div></div>`;
   setTimeout(()=>initWatchlist(),0);
   return h;
+},
+/* ---------- 이벤트 실행방안 (카드 CRUD) ---------- */
+'실행방안':()=>{
+  let h=`<div class="banner"><span class="i">🎯</span><div><b>이벤트 실행방안</b> — 초안 3개를 카드로 넣어뒀습니다. 각 카드를 <b>직접 수정·저장·복제·삭제</b>할 수 있고, 최종 확정안은 <b>채택</b>으로 표시하세요. 편집 내용은 이 브라우저에 저장됩니다(localStorage). 최종 방안이 바뀌면 그때그때 갱신하세요.</div></div>`;
+  h+=`<div class="toolbar">
+    <b style="font-size:14px">이벤트 실행방안</b>
+    <span id="planStat" style="font-size:12px;color:var(--muted)"></span>
+    <div class="spacer"></div>
+    <button class="iconbtn" id="planAdd">＋ 새 방안</button>
+    <button class="iconbtn" id="planExport">⬇ 내보내기(.md)</button>
+    <button class="iconbtn" id="planReset">↺ 기본 3안 초기화</button>
+  </div>`;
+  h+=`<div id="planBoard"></div>`;
+  setTimeout(()=>initPlans(),0);
+  return h;
 }
 };
 
@@ -7324,8 +7361,106 @@ function renderGames(){
 document.addEventListener('click',e=>{const th=e.target.closest('#gtbl thead th'); if(!th)return; const k=th.dataset.k; if(!k||k==='pat')return; if(gSort===k)gAsc=!gAsc; else{gSort=k;gAsc=(k==='name');} renderGames();});
 
 /* ============ Router ============ */
-const ORDER=['개요','기수·세그먼트','이탈·리텐션','콘텐츠·게임','건강·인구','대상자 관리'];
-const ICON={'개요':'📊','기수·세그먼트':'👥','이탈·리텐션':'📉','콘텐츠·게임':'🎮','건강·인구':'🩺','대상자 관리':'✏️'};
+/* ============ 이벤트 실행방안 (카드 CRUD) ============ */
+const PLAN_KEY='malli_plans_v1';
+const PLAN_STATUS=['검토중','채택','보류'];
+const PLAN_TMPL=['모집방법','이벤트 내용','리워드','실행방안 (타겟 구분)','리워드 지급 수준 (타겟별)','리스크·검토사항'];
+let plansEditing=null;
+let plansSaved=localStorage.getItem('malli_plans_saved')||'';
+function escH(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function escA(s){return escH(s).replace(/"/g,'&quot;');}
+function planStatusPill(s){return s==='채택'?'good':s==='보류'?'neut':'warn';}
+function newId(){return 'p'+Date.now().toString(36)+Math.floor(Math.random()*1e3);}
+function seedPlans(){return [
+ {id:'plan1',status:'검토중',title:'방안1 · 보건소 오프라인 팝업 이벤트',
+  summary:'가장 확실하지만 인력이 들어감. 보건소 동의 필요(장소·개인정보 활용 등).',
+  sections:[
+   {l:'모집방법',b:'맬리브레인 설치자 대상 일괄 문자 발송(이벤트 안내)'},
+   {l:'이벤트 내용',b:'맬리브레인 설문조사 및 설치/이용 안내'},
+   {l:'리워드',b:'보건소에서 설치 완료 후 로그인 시 모건 영양제 지급 (대상 최대 720명)'},
+   {l:'실행방안 (타겟 구분)',b:'이미사용(유지) / 온보딩실패 / 단기이탈 / 장기이탈 구분해서 설문조사 진행'},
+   {l:'리워드 지급 수준 (타겟별)',b:'· 유지(활성): 설문 후 랭킹 확인 → 랭킹별 차등 리워드?\n· 온보딩실패: 설문/설치 후 첫 게임 실행 시 리워드\n· 단기/장기 이탈: (정리 필요)'},
+   {l:'리스크·검토사항',b:'· 이미 유지중인 대상자를 이벤트에 참여시키지 않았을 때 이슈?\n· 보건소에서 거절했을 때 대안?'}]},
+ {id:'plan2',status:'검토중',title:'방안2 · 유선 안내 및 전화 설문',
+  summary:'연결불가·소통불가 이슈 가능. 보건소 동의 필요(개인정보 수집·이용).',
+  sections:[
+   {l:'모집방법',b:'리텐션 대상자에게 직접 유선 설문 진행'},
+   {l:'이벤트 내용',b:'설문 후 리워드 지급'},
+   {l:'리워드',b:'모건 영양제 지급 (보건소 수령 또는 집주소 발송 — 보건소 수령이 더 안전)'},
+   {l:'실행방안 (타겟 구분)',b:'온보딩실패 / 단기이탈 / 장기이탈 구분해서 설문조사 진행\n※ 유지(활성)는 제외'},
+   {l:'리워드 지급 수준 (타겟별)',b:'· (제외) 유지: 랭킹별 차등\n· 온보딩실패: 설문/설치 후 리워드\n· 단기/장기 이탈: 앱 진입 후 첫 게임 실행 시 리워드'},
+   {l:'리스크·검토사항',b:'· 유지 대상자를 참여시키지 않았을 때 이슈?\n· 개인번호로 연락하는 것에 동의하지 않았을 때 이슈?'}]},
+ {id:'plan3',status:'검토중',title:'방안3 · 앱/문자 일괄 연락',
+  summary:'앱푸시·문자로 일괄 도달, 자가 신청 유도.',
+  sections:[
+   {l:'모집방법',b:'앱 푸시 + 문자 발송'},
+   {l:'이벤트 내용',b:'앱 설치 / 앱 로그인 진입 시 리워드 이벤트 참여 가능'},
+   {l:'리워드',b:'모건 영양제 지급'},
+   {l:'실행방안 (타겟 구분)',b:'타겟 유저 대상 이벤트 앱푸시 + 이벤트 팝업 페이지 노출 → 주소 등록 후 신청/설치'},
+   {l:'리워드 지급 수준 (타겟별)',b:'· 설치 후 유선 연락 동의 내용 삽입'},
+   {l:'리스크·검토사항',b:'· 이벤트 발송 안내차 전화하면서 설문조사 진행'}]}
+].map(p=>Object.assign(p,{updated_at:''}));}
+let plans = (()=>{try{const v=JSON.parse(localStorage.getItem(PLAN_KEY)); return (Array.isArray(v)&&v.length)?v:seedPlans();}catch(e){return seedPlans();}})();
+function savePlans(){localStorage.setItem(PLAN_KEY,JSON.stringify(plans)); plansSaved=stamp(); localStorage.setItem('malli_plans_saved',plansSaved);}
+function planCardView(p){
+  return `<div class="plancard ${p.status==='채택'?'adopted':''}" data-pid="${p.id}">
+    <div class="phead"><span class="pill ${planStatusPill(p.status)}">${escH(p.status)}</span><h3>${escH(p.title)}</h3></div>
+    <div class="pacts">${p.status==='채택'?'':'<button class="pbtn primary" data-act="adopt">✓ 채택</button>'}
+      <button class="pbtn" data-act="edit">편집</button><button class="pbtn" data-act="dup">복제</button><button class="pbtn danger" data-act="del">삭제</button></div>
+    <div class="psum">${escH(p.summary)}</div>
+    ${p.sections.map(s=>`<div class="psec"><div class="psecl">${escH(s.l)}</div><div class="psecb">${escH(s.b)}</div></div>`).join('')}
+    <div class="pfoot">최종수정 ${p.updated_at||'–'}</div></div>`;
+}
+function planCardEdit(p){
+  return `<div class="plancard" data-pid="${p.id}">
+    <div class="phead"><select data-ef="status">${PLAN_STATUS.map(o=>`<option ${o===p.status?'selected':''}>${o}</option>`).join('')}</select>
+      <input class="pti" data-ef="title" value="${escA(p.title)}" placeholder="방안 제목"/></div>
+    <textarea data-ef="summary" placeholder="한 줄 요약">${escH(p.summary)}</textarea>
+    <div data-secs>${p.sections.map((s,i)=>`<div class="pedit-sec" data-si="${i}">
+      <div class="rowl"><input data-sf="l" value="${escA(s.l)}" placeholder="항목명"/><button class="pbtn danger" data-act="secdel">－</button></div>
+      <textarea data-sf="b" placeholder="내용">${escH(s.b)}</textarea></div>`).join('')}</div>
+    <div class="pacts" style="margin-top:8px"><button class="pbtn" data-act="secadd">＋ 항목</button>
+      <span style="flex:1"></span><button class="pbtn primary" data-act="save">💾 저장</button><button class="pbtn" data-act="cancel">취소</button></div></div>`;
+}
+function renderPlans(){
+  const board=$('#planBoard'); if(!board)return;
+  board.className='planboard';
+  board.innerHTML=plans.map(p=>plansEditing===p.id?planCardEdit(p):planCardView(p)).join('');
+  const st=$('#planStat'); if(st){const ad=plans.filter(p=>p.status==='채택').length;
+    st.textContent=`총 ${plans.length}개 · 채택 ${ad}${plansSaved?' · 저장됨 '+plansSaved:''}`;}
+}
+function readEdit(card){ // 편집 중인 카드 DOM → plan 객체
+  const p=plans.find(x=>x.id===card.dataset.pid); if(!p)return null;
+  p.title=card.querySelector('[data-ef=title]').value;
+  p.summary=card.querySelector('[data-ef=summary]').value;
+  p.status=card.querySelector('[data-ef=status]').value;
+  p.sections=[...card.querySelectorAll('.pedit-sec')].map(sec=>({l:sec.querySelector('[data-sf=l]').value, b:sec.querySelector('[data-sf=b]').value}));
+  return p;
+}
+function initPlans(){
+  renderPlans();
+  $('#planBoard').addEventListener('click',e=>{const btn=e.target.closest('[data-act]'); if(!btn)return;
+    const card=e.target.closest('.plancard'); const pid=card.dataset.pid; const idx=plans.findIndex(x=>x.id===pid); const p=plans[idx];
+    const act=btn.dataset.act;
+    if(act==='edit'){plansEditing=pid; renderPlans();}
+    else if(act==='cancel'){plansEditing=null; plans=JSON.parse(localStorage.getItem(PLAN_KEY))||plans; renderPlans();}
+    else if(act==='save'){readEdit(card); p.updated_at=stamp(); plansEditing=null; savePlans(); renderPlans(); toast('방안 저장됨');}
+    else if(act==='adopt'){p.status='채택'; p.updated_at=stamp(); savePlans(); renderPlans(); toast(`'${p.title}' 채택`);}
+    else if(act==='dup'){const c=JSON.parse(JSON.stringify(p)); c.id=newId(); c.title=p.title+' (복제)'; c.status='검토중'; c.updated_at=stamp(); plans.splice(idx+1,0,c); savePlans(); renderPlans(); toast('복제됨');}
+    else if(act==='del'){if(confirm(`'${p.title}' 방안을 삭제할까요?`)){plans.splice(idx,1); if(plansEditing===pid)plansEditing=null; savePlans(); renderPlans(); toast('삭제됨',false);}}
+    else if(act==='secadd'){readEdit(card); p.sections.push({l:'',b:''}); renderPlans();}
+    else if(act==='secdel'){readEdit(card); const si=+e.target.closest('.pedit-sec').dataset.si; p.sections.splice(si,1); renderPlans();}
+  });
+  $('#planAdd').addEventListener('click',()=>{const p={id:newId(),status:'검토중',title:'새 방안',summary:'',sections:PLAN_TMPL.map(l=>({l,b:''})),updated_at:''}; plans.push(p); plansEditing=p.id; savePlans(); renderPlans();});
+  $('#planReset').addEventListener('click',()=>{if(confirm('편집한 내용을 버리고 기본 3안으로 되돌립니다. 계속할까요?')){plans=seedPlans(); plansEditing=null; savePlans(); renderPlans();}});
+  $('#planExport').addEventListener('click',()=>{
+    const md=plans.map(p=>`# ${p.title}  (${p.status})\n\n${p.summary}\n\n`+p.sections.map(s=>`## ${s.l}\n${s.b}`).join('\n\n')).join('\n\n---\n\n');
+    const blob=new Blob(['﻿'+md],{type:'text/markdown'}); const a=el('a'); a.href=URL.createObjectURL(blob); a.download='맬리_이벤트_실행방안.md'; a.click();
+  });
+}
+
+const ORDER=['개요','기수·세그먼트','이탈·리텐션','콘텐츠·게임','건강·인구','대상자 관리','실행방안'];
+const ICON={'개요':'📊','기수·세그먼트':'👥','이탈·리텐션':'📉','콘텐츠·게임':'🎮','건강·인구':'🩺','대상자 관리':'✏️','실행방안':'🎯'};
 function route(name){
   $('#app').innerHTML=`<div class="view active">${VIEWS[name]()}</div>`;
   [...$('#tabs').children].forEach(b=>b.classList.toggle('active',b.dataset.n===name));
