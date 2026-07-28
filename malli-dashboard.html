@@ -130,7 +130,18 @@ th.sortable.act .ar{opacity:1;color:var(--brand);}
 .pager .sz.on{background:var(--brand);border-color:var(--brand);color:#fff;}
 /* 실행방안 카드 */
 .planboard{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:16px;}
+.planboard .plancard{cursor:pointer;transition:transform .12s,box-shadow .12s;}
+.planboard .plancard:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(20,30,45,.1);}
 .plancard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:2px;}
+/* 방안 모달 */
+.pmodal{position:fixed;inset:0;background:rgba(15,20,25,.6);display:none;align-items:flex-start;justify-content:center;z-index:200;padding:44px 16px;overflow:auto;}
+.pmodal.on{display:flex;animation:fade .18s ease;}
+.pmodal-panel{position:relative;width:100%;max-width:660px;}
+.pmodal-close{position:absolute;top:-36px;right:0;cursor:pointer;background:rgba(255,255,255,.16);color:#fff;border:0;border-radius:8px;padding:6px 13px;font-size:13px;font-weight:600;font-family:inherit;}
+.pmodal-close:hover{background:rgba(255,255,255,.28);}
+.pmodal .plancard{cursor:default;box-shadow:0 24px 70px rgba(0,0,0,.4);}
+.pmodal .plancard .psecb,.pmodal .plancard .psum{font-size:13.5px;}
+.pmodal .plancard h3{font-size:18px;}
 .plancard.adopted{border-color:var(--good);box-shadow:0 0 0 1px var(--good) inset,var(--shadow);}
 .plancard .phead{display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;}
 .plancard .phead h3{margin:0;font-size:15px;font-weight:800;flex:1;min-width:120px;}
@@ -7422,6 +7433,7 @@ function planCardEdit(p){
     <div class="pacts" style="margin-top:8px"><button class="pbtn" data-act="secadd">＋ 항목</button>
       <span style="flex:1"></span><button class="pbtn primary" data-act="save">💾 저장</button><button class="pbtn" data-act="cancel">취소</button></div></div>`;
 }
+let modalPid=null;
 function renderPlans(){
   const board=$('#planBoard'); if(!board)return;
   board.className='planboard';
@@ -7429,6 +7441,17 @@ function renderPlans(){
   const st=$('#planStat'); if(st){const ad=plans.filter(p=>p.status==='채택').length;
     st.textContent=`총 ${plans.length}개 · 채택 ${ad}${plansSaved?' · 저장됨 '+plansSaved:''}`;}
 }
+function renderModal(){
+  const m=document.getElementById('planModal'); if(!m)return;
+  const p=plans.find(x=>x.id===modalPid);
+  if(!modalPid||!p){m.classList.remove('on'); modalPid=null; return;}
+  m.querySelector('#planModalBody').innerHTML=(plansEditing===modalPid?planCardEdit:planCardView)(p);
+  m.classList.add('on');
+}
+function openPlanModal(pid){modalPid=pid; renderModal();}
+function closePlanModal(){ if(plansEditing===modalPid){plansEditing=null; try{plans=JSON.parse(localStorage.getItem(PLAN_KEY))||plans;}catch(e){}}
+  modalPid=null; const m=document.getElementById('planModal'); if(m)m.classList.remove('on'); renderPlans(); }
+function refreshPlans(){renderPlans(); if(modalPid)renderModal();}
 function readEdit(card){ // 편집 중인 카드 DOM → plan 객체
   const p=plans.find(x=>x.id===card.dataset.pid); if(!p)return null;
   p.title=card.querySelector('[data-ef=title]').value;
@@ -7437,22 +7460,35 @@ function readEdit(card){ // 편집 중인 카드 DOM → plan 객체
   p.sections=[...card.querySelectorAll('.pedit-sec')].map(sec=>({l:sec.querySelector('[data-sf=l]').value, b:sec.querySelector('[data-sf=b]').value}));
   return p;
 }
+function planActionFromClick(e){ // 카드 액션 버튼 처리(보드/모달 공용). 처리하면 true.
+  const btn=e.target.closest('[data-act]'); if(!btn)return false;
+  const card=e.target.closest('.plancard'); if(!card)return false;
+  const pid=card.dataset.pid, idx=plans.findIndex(x=>x.id===pid), p=plans[idx], act=btn.dataset.act;
+  if(act==='edit'){plansEditing=pid; refreshPlans();}
+  else if(act==='cancel'){plansEditing=null; try{plans=JSON.parse(localStorage.getItem(PLAN_KEY))||plans;}catch(e){} refreshPlans();}
+  else if(act==='save'){readEdit(card); p.updated_at=stamp(); plansEditing=null; savePlans(); refreshPlans(); toast('방안 저장됨');}
+  else if(act==='adopt'){p.status='채택'; p.updated_at=stamp(); savePlans(); refreshPlans(); toast(`'${p.title}' 채택`);}
+  else if(act==='dup'){const c=JSON.parse(JSON.stringify(p)); c.id=newId(); c.title=p.title+' (복제)'; c.status='검토중'; c.updated_at=stamp(); plans.splice(idx+1,0,c); savePlans(); renderPlans(); toast('복제됨');}
+  else if(act==='del'){if(confirm(`'${p.title}' 방안을 삭제할까요?`)){plans.splice(idx,1); if(plansEditing===pid)plansEditing=null; savePlans(); if(modalPid===pid){modalPid=null; const mm=document.getElementById('planModal'); if(mm)mm.classList.remove('on');} refreshPlans(); toast('삭제됨',false);}}
+  else if(act==='secadd'){readEdit(card); p.sections.push({l:'',b:''}); refreshPlans();}
+  else if(act==='secdel'){readEdit(card); const si=+e.target.closest('.pedit-sec').dataset.si; p.sections.splice(si,1); refreshPlans();}
+  return true;
+}
 function initPlans(){
+  if(!document.getElementById('planModal')){
+    const m=el('div'); m.id='planModal'; m.className='pmodal';
+    m.innerHTML=`<div class="pmodal-panel"><button class="pmodal-close" title="닫기">✕ 닫기</button><div id="planModalBody"></div></div>`;
+    document.body.appendChild(m);
+    m.addEventListener('click',e=>{ if(e.target.closest('.pmodal-close')||!e.target.closest('.pmodal-panel')){closePlanModal();return;} planActionFromClick(e); });
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&modalPid)closePlanModal(); });
+  }
   renderPlans();
-  $('#planBoard').addEventListener('click',e=>{const btn=e.target.closest('[data-act]'); if(!btn)return;
-    const card=e.target.closest('.plancard'); const pid=card.dataset.pid; const idx=plans.findIndex(x=>x.id===pid); const p=plans[idx];
-    const act=btn.dataset.act;
-    if(act==='edit'){plansEditing=pid; renderPlans();}
-    else if(act==='cancel'){plansEditing=null; plans=JSON.parse(localStorage.getItem(PLAN_KEY))||plans; renderPlans();}
-    else if(act==='save'){readEdit(card); p.updated_at=stamp(); plansEditing=null; savePlans(); renderPlans(); toast('방안 저장됨');}
-    else if(act==='adopt'){p.status='채택'; p.updated_at=stamp(); savePlans(); renderPlans(); toast(`'${p.title}' 채택`);}
-    else if(act==='dup'){const c=JSON.parse(JSON.stringify(p)); c.id=newId(); c.title=p.title+' (복제)'; c.status='검토중'; c.updated_at=stamp(); plans.splice(idx+1,0,c); savePlans(); renderPlans(); toast('복제됨');}
-    else if(act==='del'){if(confirm(`'${p.title}' 방안을 삭제할까요?`)){plans.splice(idx,1); if(plansEditing===pid)plansEditing=null; savePlans(); renderPlans(); toast('삭제됨',false);}}
-    else if(act==='secadd'){readEdit(card); p.sections.push({l:'',b:''}); renderPlans();}
-    else if(act==='secdel'){readEdit(card); const si=+e.target.closest('.pedit-sec').dataset.si; p.sections.splice(si,1); renderPlans();}
+  $('#planBoard').addEventListener('click',e=>{
+    if(planActionFromClick(e))return;                     // 버튼 클릭이면 액션 처리
+    const card=e.target.closest('.plancard'); if(card && plansEditing!==card.dataset.pid) openPlanModal(card.dataset.pid); // 카드 본문 클릭 → 모달 확대
   });
-  $('#planAdd').addEventListener('click',()=>{const p={id:newId(),status:'검토중',title:'새 방안',summary:'',sections:PLAN_TMPL.map(l=>({l,b:''})),updated_at:''}; plans.push(p); plansEditing=p.id; savePlans(); renderPlans();});
-  $('#planReset').addEventListener('click',()=>{if(confirm('편집한 내용을 버리고 기본 3안으로 되돌립니다. 계속할까요?')){plans=seedPlans(); plansEditing=null; savePlans(); renderPlans();}});
+  $('#planAdd').addEventListener('click',()=>{const p={id:newId(),status:'검토중',title:'새 방안',summary:'',sections:PLAN_TMPL.map(l=>({l,b:''})),updated_at:''}; plans.push(p); plansEditing=p.id; savePlans(); openPlanModal(p.id);});
+  $('#planReset').addEventListener('click',()=>{if(confirm('편집한 내용을 버리고 기본 3안으로 되돌립니다. 계속할까요?')){plans=seedPlans(); plansEditing=null; modalPid=null; savePlans(); refreshPlans();}});
   $('#planExport').addEventListener('click',()=>{
     const md=plans.map(p=>`# ${p.title}  (${p.status})\n\n${p.summary}\n\n`+p.sections.map(s=>`## ${s.l}\n${s.b}`).join('\n\n')).join('\n\n---\n\n');
     const blob=new Blob(['﻿'+md],{type:'text/markdown'}); const a=el('a'); a.href=URL.createObjectURL(blob); a.download='맬리_이벤트_실행방안.md'; a.click();
@@ -7462,6 +7498,7 @@ function initPlans(){
 const ORDER=['개요','기수·세그먼트','이탈·리텐션','콘텐츠·게임','건강·인구','대상자 관리','실행방안'];
 const ICON={'개요':'📊','기수·세그먼트':'👥','이탈·리텐션':'📉','콘텐츠·게임':'🎮','건강·인구':'🩺','대상자 관리':'✏️','실행방안':'🎯'};
 function route(name){
+  const pm=document.getElementById('planModal'); if(pm){pm.classList.remove('on'); modalPid=null;}  // 탭 이동 시 모달 닫기
   $('#app').innerHTML=`<div class="view active">${VIEWS[name]()}</div>`;
   [...$('#tabs').children].forEach(b=>b.classList.toggle('active',b.dataset.n===name));
   location.hash=encodeURIComponent(name);
