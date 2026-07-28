@@ -117,6 +117,9 @@ select:focus,input:focus{outline:2px solid var(--brand-soft); border-color:var(-
 .fchip:hover{border-color:var(--brand);color:var(--brand);}
 .fchip.on{background:var(--brand);border-color:var(--brand);color:#fff;}
 .fchip.clear{color:var(--bad);border-style:dashed;}
+th.grph{text-align:center;background:var(--surface-2);color:var(--brand);font-size:10.5px;letter-spacing:.02em;border-bottom:1px solid var(--line);}
+.grpsep{border-left:2px solid var(--line)!important;}
+#gtbl td.grpsep{border-left:2px solid var(--line);}
 th.sortable{cursor:pointer;user-select:none;white-space:nowrap;}
 th.sortable .ar{opacity:.35;font-size:9px;margin-left:2px;}
 th.sortable.act .ar{opacity:1;color:var(--brand);}
@@ -6729,6 +6732,8 @@ function legend(items){return `<div class="legend">${items.map(i=>`<span><i styl
 /* ============ Views ============ */
 const USAGE_COL={never:'var(--bad)',stopped:'var(--warn)',active30:'var(--good)'};
 const USAGE_LBL={never:'한번도 안 씀',stopped:'쓰다가 멈춤',active30:'꾸준히 사용중'};
+// 전체 기수 3분류(활동 기준) — 헷갈리지 않게 풀어쓴 라벨
+const GRP_LABEL={'활동0':'가입 후 무활동 (0건)','이탈':'이탈 (90일+ 무활동)','활성':'활성 (최근 90일 활동)'};
 
 function kpi(l,v,d,dcls,barpct){
   return `<div class="card kpi"><div class="l">${l}</div><div class="v">${v}</div>${d?`<div class="d ${dcls||''}">${d}</div>`:''}${barpct!=null?`<div class="bar"><span style="width:${barpct}%"></span></div>`:''}</div>`;
@@ -6819,8 +6824,8 @@ const VIEWS = {
   h+=`<div class="card"><h3>🟡 진성이탈 ${real}명 (30일+)</h3><div class="csub">사용법·습관 검증된 사람들</div><p style="font-size:12.5px;color:var(--sub);margin:0">콘텐츠 피로·동기 소진 쪽. "왜 한 달이나 쓰다 멈췄나" 확인 + <b>영양제 리워드 + 짧은 설문</b>을 전원 제시(A/B 없이).</p></div>`;
   h+=`</div>`;
 
-  h+=`<div class="sec-title">추천 대비 실수행률 (그룹별)</div><div class="card"><h3>추천받은 활동 중 실제 수행 비율</h3><div class="csub">실사용률의 진짜 분모</div>`;
-  h+=CH.hbar(DATA.recperform.map(r=>({label:r.label,value:r.rate,color:r.label==='활성'?'var(--good)':r.label==='이탈'?'var(--warn)':'var(--bad)'})),{unit:'%',max:40});
+  h+=`<div class="sec-title">추천 대비 실수행률 (활동 그룹별)</div><div class="card"><h3>추천받은 활동 중 실제 수행 비율</h3><div class="csub">전체 기수 계정을 <b>최근 활동</b>으로 3분류 · <b>가입 후 무활동</b>=콘텐츠 실행 0건 · <b>이탈</b>=90일 이상 무활동 · <b>활성</b>=최근 90일 내 활동</div>`;
+  h+=CH.hbar(DATA.recperform.map(r=>({label:GRP_LABEL[r.label]||r.label,value:r.rate,color:r.label==='활성'?'var(--good)':r.label==='이탈'?'var(--warn)':'var(--bad)'})),{unit:'%',max:40});
   h+=`<div class="note">활성 유저조차 추천의 30%만 수행 — 이게 정상 수준의 실사용률입니다.</div></div>`;
   return h;
 },
@@ -6835,11 +6840,27 @@ const VIEWS = {
   h+=`</tbody></table>${legend([{label:'완료',color:'var(--good)'},{label:'중단',color:'var(--warn)'},{label:'진입만',color:'var(--bad)'}])}`;
   h+=`<div class="note">마음 콘텐츠는 중도포기가 압도적. 운동은 완료율 최고. (완료신호 유실 이슈로 운동·마음은 소폭 과소집계)</div></div>`;
 
-  h+=`<div class="sec-title">게임별 참여도 (17종)</div><div class="card"><div class="toolbar"><h3 style="margin:0">게임 랭킹</h3><div class="csub" style="margin:0 0 0 8px">도달율=신규 ${DATA.games_meta.base_users}명 중 1회+ 이용 · 헤더 클릭 정렬</div></div>`;
-  h+=`<div class="tw"><table id="gtbl"><thead><tr>
-    <th data-k="name">게임명</th><th class="r" data-k="users">이용자</th><th class="r" data-k="reach">도달율</th>
-    <th class="r" data-k="runs">총실행</th><th class="r" data-k="complete">완료율</th><th class="r" data-k="entered">진입만</th>
-    <th class="r" data-k="stopped">중단율</th><th data-k="pat">패턴</th></tr></thead><tbody></tbody></table></div>`;
+  h+=`<div class="sec-title">게임별 참여도 (17종)</div><div class="card"><h3 style="margin:0 0 4px">게임 랭킹</h3>
+    <div class="csub" style="margin-bottom:6px">신규 ${DATA.games_meta.base_users}명 기준 · 헤더 클릭으로 정렬</div>
+    <div class="note" style="margin:0 0 10px">
+      <b>이용·도달</b> = 누가 얼마나 왔나 — <b>총 이용자수</b>(이 게임을 1번이라도 한 사람) · <b>게임카드 열어본 비율(도달율)</b>(신규 ${DATA.games_meta.base_users}명 중) &nbsp;|&nbsp;
+      <b>실행 결과</b> = 실행한 뒤 어떻게 됐나(전체 <b>실행 횟수</b> 중 %) — <b>끝까지 완료</b> · <b>초기 진입만</b>(튜토리얼만 보고 이탈) · <b>중간 중단</b>
+    </div>`;
+  h+=`<div class="tw"><table id="gtbl"><thead>
+    <tr>
+      <th rowspan="2" data-k="name" class="sortable" style="vertical-align:bottom">게임명</th>
+      <th colspan="2" class="grph">이용 · 도달</th>
+      <th rowspan="2" class="r sortable grpsep" data-k="runs" style="vertical-align:bottom">실행 횟수</th>
+      <th colspan="3" class="grph grpsep">실행 결과 (실행 건 기준 %)</th>
+      <th rowspan="2" data-k="pat" style="vertical-align:bottom">활용 패턴</th>
+    </tr>
+    <tr>
+      <th class="r sortable" data-k="users">총 이용자수</th>
+      <th class="r sortable" data-k="reach">게임카드 열어본율<br><span style="font-weight:400;text-transform:none">(도달율)</span></th>
+      <th class="r sortable grpsep" data-k="complete">끝까지 완료율</th>
+      <th class="r sortable" data-k="entered">초기 진입만<br><span style="font-weight:400;text-transform:none">(튜토리얼 이탈)</span></th>
+      <th class="r sortable" data-k="stopped">게임 중 중단율</th>
+    </tr></thead><tbody></tbody></table></div>`;
   h+=`<div class="note" id="gnote"></div></div>`;
   setTimeout(()=>renderGames(),0);
 
@@ -6896,7 +6917,7 @@ const VIEWS = {
   h+=`<div class="note">⚠️ 앱 등급(level)이 기록된 완료건만 집계(등급 미기록·점수공백 2025-11~2026-01 제외). 스트레스 관심이상 비율이 특히 높아, 마케팅이 아니라 <b>보건소 케어콜 연계</b>가 맞는 근거입니다.</div></div>`;
 
   h+=`<div class="sec-title">보조 지표</div><div class="grid g2">`;
-  h+=`<div class="card"><h3>그룹별 일평균 걸음수</h3><div class="csub">차이 크지 않음 → 이탈 주원인 아님</div>${CH.hbar(DATA.steps.map(s=>({label:s.label,value:s.avg,color:s.label==='활성'?'var(--good)':s.label==='이탈'?'var(--warn)':'var(--bad)'})),{unit:'보',fmt:KRW})}</div>`;
+  h+=`<div class="card"><h3>활동 그룹별 일평균 걸음수</h3><div class="csub">가입후무활동 / 이탈(90일+) / 활성(최근90일) · 차이 크지 않음 → 이탈 주원인 아님</div>${CH.hbar(DATA.steps.map(s=>({label:GRP_LABEL[s.label]||s.label,value:s.avg,color:s.label==='활성'?'var(--good)':s.label==='이탈'?'var(--warn)':'var(--bad)'})),{unit:'보',fmt:KRW})}</div>`;
   const f=DATA.funnel;
   h+=`<div class="card"><h3>가입 전 온보딩 퍼널</h3><div class="csub">보건소 신청 → 앱 가입</div>${CH.hbar([{label:'신청',value:f.applied},{label:'승인',value:f.approved},{label:'앱가입',value:f.signed}],{unit:'명'})}<div class="note">승인자의 ${(f.signed/f.approved*100).toFixed(0)}%가 실제 가입 — 미가입 ${f.not_signed}명(상한).</div></div>`;
   h+=`</div>`;
@@ -7296,7 +7317,7 @@ function renderGames(){
     else if(g.stopped>=38) pat='<span class="pill bad">완주 실패(난이도)</span>';
     else if(g.complete>=70) pat='<span class="pill good">건강</span>';
     else pat='<span class="pill neut">–</span>';
-    return `<tr><td>${g.name}</td><td class="r mono">${g.users}</td><td class="r mono">${g.reach}%</td><td class="r mono">${KRW(g.runs)}</td><td class="r mono">${g.complete}%</td><td class="r mono">${g.entered}%</td><td class="r mono">${g.stopped}%</td><td>${pat}</td></tr>`;
+    return `<tr><td>${g.name}</td><td class="r mono">${g.users}</td><td class="r mono">${g.reach}%</td><td class="r mono grpsep">${KRW(g.runs)}</td><td class="r mono grpsep">${g.complete}%</td><td class="r mono">${g.entered}%</td><td class="r mono">${g.stopped}%</td><td>${pat}</td></tr>`;
   }).join('');
   $('#gnote').innerHTML='실제 1위는 <b>기억의 숨바꼭질</b>(도달·완료 모두 우수). <b>숫자퍼즐 9X9</b>는 중단율 최고(난이도), <b>양말정리·오늘의 장바구니</b>는 진입만율 높음(UI 이탈).';
 }
