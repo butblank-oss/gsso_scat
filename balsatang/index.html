@@ -2,1003 +2,447 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>발사탕 — 강아지 사료 분석</title>
-<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>발사탕 — 광고 없는 강아지 사료 분석</title>
+<meta name="description" content="성분표만 보고 솔직하게 분석해요. 광고비 1원도 안 받는 강아지 사료 분석 서비스.">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>
 :root{
-  --brand:#FF5500;--brand2:#E63900;--brand-soft:#FFF1EB;
-  --bg:#fff;--surface:#F8F8F6;--border:#EBEBEB;
-  --text:#111;--sub:#888;--muted:#AFAFAF;
-  --good:#22C55E;--warn:#F59E0B;--bad:#EF4444;
-  --good-soft:#F0FDF4;--warn-soft:#FFFBEB;--bad-soft:#FEF2F2;
-  --r:14px;--rS:8px;--nav-h:64px;
-  --tr:0.22s cubic-bezier(.4,0,.2,1);
+  --brand:#3E4E66; --brand-deep:#2F3C50; --brand-soft:#EEF1F6; --brand-mid:#C8D2E0;
+  --good:#16A34A; --good-soft:#F0FDF4; --good-mid:#BBF7D0;
+  --warn:#D97706; --warn-soft:#FFFBEB; --warn-mid:#FDE68A;
+  --bad:#DC2626;  --bad-soft:#FFF5F5;  --bad-mid:#FECACA;
+  --blue:#2563EB; --blue-soft:#EFF6FF;
+  --ink:#111; --ink2:#3D3D3D; --sub:#6B6B78; --muted:#A0A0AC;
+  --line:#EBEBEF; --bg:#FAFAF8; --card:#FFF; --card2:#F5F5F2;
+  --r:12px; --r-lg:20px; --r-xl:28px;
+  --nav-h:60px;
+  --ease:cubic-bezier(.32,.72,0,1);
+  --t:.2s var(--ease);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;background:#eee;overscroll-behavior:none}
-body{font-family:'Pretendard',sans-serif;color:var(--text)}
-#app{max-width:480px;margin:0 auto;height:100%;background:var(--bg);position:relative;overflow:hidden;display:flex;flex-direction:column}
-.screen{position:absolute;inset:0;background:var(--bg);overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--nav-h)+12px);display:none;flex-direction:column}
-.screen.active{display:flex}
-.screen.overlay{z-index:50;transform:translateY(100%);transition:transform .32s cubic-bezier(.32,0,.67,0);padding-bottom:0}
-.screen.overlay.open{transform:translateY(0);transition:transform .32s cubic-bezier(.33,1,.68,1)}
-#nav{position:absolute;bottom:0;left:0;right:0;height:var(--nav-h);background:var(--bg);border-top:1px solid var(--border);display:flex;z-index:40;padding-bottom:env(safe-area-inset-bottom)}
-.tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:none;color:var(--muted);font-size:10px;font-family:inherit;cursor:pointer;transition:color var(--tr)}
-.tab-btn.on{color:var(--brand)}
-.tab-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.topbar{display:flex;align-items:center;padding:14px 16px;gap:10px;flex-shrink:0;position:sticky;top:0;background:var(--bg);z-index:10;border-bottom:1px solid var(--border)}
-.logo{font-size:20px;font-weight:900;letter-spacing:-.5px}
-.logo em{color:var(--brand);font-style:normal}
-.logo-pill{font-size:10px;font-weight:600;color:var(--brand);background:var(--brand-soft);padding:3px 8px;border-radius:99px}
-.topbar-title{flex:1;font-size:16px;font-weight:700;text-align:center}
-.back-btn{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;font-size:22px;color:var(--text);font-weight:300;line-height:1;padding:0;flex-shrink:0}
-.hero{padding:20px 20px 16px;flex-shrink:0}
-.hero h1{font-size:26px;font-weight:900;line-height:1.25;letter-spacing:-.5px}
-.hero h1 em{color:var(--brand);font-style:normal}
-.hero p{margin-top:8px;font-size:13.5px;color:var(--sub);line-height:1.6}
-.searchwrap{padding:0 16px 14px;flex-shrink:0}
-.search-fake{display:flex;align-items:center;gap:10px;background:var(--surface);border:1.5px solid var(--border);border-radius:13px;padding:11px 14px;cursor:pointer;transition:border-color var(--tr)}
-.search-fake:hover{border-color:var(--brand)}
-.search-fake svg{width:18px;height:18px;stroke:var(--muted);flex-shrink:0}
-.search-fake span{font-size:14px;color:var(--muted)}
-.match-banner{margin:0 16px 20px;background:linear-gradient(135deg,var(--brand) 0%,var(--brand2) 100%);border-radius:var(--r);padding:18px 20px;cursor:pointer;position:relative;overflow:hidden;color:#fff;flex-shrink:0}
-.match-banner::after{content:'🐾';position:absolute;right:16px;bottom:-4px;font-size:52px;opacity:.15;pointer-events:none}
-.match-banner h3{font-size:15px;font-weight:800;margin-bottom:4px}
-.match-banner p{font-size:12.5px;opacity:.85;line-height:1.5}
-.match-banner .arr{position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:22px;font-weight:300}
-.sec-h{display:flex;align-items:center;padding:4px 20px 10px;flex-shrink:0}
-.sec-h h2{font-size:16px;font-weight:800;flex:1}
-.more-btn{font-size:12px;color:var(--brand);font-weight:600;background:none;border:none;cursor:pointer;padding:4px 0;font-family:inherit}
-.chips{display:flex;gap:8px;padding:0 16px 16px;overflow-x:auto;flex-shrink:0;scrollbar-width:none}
+html,body{height:100%;overscroll-behavior:none}
+body{font-family:'Pretendard',-apple-system,sans-serif;background:#E8E8E4;color:var(--ink);
+  display:flex;justify-content:center;-webkit-font-smoothing:antialiased}
+#app{width:100%;max-width:480px;height:100%;background:var(--bg);position:relative;overflow:hidden}
+svg.i{display:inline-block;vertical-align:-.14em;fill:none;stroke:currentColor;
+  stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+
+/* ── SCREENS ── */
+.screen{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
+  background:var(--bg);padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 16px);
+  display:none;flex-direction:column}
+.screen.on{display:flex;animation:screenIn .26s var(--ease) both}
+.screen.ov{z-index:60;padding-bottom:env(safe-area-inset-bottom);
+  transform:translateY(100%);transition:transform .34s var(--ease);display:flex}
+.screen.ov.open{transform:translateY(0)}
+@keyframes screenIn{from{opacity:0}to{opacity:1}}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;gap:10px;padding:14px 20px;flex-shrink:0;
+  position:sticky;top:0;z-index:20;background:rgba(250,250,248,.88);backdrop-filter:blur(12px);
+  border-bottom:1px solid transparent;transition:border-color var(--t)}
+.topbar.stuck{border-bottom-color:var(--line)}
+.logo{font-size:19px;font-weight:900;letter-spacing:-.6px}
+.logo em{font-style:normal;color:var(--brand)}
+.pill{margin-left:auto;font-size:10.5px;font-weight:700;color:var(--brand);
+  background:var(--brand-soft);padding:4px 9px;border-radius:99px;letter-spacing:-.2px}
+.tb-title{font-size:16px;font-weight:800;letter-spacing:-.3px}
+.back{width:32px;height:32px;margin-left:-6px;display:flex;align-items:center;justify-content:center;
+  border:none;background:none;cursor:pointer;color:var(--ink);border-radius:8px;transition:background var(--t)}
+.back:active{background:var(--card2)}
+
+/* ── HOME HERO ── */
+.hero{padding:8px 20px 20px;flex-shrink:0}
+.hero h1{font-size:27px;font-weight:900;line-height:1.28;letter-spacing:-1px}
+.hero h1 em{font-style:normal;color:var(--brand)}
+.hero p{margin-top:10px;font-size:13.5px;line-height:1.6;color:var(--sub);letter-spacing:-.2px}
+.searchwrap{padding:0 20px 14px;flex-shrink:0}
+.sbox{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);
+  border-radius:14px;padding:13px 15px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.04);
+  transition:border-color var(--t),box-shadow var(--t)}
+.sbox:active{border-color:var(--brand-mid);box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.sbox .i{color:var(--muted)}
+.sbox span{font-size:14px;color:var(--muted);letter-spacing:-.2px}
+.sbox input{flex:1;border:none;background:none;outline:none;font:inherit;font-size:14.5px;
+  color:var(--ink);letter-spacing:-.2px}
+.sbox input::placeholder{color:var(--muted)}
+
+/* ── MATCH BANNER ── */
+.banner{margin:0 20px 26px;padding:19px 20px;border-radius:var(--r-lg);cursor:pointer;
+  background:linear-gradient(135deg,#48597333 0%,#2F3C50 60%),var(--brand);
+  color:#fff;position:relative;overflow:hidden;flex-shrink:0;
+  box-shadow:0 6px 20px rgba(47,60,80,.22);transition:transform var(--t),box-shadow var(--t)}
+.banner:active{transform:scale(.985);box-shadow:0 3px 12px rgba(47,60,80,.2)}
+.banner .paw{position:absolute;right:-8px;bottom:-14px;opacity:.14;pointer-events:none;color:#fff}
+.banner h3{display:flex;align-items:center;gap:7px;font-size:15px;font-weight:800;
+  letter-spacing:-.4px;margin-bottom:6px}
+.banner p{font-size:12.5px;line-height:1.55;color:#ffffffcc;letter-spacing:-.2px}
+.banner .arr{position:absolute;right:16px;top:50%;transform:translateY(-50%);opacity:.7}
+
+/* ── SECTION HEAD ── */
+.sec-h{display:flex;align-items:center;gap:8px;padding:2px 20px 12px;flex-shrink:0}
+.sec-h h2{display:flex;align-items:center;gap:6px;font-size:17px;font-weight:800;
+  letter-spacing:-.5px;flex:1}
+.sec-h h2 .i{color:var(--brand)}
+.more{display:flex;align-items:center;gap:2px;font-size:12.5px;font-weight:700;color:var(--sub);
+  background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 0;transition:color var(--t)}
+.more:active{color:var(--brand)}
+
+/* ── CHIPS ── */
+.chips{display:flex;gap:7px;padding:0 20px 20px;overflow-x:auto;flex-shrink:0;
+  scrollbar-width:none;-ms-overflow-style:none}
 .chips::-webkit-scrollbar{display:none}
-.chip{flex-shrink:0;padding:7px 14px;border-radius:99px;border:1.5px solid var(--border);font-size:13px;font-weight:600;background:var(--bg);color:var(--text);cursor:pointer;transition:all var(--tr);font-family:inherit}
-.chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
-.hscroll{display:flex;gap:12px;padding:0 16px 20px;overflow-x:auto;flex-shrink:0;scrollbar-width:none}
+.chip{flex-shrink:0;padding:8px 15px;border-radius:99px;border:1px solid var(--line);
+  background:var(--card);color:var(--ink2);font:inherit;font-size:13px;font-weight:700;
+  letter-spacing:-.3px;cursor:pointer;transition:all .22s var(--ease);white-space:nowrap}
+.chip:active{transform:scale(.95)}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+
+/* ── H-SCROLL CARD ── */
+.hscroll{display:flex;gap:12px;padding:2px 20px 26px;overflow-x:auto;flex-shrink:0;
+  scroll-snap-type:x proximity;scrollbar-width:none;-ms-overflow-style:none}
 .hscroll::-webkit-scrollbar{display:none}
-.hcard{flex-shrink:0;width:140px;background:var(--surface);border-radius:var(--r);padding:14px 12px;cursor:pointer;transition:transform var(--tr),box-shadow var(--tr)}
-.hcard:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.1)}
-.hcard-brand{font-size:10px;color:var(--sub);margin-bottom:2px;font-weight:500}
-.hcard-name{font-size:13px;font-weight:700;line-height:1.35;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.hcard-type{font-size:11px;color:var(--muted);margin-bottom:6px}
-.hcard-price{font-size:12px;font-weight:700;color:var(--brand)}
-.hcard-price span{font-size:10px;color:var(--sub);font-weight:400}
-.fcard{display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;animation:fadeUp .3s ease both;transition:background var(--tr)}
-.fcard:hover{background:var(--surface)}
-.fcard-thumb{width:52px;height:52px;border-radius:10px;background:var(--surface);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px}
-.fcard-body{flex:1;min-width:0}
-.fcard-brand{font-size:11px;color:var(--sub);margin-bottom:2px}
-.fcard-name-row{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:3px}
-.fcard-name{font-size:14px;font-weight:700;line-height:1.3}
-.fcard-meta{font-size:11px;color:var(--muted);margin-bottom:6px}
-.fcard-bottom{display:flex;align-items:center;gap:8px}
-.fcard-price{font-size:12px;font-weight:600;color:var(--sub)}
-.badge{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;flex-shrink:0}
-.badge.rx{background:#EEF2FF;color:#6366F1}
-.badge.warn{background:var(--warn-soft);color:var(--warn)}
-#search .topbar .search-real{flex:1;display:flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--brand);border-radius:10px;padding:8px 12px}
-#search .topbar .search-real svg{width:16px;height:16px;stroke:var(--brand)}
-#search .topbar .search-real input{flex:1;border:none;background:none;font-size:14px;font-family:inherit;color:var(--text);outline:none}
-.srch-filters{display:flex;gap:8px;padding:10px 16px;overflow-x:auto;scrollbar-width:none;flex-shrink:0}
-.srch-filters::-webkit-scrollbar{display:none}
-.filter-chip{flex-shrink:0;padding:5px 12px;border-radius:99px;border:1.5px solid var(--border);font-size:12px;font-weight:600;background:var(--bg);cursor:pointer;font-family:inherit;transition:all var(--tr)}
-.filter-chip.on{background:var(--brand-soft);border-color:var(--brand);color:var(--brand)}
-.srch-count{padding:6px 16px 2px;font-size:12px;color:var(--muted)}
-.empty{padding:60px 20px;text-align:center;color:var(--muted);font-size:14px}
-#detail{padding-bottom:72px}
-.detail-hero{padding:20px 20px 16px;background:var(--surface);flex-shrink:0}
-.detail-brand{font-size:12px;color:var(--sub);margin-bottom:4px}
-.detail-name{font-size:22px;font-weight:900;line-height:1.25;margin-bottom:10px}
-.detail-score-row{display:flex;align-items:center;gap:16px}
-.sub-scores{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px 16px;flex-shrink:0}
-.sub-score{background:var(--surface);border-radius:var(--rS);padding:10px 12px}
-.sub-score-label{font-size:11px;color:var(--sub);margin-bottom:4px}
-.star{font-size:14px}
-.dtabs{display:flex;border-bottom:2px solid var(--border);flex-shrink:0}
-.dtab{flex:1;padding:12px;font-size:14px;font-weight:600;text-align:center;border:none;background:none;color:var(--muted);cursor:pointer;font-family:inherit;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all var(--tr)}
-.dtab.on{color:var(--brand);border-bottom-color:var(--brand)}
-.dtab-panel{display:none;flex-direction:column;flex:1}
-.dtab-panel.on{display:flex}
-.verdict-block{padding:14px 16px;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
-.verdict-item{display:flex;gap:8px;padding:10px 12px;border-radius:var(--rS);font-size:13px;line-height:1.5}
-.verdict-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
-.ingr-section{padding:0 16px 16px;flex-shrink:0}
-.ingr-title{font-size:13px;font-weight:700;color:var(--sub);padding:12px 0 8px}
-.ingr-list{display:flex;flex-direction:column;gap:4px}
-.ingr-item{display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-radius:var(--rS);background:var(--surface)}
-.ingr-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
-.ingr-name{font-size:13px;font-weight:600}
-.ingr-desc{font-size:11.5px;color:var(--sub);line-height:1.45;margin-top:2px}
-.nutri-section{padding:0 16px 16px;flex-shrink:0}
-.nutri-row{margin-bottom:10px}
-.nutri-label-row{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
-.nutri-label{color:var(--sub)}
-.nutri-val{font-weight:700}
-.nutri-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
-.nutri-fill{height:100%;border-radius:3px;background:var(--brand);transition:width .6s ease}
-.recall-box{margin:0 16px 16px;padding:10px 12px;background:var(--warn-soft);border-radius:var(--rS);border-left:3px solid var(--warn);font-size:12.5px;color:var(--warn);line-height:1.5}
-.feeding-section{padding:16px}
-.feeding-title{font-size:15px;font-weight:800;margin-bottom:12px}
-.weight-input-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-.weight-input{flex:1;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-size:15px;font-family:inherit;text-align:center;outline:none;transition:border-color var(--tr)}
-.weight-input:focus{border-color:var(--brand)}
-.weight-unit{font-size:14px;color:var(--sub);font-weight:600}
-.feeding-result{background:var(--surface);border-radius:var(--r);padding:14px;text-align:center}
-.feeding-amount{font-size:28px;font-weight:900;color:var(--brand)}
-.feeding-sub{font-size:12px;color:var(--sub);margin-top:4px}
-.price-list{padding:0 16px 16px;display:flex;flex-direction:column;gap:8px;flex-shrink:0}
-.price-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface);border-radius:var(--r)}
-.price-shop{font-size:12px;color:var(--sub);flex-shrink:0;width:44px}
-.price-wg{font-size:12px;color:var(--sub)}
-.price-val{font-size:15px;font-weight:800}
-.price-per{font-size:11px;color:var(--muted)}
-.price-link{font-size:12px;color:var(--brand);font-weight:600;text-decoration:none}
-.detail-bottom-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;display:flex;gap:8px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--border);z-index:20}
-.btn-outline{flex:1;padding:12px;border:1.5px solid var(--border);border-radius:12px;font-size:14px;font-weight:700;background:none;cursor:pointer;font-family:inherit;color:var(--text);transition:all var(--tr)}
-.btn-outline:hover{border-color:var(--brand);color:var(--brand)}
-.btn-solid{flex:1;padding:12px;border:none;border-radius:12px;font-size:14px;font-weight:700;background:var(--brand);color:#fff;cursor:pointer;font-family:inherit;transition:opacity var(--tr)}
-.btn-solid:hover{opacity:.88}
-.cmp-slots{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px;flex-shrink:0}
-.cmp-slot{background:var(--surface);border-radius:var(--r);padding:14px;cursor:pointer;min-height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:2px dashed var(--border);transition:all var(--tr);text-align:center}
-.cmp-slot.filled{border-style:solid;border-color:var(--border);align-items:flex-start;justify-content:flex-start}
-.cmp-slot-empty{font-size:13px;color:var(--muted)}
-.cmp-slot-brand{font-size:10px;color:var(--sub)}
-.cmp-slot-name{font-size:13px;font-weight:700;line-height:1.3}
-.cmp-run-btn{margin:0 16px 16px;padding:14px;border:none;border-radius:13px;background:var(--brand);color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;width:calc(100% - 32px)}
-.cmp-table{padding:0 16px}
-.cmp-row{display:grid;grid-template-columns:90px 1fr 1fr;gap:8px;padding:11px 0;border-bottom:1px solid var(--border);align-items:center}
-.cmp-row-label{font-size:12px;color:var(--sub)}
-.cmp-cell{font-size:13px;font-weight:600;text-align:center}
-.cmp-cell.hi{color:var(--good);font-weight:800}
-.content-header{padding:20px 20px 4px}
-.content-header-title{font-size:22px;font-weight:900;margin-bottom:4px}
-.content-header-sub{font-size:13.5px;color:var(--sub)}
-.content-chips{display:flex;gap:8px;padding:14px 16px 8px;overflow-x:auto;scrollbar-width:none;flex-shrink:0}
-.content-chips::-webkit-scrollbar{display:none}
-.content-list{padding:0 16px;display:flex;flex-direction:column}
-.content-card{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:background var(--tr)}
-.content-icon{width:52px;height:52px;border-radius:10px;background:var(--brand-soft);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px}
-.content-cat{font-size:10px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
-.content-title{font-size:15px;font-weight:700;line-height:1.3;margin-bottom:3px}
-.content-desc{font-size:12.5px;color:var(--sub);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.5;margin-bottom:4px}
-.content-meta{font-size:11px;color:var(--muted)}
-#content-detail{padding-bottom:20px}
-.article-cover{width:100%;aspect-ratio:16/9;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:48px}
-.article-header{padding:20px 20px 0}
-.article-cat{font-size:11px;font-weight:700;color:var(--brand);margin-bottom:6px}
-.article-title{font-size:23px;font-weight:900;line-height:1.25;letter-spacing:-.3px}
-.article-body{padding:16px 20px;font-size:14.5px;line-height:1.85;color:var(--text)}
-.article-body h3{font-size:16px;font-weight:800;margin:20px 0 8px}
-.article-body p{margin-bottom:14px}
-.article-body p.lead{font-size:16px;font-weight:700}
-.article-body strong{font-weight:700}
-.article-body ul,.article-body ol{margin:0 0 14px;padding-left:22px}
-.article-body li{margin-bottom:4px}
-.article-body .highlight{background:var(--brand-soft);border-left:3px solid var(--brand);border-radius:0 8px 8px 0;padding:12px 16px;margin:14px 0}
-.mydog-form{padding:16px}
-.form-title{font-size:22px;font-weight:900;margin-bottom:4px}
-.form-sub{font-size:13px;color:var(--sub);margin-bottom:20px;line-height:1.5}
-.form-row{margin-bottom:20px}
-.form-label{display:block;font-size:13px;font-weight:700;margin-bottom:8px;color:var(--text)}
-.form-label span{font-weight:400;color:var(--muted)}
-.form-input{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;font-size:14px;font-family:inherit;outline:none;transition:border-color var(--tr)}
-.form-input:focus{border-color:var(--brand)}
-.seg-btns{display:flex;border:1.5px solid var(--border);border-radius:10px;overflow:hidden}
-.seg-btn{flex:1;padding:10px 6px;border:none;border-right:1px solid var(--border);background:var(--bg);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--sub);transition:all var(--tr);line-height:1.3}
-.seg-btn:last-child{border-right:none}
-.seg-btn.on{background:var(--brand);color:#fff}
-.concern-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.concern-opt{padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:all var(--tr);background:var(--bg);font-family:inherit;text-align:left;line-height:1.3}
-.concern-opt.on{background:var(--brand-soft);border-color:var(--brand);color:var(--brand)}
-.allergen-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.allergen-opt{padding:8px 6px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all var(--tr);background:var(--bg);font-family:inherit;text-align:center}
-.allergen-opt.on{background:#FEF2F2;border-color:var(--bad);color:var(--bad)}
-.foodpick-results{border:1.5px solid var(--border);border-radius:10px;margin-top:6px;max-height:160px;overflow-y:auto}
-.foodpick-result-item{padding:10px 14px;font-size:13.5px;cursor:pointer;transition:background var(--tr);border-bottom:1px solid var(--border)}
-.foodpick-result-item:last-child{border-bottom:none}
-.foodpick-result-item:hover{background:var(--surface)}
-.foodpick-selected{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--brand-soft);border-radius:10px;margin-top:6px}
-.foodpick-selected-name{font-size:13px;font-weight:600;flex:1}
-.foodpick-remove{border:none;background:none;color:var(--brand);cursor:pointer;font-size:18px;padding:0}
-.mydog-submit{width:100%;padding:16px;border:none;border-radius:13px;background:var(--brand);color:#fff;font-size:16px;font-weight:900;cursor:pointer;font-family:inherit;margin-top:4px}
-.mydog-result-header{padding:20px 16px 8px;display:flex;align-items:flex-start;gap:12px}
-.mydog-result-title{font-size:22px;font-weight:900;flex:1}
-.mydog-result-sub{font-size:12.5px;color:var(--sub);margin-top:3px;line-height:1.5}
-.reset-btn{padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;font-weight:600;background:none;cursor:pointer;font-family:inherit;flex-shrink:0}
-.cur-analysis{margin:0 16px 16px;border:1.5px solid var(--warn);border-radius:var(--r);overflow:hidden}
-.cur-analysis-header{display:flex;align-items:center;gap:8px;padding:12px 14px;background:var(--warn-soft);cursor:pointer}
-.cur-analysis-title{font-size:13.5px;font-weight:700;flex:1}
-.cur-analysis-arr{font-size:14px;transition:transform var(--tr)}
-.cur-analysis-arr.open{transform:rotate(180deg)}
-.cur-analysis-body{padding:12px 14px;display:none;flex-direction:column;gap:8px}
-.cur-analysis-body.open{display:flex}
-.cur-issue{display:flex;gap:10px}
-.cur-issue-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
-.cur-issue-title{font-size:13px;font-weight:700;margin-bottom:2px}
-.cur-issue-desc{font-size:12px;color:var(--sub);line-height:1.5}
-.rec-card{margin:0 16px 12px;border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden}
-.rec-card-main{padding:14px;cursor:pointer;transition:background var(--tr)}
-.rec-card-main:hover{background:var(--surface)}
-.rec-badge{display:inline-block;background:var(--brand);color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:4px;margin-bottom:8px}
-.rec-match-row{display:flex;align-items:center;gap:8px;margin:10px 0 8px}
-.rec-match-bar{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
-.rec-match-fill{height:100%;background:var(--brand);border-radius:3px;transition:width .6s ease}
-.rec-match-pct{font-size:12px;font-weight:800;color:var(--brand);width:38px;text-align:right}
-.rec-reasons{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
-.rec-reason{font-size:12px;color:var(--sub);line-height:1.5}
-.rec-reason::before{content:"✓ "}
-.rec-diffs{display:flex;gap:8px;margin-top:8px}
-.rec-diff{flex:1;text-align:center;background:var(--surface);border-radius:8px;padding:6px 0}
-.rec-diff-label{font-size:10px;color:var(--muted);margin-bottom:2px}
-.rec-diff-val{font-size:13px;font-weight:800}
-.rec-diff-val.up{color:var(--good)}
-.rec-diff-val.dn{color:var(--bad)}
-.picker-wrap{display:flex;flex-direction:column;height:100%}
-.picker-list{flex:1;overflow-y:auto}
-.note{padding:16px 20px;font-size:11.5px;color:var(--muted);line-height:1.6;flex-shrink:0}
-@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.hcard{flex:0 0 156px;width:156px;background:var(--card);border:1px solid var(--line);
+  border-radius:16px;padding:14px;cursor:pointer;scroll-snap-align:start;
+  box-shadow:0 2px 8px rgba(0,0,0,.04);animation:cardIn .34s var(--ease) both;
+  transition:transform .16s var(--ease),box-shadow .16s var(--ease)}
+.hcard:active{transform:scale(.97);box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.hcard-thumb{width:100%;aspect-ratio:1;border-radius:12px;background:var(--bg);
+  border:1px solid var(--line);display:flex;align-items:center;justify-content:center;
+  margin-bottom:11px;color:var(--ink2)}
+.hcard-thumb img{width:100%;height:100%;object-fit:cover;border-radius:11px}
+.hcard-brand{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.2px;margin-bottom:3px}
+.hcard-name{font-size:14px;font-weight:800;letter-spacing:-.4px;line-height:1.3;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hcard-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:9px}
+@keyframes cardIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* ── LIST CARD ── */
+.flist{padding:0 20px;display:flex;flex-direction:column;gap:10px}
+.fcard{display:flex;gap:13px;align-items:flex-start;background:var(--card);border:1px solid var(--line);
+  border-radius:16px;padding:14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.04);
+  animation:cardIn .34s var(--ease) both;transition:transform .16s var(--ease),box-shadow .16s var(--ease)}
+.fcard:active{transform:scale(.985);box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.fthumb{width:56px;height:56px;flex-shrink:0;border-radius:13px;background:var(--bg);
+  border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink2)}
+.fthumb img{width:100%;height:100%;object-fit:cover;border-radius:12px}
+.finfo{flex:1;min-width:0}
+.fbrand{font-size:11px;color:var(--muted);font-weight:700;margin-bottom:3px}
+.fname-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.fname{font-size:14.5px;font-weight:800;letter-spacing:-.4px;line-height:1.3}
+.fmeta{display:flex;flex-wrap:wrap;gap:4px}
+
+/* ── TAGS / BADGES ── */
+.ffn,.ftag{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:700;
+  padding:3px 7px;border-radius:6px;letter-spacing:-.2px;white-space:nowrap}
+.ffn{background:var(--brand-soft);color:var(--brand)}
+.ftag.good{background:var(--good-soft);color:var(--good)}
+.ftag.warn{background:var(--warn-soft);color:var(--warn)}
+.ftag.rx{background:var(--blue-soft);color:var(--blue)}
+
+/* ── EMPTY / NOTE ── */
+.empty{padding:64px 20px;text-align:center;color:var(--muted);font-size:13.5px;
+  display:flex;flex-direction:column;align-items:center;gap:14px}
+.empty .i{color:var(--line);stroke-width:1.4}
+.note{padding:22px 20px 8px;font-size:11.5px;line-height:1.65;color:var(--muted);
+  letter-spacing:-.2px;flex-shrink:0}
+.count{padding:2px 20px 12px;font-size:12px;color:var(--muted);font-weight:600;flex-shrink:0}
+
+/* ── BOTTOM NAV ── */
+#nav{position:absolute;left:0;right:0;bottom:0;z-index:50;display:flex;
+  height:calc(var(--nav-h) + env(safe-area-inset-bottom));
+  padding-bottom:env(safe-area-inset-bottom);
+  background:rgba(255,255,255,.92);backdrop-filter:blur(14px);border-top:1px solid var(--line)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  border:none;background:none;font:inherit;font-size:10px;font-weight:700;letter-spacing:-.2px;
+  color:var(--muted);cursor:pointer;transition:color .2s var(--ease)}
+.tab.on{color:var(--brand)}
+.tab .i{transition:transform .24s var(--ease)}
+.tab.on .i{transform:translateY(-1px) scale(1.06)}
 </style>
 </head>
 <body>
 <div id="app">
 
-<div class="screen active" id="home">
-  <div class="topbar">
+<!-- ══ HOME ══ -->
+<section class="screen on" id="s-home">
+  <header class="topbar">
     <div class="logo">발<em>사탕</em></div>
-    <div class="logo-pill">광고 없는 솔직 분석</div>
-  </div>
+    <span class="pill">광고 없는 솔직 분석</span>
+  </header>
   <div class="hero">
     <h1>우리 아이 사료,<br><em>진짜</em> 괜찮을까?</h1>
     <p>성분표만 보고 솔직하게 분석해요. 광고비 1원도 안 받아요.</p>
   </div>
   <div class="searchwrap">
-    <div class="search-fake" onclick="openSearch()">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+    <div class="sbox" onclick="openSearch()">
+      <span data-ico="search" data-sz="18"></span>
       <span>사료 이름을 검색해보세요</span>
     </div>
   </div>
-  <div class="match-banner" onclick="goTab('mydog')">
-    <h3>🐶 우리 아이에게 맞는 사료 찾기</h3>
+  <div class="banner" onclick="goTab('mydog')">
+    <span class="paw" data-ico="paw" data-sz="86"></span>
+    <h3><span data-ico="dog" data-sz="18"></span>우리 아이에게 맞는 사료 찾기</h3>
     <p>몸무게·나이·고민만 알려주면<br>딱 맞는 사료를 찾아드려요</p>
-    <span class="arr">›</span>
+    <span class="arr" data-ico="chevronRight" data-sz="20"></span>
   </div>
   <div class="sec-h"><h2>고민별 사료 찾기</h2></div>
   <div class="chips" id="concernChips"></div>
   <div id="homeSections">
-    <div class="sec-h"><h2>발사탕 추천 사료 🏆</h2><button class="more-btn" onclick="openSearch()">전체보기</button></div>
+    <div class="sec-h">
+      <h2><span data-ico="trophy" data-sz="17"></span>발사탕 추천 사료</h2>
+      <button class="more" onclick="openSearch()">전체보기<span data-ico="chevronRight" data-sz="13"></span></button>
+    </div>
     <div class="hscroll" id="rankList"></div>
-    <div class="sec-h"><h2>가성비 좋은 사료 💰</h2></div>
+    <div class="sec-h"><h2><span data-ico="coins" data-sz="17"></span>가성비 좋은 사료</h2></div>
     <div class="hscroll" id="valueList"></div>
-    <div class="sec-h"><h2>처방식 ✚</h2></div>
+    <div class="sec-h"><h2><span data-ico="plus" data-sz="17"></span>처방식</h2></div>
     <div class="hscroll" id="rxList"></div>
   </div>
-  <div id="homeFiltered" style="display:none"></div>
-  <div class="note">※ 모든 분석은 라벨 표기 성분 기준 참고용이에요. 건강 문제는 수의사와 상담하세요.</div>
-</div>
+  <div class="flist" id="homeFiltered" hidden></div>
+  <p class="note">※ 모든 분석은 라벨 표기 성분 기준 참고용이에요. 건강 문제는 수의사와 상담하세요.</p>
+</section>
 
-<div class="screen" id="compare">
-  <div class="topbar"><div class="topbar-title">사료 비교</div></div>
-  <div class="cmp-slots" id="cmpSlots"></div>
-  <button class="cmp-run-btn" id="cmpRunBtn" onclick="runCompare()" disabled style="opacity:.5">비교하기</button>
-  <div id="cmpTable"></div>
-</div>
+<!-- ══ COMPARE (STEP 4) ══ -->
+<section class="screen" id="s-compare">
+  <header class="topbar"><div class="logo">발<em>사탕</em></div><span class="pill">사료 비교</span></header>
+  <div class="empty"><span data-ico="compare" data-sz="44"></span>비교 화면은 다음 단계에서 만들어요</div>
+</section>
 
-<div class="screen" id="content">
-  <div class="topbar"><div class="logo">발<em>사탕</em></div><div class="logo-pill">사료 지식</div></div>
-  <div class="content-header">
-    <div class="content-header-title">사료, 제대로 알기</div>
-    <div class="content-header-sub">헷갈렸던 것들을 쉽게 풀어드려요</div>
-  </div>
-  <div class="content-chips" id="contentChips"></div>
-  <div class="content-list" id="contentList"></div>
-</div>
+<!-- ══ CONTENT (STEP 5) ══ -->
+<section class="screen" id="s-content">
+  <header class="topbar"><div class="logo">발<em>사탕</em></div><span class="pill">사료 지식</span></header>
+  <div class="empty"><span data-ico="book" data-sz="44"></span>콘텐츠 화면은 다음 단계에서 만들어요</div>
+</section>
 
-<div class="screen" id="mydog">
-  <div class="topbar"><div class="logo">발<em>사탕</em></div><div class="logo-pill">맞춤 추천</div></div>
-  <div id="mydogBody"></div>
-</div>
+<!-- ══ MYDOG (STEP 6) ══ -->
+<section class="screen" id="s-mydog">
+  <header class="topbar"><div class="logo">발<em>사탕</em></div><span class="pill">맞춤 추천</span></header>
+  <div class="empty"><span data-ico="paw" data-sz="44"></span>맞춤 화면은 다음 단계에서 만들어요</div>
+</section>
 
-<div class="screen overlay" id="search">
-  <div class="topbar">
-    <button class="back-btn" onclick="closeOverlay()">‹</button>
-    <div class="search-real">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
-      <input id="searchInput" placeholder="오리젠, 아카나, 로얄캐닌..." oninput="filterSearch()">
+<!-- ══ SEARCH (overlay) ══ -->
+<section class="screen ov" id="s-search">
+  <header class="topbar">
+    <button class="back" onclick="closeOv()" aria-label="뒤로"><span data-ico="chevronRight" data-sz="20" style="transform:rotate(180deg)"></span></button>
+    <div class="tb-title">사료 검색</div>
+  </header>
+  <div class="searchwrap">
+    <div class="sbox" style="cursor:text">
+      <span data-ico="search" data-sz="18"></span>
+      <input id="searchInput" placeholder="오리젠, 아카나, 로얄캐닌..." oninput="filterSearch()" autocomplete="off">
     </div>
   </div>
-  <div class="srch-filters">
-    <button class="filter-chip on" onclick="setTypeFilter(this,'all')">전체</button>
-    <button class="filter-chip" onclick="setTypeFilter(this,'dry')">건식</button>
-    <button class="filter-chip" onclick="setTypeFilter(this,'wet')">습식</button>
-    <button class="filter-chip" onclick="setTypeFilter(this,'air_dried')">에어드라이</button>
-    <button class="filter-chip" onclick="setTypeFilter(this,'freeze_dried')">동결건조</button>
-  </div>
-  <div class="srch-count" id="srchCount"></div>
-  <div id="searchList"></div>
-</div>
+  <div class="count" id="searchCount"></div>
+  <div class="flist" id="searchList"></div>
+  <div style="height:24px;flex-shrink:0"></div>
+</section>
 
-<div class="screen overlay" id="detail">
-  <div class="topbar">
-    <button class="back-btn" onclick="closeOverlay()">‹</button>
-    <div class="topbar-title" id="detailTopTitle"></div>
-  </div>
+<!-- ══ DETAIL (overlay, STEP 3) ══ -->
+<section class="screen ov" id="s-detail">
+  <header class="topbar">
+    <button class="back" onclick="closeOv()" aria-label="뒤로"><span data-ico="chevronRight" data-sz="20" style="transform:rotate(180deg)"></span></button>
+    <div class="tb-title">사료 분석</div>
+  </header>
   <div id="detailBody" style="flex:1"></div>
-  <div class="detail-bottom-bar">
-    <button class="btn-outline" onclick="addToCmp()">비교담기</button>
-    <button class="btn-solid" onclick="switchDtab('feed')">급여량·가격</button>
-  </div>
-</div>
+</section>
 
-<div class="screen overlay" id="content-detail">
-  <div class="topbar">
-    <button class="back-btn" onclick="closeOverlay()">‹</button>
-    <div class="topbar-title">콘텐츠</div>
-  </div>
-  <div id="contentDetailBody"></div>
-</div>
-
-<div class="screen overlay" id="picker">
-  <div class="topbar">
-    <button class="back-btn" onclick="closeOverlay()">‹</button>
-    <div class="topbar-title">사료 선택</div>
-  </div>
-  <div class="picker-wrap">
-    <div class="searchwrap" style="padding-top:12px">
-      <div class="search-fake" style="border-color:var(--brand)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
-        <input id="pickerInput" placeholder="사료 검색..." oninput="filterPicker()" style="background:none;border:none;outline:none;font-size:14px;font-family:inherit;flex:1">
-      </div>
-    </div>
-    <div class="picker-list" id="pickerList"></div>
-  </div>
-</div>
-
-<div id="nav">
-  <button class="tab-btn on" id="tab-home" onclick="goTab('home')">
-    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>홈
-  </button>
-  <button class="tab-btn" id="tab-compare" onclick="goTab('compare')">
-    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg>비교
-  </button>
-  <button class="tab-btn" id="tab-content" onclick="goTab('content')">
-    <svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>콘텐츠
-  </button>
-  <button class="tab-btn" id="tab-mydog" onclick="goTab('mydog')">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>맞춤
-  </button>
-</div>
+<!-- ══ NAV ══ -->
+<nav id="nav">
+  <button class="tab on" id="t-home" onclick="goTab('home')"><span data-ico="house" data-sz="21"></span>홈</button>
+  <button class="tab" id="t-compare" onclick="goTab('compare')"><span data-ico="compare" data-sz="21"></span>비교</button>
+  <button class="tab" id="t-content" onclick="goTab('content')"><span data-ico="book" data-sz="21"></span>콘텐츠</button>
+  <button class="tab" id="t-mydog" onclick="goTab('mydog')"><span data-ico="paw" data-sz="21"></span>맞춤</button>
+</nav>
 
 </div>
+
 <script src="data.js"></script>
 <script>
-var activeTab='home',overlayStack=[],activeConcern='all',activeDetailId=null;
-var cmpA=null,cmpB=null,pickerTarget=null;
-var mydogState=null;
-var mydogForm={name:'',size:'small',stage:'adult',concerns:[],allergens:[],curFood:null};
-var contentFilterCat='all',searchTypeFilter='all';
+'use strict';
 
-var CONCERNS=[
-  {key:'all',label:'전체'},{key:'healthy',label:'건강한 아이'},
-  {key:'picky_eater',label:'입맛이 까다로워요'},{key:'weight',label:'체중 관리'},
-  {key:'eye_tear',label:'눈물·피부'},{key:'allergy',label:'알러지'},
-  {key:'digestive',label:'소화가 약해요'},{key:'joint',label:'관절'},
-  {key:'post_surgery',label:'수술·질환 후'},{key:'senior',label:'시니어'},
-  {key:'puppy',label:'어린 강아지'}
-];
-var CONCERN_OPTS=[
-  {key:'healthy',label:'건강한 아이예요',ico:'💪'},{key:'picky_eater',label:'입맛이 까다로워요',ico:'🍽'},
-  {key:'weight',label:'체중 관리',ico:'⚖️'},{key:'eye_tear',label:'눈물·피부',ico:'😢'},
-  {key:'allergy',label:'알러지',ico:'🚨'},{key:'digestive',label:'소화가 약해요',ico:'🫶'},
-  {key:'joint',label:'관절',ico:'🦴'},{key:'post_surgery',label:'수술·질환 후',ico:'💊'}
-];
-var ALLERGENS=[
-  {key:'chicken',label:'닭고기',kw:['닭','chicken','가금']},
-  {key:'beef',label:'소고기',kw:['소고기','beef','쇠고기']},
-  {key:'egg',label:'달걀',kw:['달걀','계란','egg']},
-  {key:'dairy',label:'유제품',kw:['유청','우유','치즈','dairy','milk']},
-  {key:'lamb',label:'양고기',kw:['양고기','lamb']},
-  {key:'pork',label:'돼지고기',kw:['돼지','pork']},
-  {key:'fish',label:'생선류',kw:['연어','청어','고등어','참치','멸치','fish','어류']},
-  {key:'grain',label:'곡물(밀)',kw:['밀','wheat','글루텐']},
-  {key:'corn',label:'옥수수',kw:['옥수수','corn']},
-  {key:'soy',label:'콩(대두)',kw:['대두','콩','soy','soybean']}
-];
-var TYPE_LABEL={dry:'건식',wet:'습식',air_dried:'에어드라이',freeze_dried:'동결건조'};
-var AGE_LABEL={puppy:'퍼피',adult:'성견',senior:'시니어',all:'전연령'};
-var SIZE_LABEL={small:'소형',medium:'중형',large:'대형',all:'전체'};
-var ARTICLES=[
-  {id:'a1',cat:'성분 분석',ico:'🔬',title:'사료 성분표 읽는 법',
-   excerpt:'성분표는 앞에 나올수록 많이 들어있어요. 첫 번째 재료가 고기인지 확인하는 게 핵심이에요.',
-   body:'성분표를 보면 어떤 재료가 가장 많이 들어있는지 알 수 있어요.\n\n### 핵심 원칙: 앞에 나올수록 많다\n성분표는 **무게 순서대로** 나열돼요. 첫 번째에 나온 재료가 가장 많이 들어있다는 뜻이에요.\n\n> **첫 번째 재료가 닭고기인지, 쌀인지를 먼저 확인하세요.** 고기가 앞에 오는 게 좋아요.\n\n### 주의해야 할 성분들\n- **부산물(by-product)**: 고기 부위 외 나머지. 무조건 나쁜 건 아니지만 품질 차이가 커요\n- **밀·옥수수**: 탄수화물 비중이 높아지고 알러지 원인이 될 수 있어요\n- **인공 보존제(BHA, BHT, 에톡시퀸)**: 되도록 피하는 게 좋아요\n- **설탕·당밀**: 장기 섭취 시 체중 문제가 생길 수 있어요\n\n### 고기 함량 계산하기\n"닭고기 40%, 탈수 닭고기 15%"처럼 표기될 때는 두 수치를 합산해서 보면 더 정확해요.\n\n성분표를 한 번 읽는 습관만 들여도 우리 아이 사료 선택이 달라져요.'},
-  {id:'a2',cat:'사료 종류',ico:'🥩',title:'건식 vs 습식 vs 동결건조, 뭐가 다를까?',
-   excerpt:'각 사료 형태마다 장단점이 달라요. 우리 아이 상황에 맞게 고르는 법을 알아봐요.',
-   body:'사료 형태에 따라 영양 프로필, 가격, 보관 방법이 달라요.\n\n### 건식 사료 (키블)\n가장 많이 쓰이는 형태예요.\n\n- **장점**: 보관이 쉽고 가격이 저렴해요. 치석 예방에 도움돼요\n- **단점**: 수분 함량이 낮아요 (약 8~12%). 물을 많이 마시게 유도해야 해요\n- **추천**: 건강한 성견, 치아 관리가 필요한 아이\n\n### 습식 사료 (캔·파우치)\n수분 함량이 75~85%로 높아요.\n\n- **장점**: 기호성이 좋고 수분 섭취에 유리해요\n- **단점**: 가격이 비싸고 개봉 후 빨리 소비해야 해요\n- **추천**: 수분 섭취가 부족한 아이, 식욕이 떨어진 아이\n\n### 에어드라이\n저온에서 서서히 건조해 영양소를 보존해요.\n\n- **장점**: 생식에 가까운 영양, 뛰어난 기호성\n- **단점**: 가격이 비싸요\n\n### 동결건조\n영하 온도에서 수분을 제거해요.\n\n- **장점**: 가장 영양소가 잘 보존돼요\n- **단점**: 가격이 가장 비싸요\n\n> 형태보다 **성분 품질**이 더 중요해요. 좋은 건식이 나쁜 동결건조보다 나을 수 있어요.'},
-  {id:'a3',cat:'영양',ico:'💊',title:'단백질 함량이 높으면 무조건 좋을까?',
-   excerpt:'단백질 30%와 40%의 차이가 실제로 중요할까요? 숫자보다 중요한 게 있어요.',
-   body:'단백질 함량 수치만 보고 사료를 고르는 건 함정이에요.\n\n### 단백질 출처가 먼저예요\n고기에서 온 단백질인지, 식물성 단백질인지가 달라요.\n\n- **동물성 단백질**: 필수 아미노산이 풍부. 소화 흡수율이 높아요\n- **식물성 단백질**: 아미노산 구성이 불완전. 이용률이 달라요\n\n> "단백질 40%"라고 해도 완두단백이 주원료라면 실제 이용률은 낮아요.\n\n### 과도한 단백질이 문제가 되는 경우\n- **신장 질환**: 단백질 대사 산물이 신장에 부담을 줄 수 있어요\n- **성장기 강아지**: 과도한 단백질은 골격 발달에 영향 줄 수 있어요\n\n### 권장 단백질 함량\n- 성견: 건물 기준 18~30%\n- 퍼피: 22~32%\n- 시니어: 신장 상태에 따라 다름\n\n### 탄수화물도 같이 봐야 해요\n단백질이 높아도 탄수화물(옥수수, 밀)이 많으면 혈당 부담이 생겨요.\n\n숫자 하나보다 **전체 성분 균형**을 보세요.'},
-  {id:'a4',cat:'건강',ico:'👁',title:'눈물 자국과 사료의 관계',
-   excerpt:'갈색 눈물 자국이 심하다면 사료를 한번 의심해볼 수 있어요.',
-   body:'강아지 눈물 자국(포르피린 착색)은 여러 원인이 있지만, 사료가 영향을 줄 수 있어요.\n\n### 눈물 자국이 생기는 이유\n포르피린이라는 물질이 눈물에 섞여 나오면서 붉은/갈색 착색이 생겨요.\n\n- **유전적 요인**: 몰티즈, 비숑, 시추 등 소형견에 많아요\n- **식이 요인**: 특정 성분에 대한 민감 반응\n\n### 사료와의 연관성\n**피해야 할 성분들**:\n- 인공 착색제, 인공 향미료\n- 옥수수·밀 (글루텐 민감)\n\n**도움이 되는 성분들**:\n- 오메가3 (EPA, DHA): 항염 효과로 눈물 과분비 완화\n- 아연: 피부·점막 건강\n\n> 사료를 바꾼 후 효과를 보려면 **최소 4~6주**가 필요해요.\n\n### 실제로 해볼 것\n1. 현재 사료 성분표에서 인공 첨가물 확인\n2. 오메가3 함량이 높은 사료로 교체 시도\n3. 그래도 개선 안 되면 수의사 진료 권장\n\n사료 교체가 모든 경우에 효과 있는 건 아니에요. 하지만 시도해볼 만해요.'},
-  {id:'a5',cat:'체중 관리',ico:'⚖️',title:'강아지 체중 관리, 사료부터',
-   excerpt:'비만 강아지는 관절, 심장, 수명에 영향받아요. 사료 선택과 급여량 조절법을 알아봐요.',
-   body:'강아지 비만은 단순히 보기에만 문제가 아니에요.\n\n### 비만이 미치는 영향\n- **관절**: 과체중이면 관절 마모가 빨라져요\n- **심폐**: 심장과 폐에 부담이 커져요\n- **수명**: 비만 개는 평균 2.5년 짧게 산다는 연구 결과가 있어요\n\n### 이상 체중 확인법\n갈비뼈를 만져보세요. 쉽게 만져지면 정상, 두꺼운 지방층이 있으면 과체중이에요.\n\n### 사료 선택 포인트\n- 칼로리(kcal/100g) 확인 — 300~330이 적당해요\n- 단백질: 22% 이상 유지 (근육 유지)\n- 지방: 8~12% (일반 사료 대비 낮게)\n- 식이섬유 높은 사료 — 포만감 유지에 유리해요\n\n### 급여량 계산\nRER = 체중(kg)^0.75 × 70\n중성화 성견의 일일 칼로리 = RER × 1.6\n\n> 체중 감량 중이라면 **RER × 1.0** 수준으로 낮추고, 반드시 수의사와 상담하세요.\n\n### 간식도 칼로리예요\n하루 총 칼로리의 10% 이내로 간식을 제한하고, 그만큼 사료를 줄여야 해요.'}
-];
-
-function sc(s){return s>=8?'good':s>=6?'warn':'bad'}
-function scoreColor(s){return s>=8?'var(--good)':s>=6?'var(--warn)':'var(--bad)'}
-function typeLabel(t){return TYPE_LABEL[t]||t}
-function ageLabel(arr){if(!arr||arr.includes('all'))return '전연령';return arr.map(function(a){return AGE_LABEL[a]||a}).join('·')}
-function sizeLabel(arr){if(!arr||arr.includes('all'))return '전체';return arr.map(function(s){return SIZE_LABEL[s]||s}).join('·')}
-function priceStr(f){if(!f.price)return '';var w=f.price.wg;return '최저 '+f.price.p.toLocaleString()+'원 · '+(w>=1000?(w/1000).toFixed(1)+'kg':w+'g')}
-function foodThumb(f){var e={'오리젠':'🦌','지위픽':'🦘','아카나':'🐟','로얄캐닌':'👑','더리얼':'🐔'};return e[f.brand]||'🐾'}
-function scoreSVG(s,size){
-  size=size||64;
-  var r=size===64?26:16,sw=size===64?5:4,c=size/2;
-  var circ=2*Math.PI*r,dash=(s/10*circ).toFixed(1);
-  var fs=size===64?18:11;
-  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">'+
-    '<circle cx="'+c+'" cy="'+c+'" r="'+r+'" fill="none" stroke="var(--border)" stroke-width="'+sw+'"/>'+
-    '<circle cx="'+c+'" cy="'+c+'" r="'+r+'" fill="none" stroke="'+scoreColor(s)+'" stroke-width="'+sw+'"'+
-    ' stroke-linecap="round" stroke-dasharray="'+dash+' '+circ.toFixed(1)+'" transform="rotate(-90 '+c+' '+c+')"/>'+
-    '<text x="'+c+'" y="'+c+'" text-anchor="middle" dominant-baseline="central"'+
-    ' font-size="'+fs+'" font-weight="800" fill="'+scoreColor(s)+'" font-family="Pretendard,sans-serif">'+s+'</text></svg>';
+/* ═══ ICON ═══ */
+function icon(name, size){
+  const p = ICONS[name]; if(!p) return '';
+  return `<svg class="i" width="${size||16}" height="${size||16}" viewBox="0 0 24 24">${p}</svg>`;
 }
-function stars(n,max){max=max||5;var s='';for(var i=1;i<=max;i++)s+='<span class="star">'+(i<=n?'★':'☆')+'</span>';return s}
-
-function goTab(id){
-  document.querySelectorAll('.screen:not(.overlay)').forEach(function(s){s.classList.remove('active')});
-  document.getElementById(id).classList.add('active');
-  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('on')});
-  var tb=document.getElementById('tab-'+id);if(tb)tb.classList.add('on');
-  activeTab=id;
-  if(id==='compare')renderCompare();
-  if(id==='content')renderContent();
-  if(id==='mydog')renderMydog();
-}
-function openOverlay(id){
-  var el=document.getElementById(id);
-  el.classList.add('open');
-  overlayStack.push(id);
-  document.getElementById('nav').style.display='none';
-}
-function closeOverlay(){
-  if(!overlayStack.length)return;
-  var id=overlayStack.pop();
-  document.getElementById(id).classList.remove('open');
-  if(!overlayStack.length)document.getElementById('nav').style.display='';
-}
-function openSearch(){
-  openOverlay('search');
-  setTimeout(function(){var i=document.getElementById('searchInput');if(i)i.focus();},350);
-  filterSearch();
-}
-function openDetail(id){
-  activeDetailId=id;
-  renderDetail(id);
-  openOverlay('detail');
-}
-function openArticle(id){
-  renderArticleDetail(id);
-  openOverlay('content-detail');
-}
-function openPicker(target){
-  pickerTarget=target;
-  document.getElementById('pickerInput').value='';
-  filterPicker();
-  openOverlay('picker');
-}
-
-function renderConcernChips(){
-  document.getElementById('concernChips').innerHTML=CONCERNS.map(function(c){
-    return '<button class="chip'+(c.key===activeConcern?' on':'')+'" onclick="selectConcern(\''+c.key+'\')">'+c.label+'</button>';
-  }).join('');
-}
-function selectConcern(key){
-  activeConcern=key;
-  renderConcernChips();
-  var sec=document.getElementById('homeSections'),fil=document.getElementById('homeFiltered');
-  if(key==='all'){sec.style.display='';fil.style.display='none';}
-  else{
-    sec.style.display='none';fil.style.display='';
-    var foods=filterByConcern(key).slice(0,8);
-    fil.innerHTML=foods.length?foods.map(function(f,i){return fCard(f,i*40)}).join(''):'<div class="empty">해당하는 사료가 없어요</div>';
-  }
-}
-function filterByConcern(key){
-  if(key==='senior')return FOODS.filter(function(f){return f.ages&&(f.ages.includes('senior')||f.ages.includes('all'))}).sort(function(a,b){return b.score-a.score});
-  if(key==='puppy')return FOODS.filter(function(f){return f.ages&&(f.ages.includes('puppy')||f.ages.includes('all'))}).sort(function(a,b){return b.score-a.score});
-  return FOODS.filter(function(f){return f.concerns&&f.concerns.includes(key)}).sort(function(a,b){return b.score-a.score});
-}
-function renderHomeCarousels(){
-  var nonRx=FOODS.filter(function(f){return !f.rx}).sort(function(a,b){return b.score-a.score});
-  document.getElementById('rankList').innerHTML=nonRx.slice(0,10).map(hCard).join('');
-  var byVal=FOODS.filter(function(f){return !f.rx&&f.price}).sort(function(a,b){return (a.price.p/a.price.wg)-(b.price.p/b.price.wg)});
-  document.getElementById('valueList').innerHTML=byVal.slice(0,8).map(hCard).join('');
-  var rx=FOODS.filter(function(f){return f.rx}).sort(function(a,b){return b.score-a.score});
-  document.getElementById('rxList').innerHTML=rx.slice(0,6).map(hCard).join('');
-}
-function hCard(f){
-  return '<div class="hcard" onclick="openDetail(\''+f.id+'\')">'+
-    '<div style="margin-bottom:8px">'+scoreSVG(f.score,40)+'</div>'+
-    '<div class="hcard-brand">'+f.brand+'</div>'+
-    '<div class="hcard-name">'+f.name+'</div>'+
-    '<div class="hcard-type">'+typeLabel(f.type)+(f.rx?' · 처방식':'')+'</div>'+
-    (f.price?'<div class="hcard-price">'+f.price.p.toLocaleString()+'원<span>/'+(f.price.wg>=1000?(f.price.wg/1000).toFixed(1)+'kg':f.price.wg+'g')+'</span></div>':'')+
-    '</div>';
-}
-function fCard(f,delay){
-  delay=delay||0;
-  return '<div class="fcard" onclick="openDetail(\''+f.id+'\')" style="animation-delay:'+delay+'ms">'+
-    '<div class="fcard-thumb">'+foodThumb(f)+'</div>'+
-    '<div class="fcard-body">'+
-      '<div class="fcard-brand">'+f.brand+' · '+typeLabel(f.type)+'</div>'+
-      '<div class="fcard-name-row"><span class="fcard-name">'+f.name+'</span>'+
-        (f.rx?'<span class="badge rx">처방식</span>':'')+
-        (f.warnCount>0?'<span class="badge warn">주의 '+f.warnCount+'</span>':'')+
-      '</div>'+
-      '<div class="fcard-meta">'+ageLabel(f.ages)+' · '+sizeLabel(f.sizes)+'</div>'+
-      '<div class="fcard-bottom">'+scoreSVG(f.score,36)+'<div class="fcard-price">'+priceStr(f)+'</div></div>'+
-    '</div></div>';
-}
-
-function filterSearch(){
-  var q=(document.getElementById('searchInput').value||'').trim().toLowerCase();
-  var list=FOODS.slice();
-  if(searchTypeFilter!=='all')list=list.filter(function(f){return f.type===searchTypeFilter});
-  if(q)list=list.filter(function(f){return (f.brand+f.name).toLowerCase().includes(q)});
-  else list=list.sort(function(a,b){return b.score-a.score});
-  document.getElementById('srchCount').textContent='검색 결과 '+list.length+'개';
-  document.getElementById('searchList').innerHTML=list.length
-    ?list.map(function(f,i){return fCard(f,i*20)}).join('')
-    :'<div class="empty">검색 결과가 없어요</div>';
-}
-function setTypeFilter(btn,type){
-  searchTypeFilter=type;
-  document.querySelectorAll('.filter-chip').forEach(function(b){b.classList.remove('on')});
-  btn.classList.add('on');
-  filterSearch();
-}
-
-function renderDetail(id){
-  var f=FOODS.find(function(x){return x.id===id});
-  var d=typeof DETAIL!=='undefined'&&DETAIL?DETAIL[id]:null;
-  if(!f)return;
-  document.getElementById('detailTopTitle').textContent=f.brand;
-  var nutri=d&&d.nutrient||{};
-  var ingr=d&&d.ingr||[];
-  var prices=d&&d.prices||[];
-  var verdict=d&&d.verdict||{pos:[],cau:[],bad:[]};
-  document.getElementById('detailBody').innerHTML=
-    '<div class="detail-hero">'+
-      '<div class="detail-brand">'+f.brand+'</div>'+
-      '<div class="detail-name">'+f.name+'</div>'+
-      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">'+
-        '<span style="font-size:11px;background:var(--surface);padding:3px 8px;border-radius:99px;color:var(--sub)">'+typeLabel(f.type)+'</span>'+
-        '<span style="font-size:11px;background:var(--surface);padding:3px 8px;border-radius:99px;color:var(--sub)">'+ageLabel(f.ages)+'</span>'+
-        (f.rx?'<span class="badge rx">처방식</span>':'')+
-      '</div>'+
-      '<div class="detail-score-row">'+
-        scoreSVG(f.score,64)+
-        '<div><div style="font-size:12px;color:var(--sub);margin-bottom:4px">발사탕 점수</div>'+
-        '<div style="font-size:22px;font-weight:900;color:'+scoreColor(f.score)+'">'+f.score+'<span style="font-size:14px;color:var(--sub)">/10</span></div></div>'+
-      '</div>'+
-    '</div>'+
-    '<div class="sub-scores">'+
-      '<div class="sub-score"><div class="sub-score-label">원료 품질</div><div>'+stars(f.ratings&&f.ratings.quality)+'</div></div>'+
-      '<div class="sub-score"><div class="sub-score-label">탄수화물</div><div>'+stars(f.ratings&&f.ratings.carb)+'</div></div>'+
-      '<div class="sub-score"><div class="sub-score-label">첨가물</div><div>'+stars(f.ratings&&f.ratings.additive)+'</div></div>'+
-      '<div class="sub-score"><div class="sub-score-label">가성비</div><div>'+stars(f.ratings&&f.ratings.value)+'</div></div>'+
-    '</div>'+
-    '<div class="dtabs">'+
-      '<button class="dtab on" id="dtab-ingr" onclick="switchDtab(\'ingr\')">성분 분석</button>'+
-      '<button class="dtab" id="dtab-feed" onclick="switchDtab(\'feed\')">급여량·가격</button>'+
-    '</div>'+
-    '<div class="dtab-panel on" id="dpanel-ingr">'+
-      renderVerdictBlock(verdict)+
-      renderIngrSection(ingr)+
-      renderNutriSection(nutri)+
-      (d&&d.recall?'<div class="recall-box">⚠️ 리콜 이력: '+d.recall+'</div>':'')+
-    '</div>'+
-    '<div class="dtab-panel" id="dpanel-feed">'+
-      renderFeedingSection(f,nutri,prices)+
-    '</div>';
-}
-function switchDtab(tab){
-  ['ingr','feed'].forEach(function(t){
-    var dt=document.getElementById('dtab-'+t),dp=document.getElementById('dpanel-'+t);
-    if(dt)dt.classList.toggle('on',t===tab);
-    if(dp)dp.classList.toggle('on',t===tab);
+function hydrateIcons(root){
+  (root||document).querySelectorAll('[data-ico]').forEach(el=>{
+    el.innerHTML = icon(el.dataset.ico, +el.dataset.sz || 16);
+    el.removeAttribute('data-ico');
   });
 }
-function renderVerdictBlock(v){
-  var rows=[
-    (v.pos||[]).map(function(t){return '<div class="verdict-item" style="background:var(--good-soft)"><div class="verdict-dot" style="background:var(--good)"></div><div>'+t+'</div></div>'}),
-    (v.cau||[]).map(function(t){return '<div class="verdict-item" style="background:var(--warn-soft)"><div class="verdict-dot" style="background:var(--warn)"></div><div>'+t+'</div></div>'}),
-    (v.bad||[]).map(function(t){return '<div class="verdict-item" style="background:var(--bad-soft)"><div class="verdict-dot" style="background:var(--bad)"></div><div>'+t+'</div></div>'})
-  ].flat();
-  return rows.length?'<div class="verdict-block">'+rows.join('')+'</div>':'';
+
+/* ═══ LABEL MAPS (원본 main.ts 기준) ═══ */
+const TYPE_KO = {dry:'건식',wet:'습식',freeze_dried:'동결건조',air_dried:'에어드라이',raw:'화식',topping:'토핑'};
+const COUNTRY_KO = {CA:'캐나다',NZ:'뉴질랜드',US:'미국',FR:'프랑스',KR:'대한민국',DE:'독일',GB:'영국',AU:'호주',TH:'태국',IT:'이탈리아',NL:'네덜란드',BE:'벨기에'};
+const SHOP_KO = {coupang:'쿠팡',naver:'네이버',mypet:'마이펫',gmarket:'G마켓',auction:'옥션',eleven_st:'11번가',brand_official:'공식몰',other:'기타'};
+const AGE_KO = {puppy:'퍼피',adult:'성견',senior:'시니어',all:'전연령'};
+const SIZE_KO = {small:'소형',medium:'중형',large:'대형',all:'전체'};
+
+const FUNC_META = {
+  eye_tear:{label:'눈물·피모', ico:'eye'},
+  joint:{label:'관절', ico:'bone'},
+  digestive:{label:'소화', ico:'heart'},
+  immune:{label:'면역', ico:'zap'},
+  weight:{label:'체중', ico:'scale'},
+  heart:{label:'심장', ico:'heartPulse'},
+  kidney:{label:'신장', ico:'stethoscope'},
+  liver:{label:'간', ico:'heartPulse'},
+  dental:{label:'치아', ico:'smile'}
+};
+
+const CONCERNS = [
+  {key:'all',        label:'전체'},
+  {key:'healthy',    label:'건강한 아이'},
+  {key:'picky_eater',label:'입맛이 까다로워요'},
+  {key:'weight',     label:'체중 관리'},
+  {key:'eye_tear',   label:'눈물·피부'},
+  {key:'allergy',    label:'알러지'},
+  {key:'digestive',  label:'소화가 약해요'},
+  {key:'joint',      label:'관절'},
+  {key:'post_surgery',label:'수술·질환 후'},
+  {key:'senior',     label:'시니어'},
+  {key:'puppy',      label:'어린 강아지'}
+];
+
+/* ═══ STATE ═══ */
+let activeTab = 'home';
+const ovStack = [];
+let activeConcern = 'all';
+
+/* ═══ NAV ═══ */
+function goTab(id){
+  document.querySelectorAll('.screen:not(.ov)').forEach(s=>s.classList.remove('on'));
+  document.getElementById('s-'+id).classList.add('on');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.getElementById('t-'+id).classList.add('on');
+  activeTab = id;
 }
-function renderIngrSection(ingr){
-  if(!ingr||!ingr.length)return '';
-  var main=ingr.filter(function(i){return i.isMain}),rest=ingr.filter(function(i){return !i.isMain});
-  function ingrHTML(group){
-    return '<div class="ingr-list">'+group.map(function(i){
-      var dotColor=i.safe===0?'var(--bad)':i.safe===1?'var(--warn)':'var(--good)';
-      return '<div class="ingr-item"><div class="ingr-dot" style="background:'+dotColor+'"></div>'+
-        '<div><div class="ingr-name">'+i.name+(i.cat?' <span style="font-size:10px;color:var(--sub)">('+i.cat+')</span>':'')+'</div>'+
-        (i.desc?'<div class="ingr-desc">'+i.desc+'</div>':'')+
-        '</div></div>';
-    }).join('')+'</div>';
-  }
-  return '<div class="ingr-section">'+
-    (main.length?'<div class="ingr-title">주요 원료</div>'+ingrHTML(main):'')+
-    (rest.length?'<div class="ingr-title">기타 성분</div>'+ingrHTML(rest):'')+
-    '</div>';
+function openOv(id){
+  const el = document.getElementById('s-'+id);
+  el.scrollTop = 0;
+  requestAnimationFrame(()=>el.classList.add('open'));
+  ovStack.push(id);
+  document.getElementById('nav').style.display = 'none';
 }
-function renderNutriSection(n){
-  if(!n||!Object.keys(n).length)return '';
-  var rows=[
-    {k:'protein',l:'단백질',v:n.protein,max:50},
-    {k:'fat',l:'지방',v:n.fat,max:30},
-    {k:'fiber',l:'식이섬유',v:n.fiber,max:10},
-    {k:'moisture',l:'수분',v:n.moisture,max:15},
-    {k:'carb',l:'탄수화물',v:n.carb,max:50}
-  ].filter(function(r){return r.v!=null});
-  if(!rows.length)return '';
-  return '<div class="nutri-section"><div class="ingr-title">영양 성분</div>'+
-    rows.map(function(r){
-      return '<div class="nutri-row">'+
-        '<div class="nutri-label-row"><span class="nutri-label">'+r.l+'</span><span class="nutri-val">'+r.v+'%</span></div>'+
-        '<div class="nutri-bar"><div class="nutri-fill" style="width:'+Math.min(100,r.v/r.max*100).toFixed(1)+'%"></div></div>'+
-        '</div>';
-    }).join('')+'</div>';
+function closeOv(){
+  const id = ovStack.pop(); if(!id) return;
+  document.getElementById('s-'+id).classList.remove('open');
+  if(!ovStack.length) document.getElementById('nav').style.display = '';
 }
-function renderFeedingSection(f,nutri,prices){
-  var cal=nutri&&nutri.cal?nutri.cal:380;
-  return '<div class="feeding-section">'+
-      '<div class="feeding-title">하루 급여량 계산</div>'+
-      '<div class="weight-input-row">'+
-        '<input class="weight-input" id="weightInput" type="number" min="0.5" max="60" step="0.1" placeholder="체중" oninput="calcFeeding('+cal+')">'+
-        '<span class="weight-unit">kg</span></div>'+
-      '<div class="feeding-result" id="feedingResult">'+
-        '<div style="font-size:13px;color:var(--muted)">체중을 입력하면 급여량을 계산해드려요</div></div>'+
-      '<div class="note" style="padding:10px 0 0">RER × 1.6 공식 (중성화 성견 기준). 수의사와 상담 후 조절하세요.</div>'+
-    '</div>'+
-    (prices&&prices.length?
-      '<div style="padding:0 16px 8px"><div class="ingr-title">구매 정보</div></div>'+
-      '<div class="price-list">'+prices.map(function(p){
-        return '<div class="price-item">'+
-          '<div class="price-shop">'+(p.shop||'-')+'</div>'+
-          '<div class="price-wg">'+(p.wg>=1000?(p.wg/1000).toFixed(1)+'kg':p.wg+'g')+'</div>'+
-          '<div style="flex:1"></div>'+
-          '<div><div class="price-val">'+p.price.toLocaleString()+'원</div>'+
-          '<div class="price-per">'+Math.round(p.price/(p.wg/1000)).toLocaleString()+'원/kg</div></div>'+
-          (p.url?'<a class="price-link" href="'+p.url+'" target="_blank">구매↗</a>':'')+
-          '</div>';
-      }).join('')+'</div>':'');
-}
-function calcFeeding(cal){
-  var kg=parseFloat(document.getElementById('weightInput').value);
-  var el=document.getElementById('feedingResult');
-  if(!kg||kg<=0){el.innerHTML='<div style="font-size:13px;color:var(--muted)">체중을 입력하면 급여량을 계산해드려요</div>';return;}
-  var rer=70*Math.pow(kg,0.75),daily=rer*1.6,grams=Math.round(daily/cal*100);
-  el.innerHTML='<div class="feeding-amount">'+grams+'g</div><div class="feeding-sub">하루 기준 ('+Math.round(daily)+' kcal / '+cal+' kcal/100g 기준)</div>';
+function openSearch(){
+  openOv('search');
+  filterSearch();
+  setTimeout(()=>document.getElementById('searchInput').focus(), 380);
 }
 
-function addToCmp(){
-  var id=activeDetailId,f=FOODS.find(function(x){return x.id===id});
-  if(!f)return;
-  if(cmpA===id||cmpB===id){alert('이미 비교 목록에 있어요.');return;}
-  if(!cmpA)cmpA=id;
-  else if(!cmpB)cmpB=id;
-  else{alert('비교 목록이 가득 찼어요.');return;}
-  closeOverlay();
-  goTab('compare');
+/* ═══ CARD PARTS ═══ */
+function thumb(f, cls, sz){
+  return `<div class="${cls}">${icon(f.ico, sz)}</div>`;
 }
-function renderCompare(){
-  var fa=cmpA?FOODS.find(function(x){return x.id===cmpA}):null;
-  var fb=cmpB?FOODS.find(function(x){return x.id===cmpB}):null;
-  document.getElementById('cmpSlots').innerHTML=
-    slotHTML(fa,'A')+slotHTML(fb,'B');
-  var btn=document.getElementById('cmpRunBtn');
-  btn.disabled=!(fa&&fb);btn.style.opacity=fa&&fb?'1':'0.5';
-  if(fa&&fb)buildCmpTable(fa,fb);else document.getElementById('cmpTable').innerHTML='';
+function funcTags(f, max){
+  return (f.func||[]).filter(k=>FUNC_META[k]).slice(0, max||3)
+    .map(k=>`<span class="ffn">${icon(FUNC_META[k].ico,12)}${FUNC_META[k].label}</span>`).join('');
 }
-function slotHTML(f,slot){
-  if(f)return '<div class="cmp-slot filled" onclick="clearSlot(\''+slot+'\')">'+
-    '<div style="font-size:24px;margin-bottom:6px">'+foodThumb(f)+'</div>'+
-    '<div class="cmp-slot-brand">'+f.brand+'</div>'+
-    '<div class="cmp-slot-name">'+f.name+'</div>'+
-    '<div style="font-size:11px;color:var(--bad);margin-top:6px">✕ 삭제</div></div>';
-  return '<div class="cmp-slot" onclick="openPicker(\''+slot+'\')">'+
-    '<div style="font-size:28px">＋</div><div class="cmp-slot-empty">사료 선택</div></div>';
+function warnBadge(f){
+  return f.warnN > 0
+    ? `<span class="ftag warn">${icon('alert',12)}주의성분 ${f.warnN}</span>`
+    : `<span class="ftag good">${icon('shieldCheck',12)}주의성분 없음</span>`;
 }
-function clearSlot(slot){if(slot==='A')cmpA=null;else cmpB=null;renderCompare();}
-function buildCmpTable(fa,fb){
-  var da=typeof DETAIL!=='undefined'&&DETAIL?DETAIL[fa.id]||{}:{},db=typeof DETAIL!=='undefined'&&DETAIL?DETAIL[fb.id]||{}:{};
-  var na=da.nutrient||{},nb=db.nutrient||{};
-  function row(label,va,vb,unit){
-    unit=unit||'';
-    var an=parseFloat(va),bn=parseFloat(vb);
-    var ah=!isNaN(an)&&!isNaN(bn)&&an>bn,bh=!isNaN(an)&&!isNaN(bn)&&bn>an;
-    return '<div class="cmp-row"><div class="cmp-row-label">'+label+'</div>'+
-      '<div class="cmp-cell'+(ah?' hi':'')+'>'+(va!=null?va+unit:'-')+'</div>'+
-      '<div class="cmp-cell'+(bh?' hi':'')+'>'+(vb!=null?vb+unit:'-')+'</div></div>';
-  }
-  document.getElementById('cmpTable').innerHTML='<div class="cmp-table">'+
-    '<div class="cmp-row" style="font-weight:800;border-bottom:2px solid var(--border)">'+
-      '<div class="cmp-row-label"></div>'+
-      '<div class="cmp-cell" style="font-size:12px">'+fa.brand+'<br><span style="font-weight:400">'+fa.name+'</span></div>'+
-      '<div class="cmp-cell" style="font-size:12px">'+fb.brand+'<br><span style="font-weight:400">'+fb.name+'</span></div>'+
-    '</div>'+
-    row('발사탕 점수',fa.score,fb.score)+
-    row('원료 품질',fa.ratings&&fa.ratings.quality,fb.ratings&&fb.ratings.quality,'★')+
-    row('탄수화물 평가',fa.ratings&&fa.ratings.carb,fb.ratings&&fb.ratings.carb,'★')+
-    row('첨가물 평가',fa.ratings&&fa.ratings.additive,fb.ratings&&fb.ratings.additive,'★')+
-    row('가성비',fa.ratings&&fa.ratings.value,fb.ratings&&fb.ratings.value,'★')+
-    row('단백질',na.protein,nb.protein,'%')+
-    row('지방',na.fat,nb.fat,'%')+
-    row('탄수화물',na.carb,nb.carb,'%')+
-    row('열량',na.cal,nb.cal,'kcal')+
-    '</div>';
+function rxBadge(f){
+  return f.rx ? `<span class="ftag rx">${icon('stethoscope',12)}처방식</span>` : '';
 }
-function runCompare(){if(cmpA&&cmpB)buildCmpTable(FOODS.find(function(x){return x.id===cmpA}),FOODS.find(function(x){return x.id===cmpB}));}
-
-function filterPicker(){
-  var q=(document.getElementById('pickerInput').value||'').trim().toLowerCase();
-  var list=FOODS.filter(function(f){return !q||(f.brand+f.name).toLowerCase().includes(q)}).slice(0,20);
-  document.getElementById('pickerList').innerHTML=list.map(function(f){
-    return '<div class="fcard" onclick="pickFood(\''+f.id+'\')">'+
-      '<div class="fcard-thumb">'+foodThumb(f)+'</div>'+
-      '<div class="fcard-body">'+
-        '<div class="fcard-brand">'+f.brand+' · '+typeLabel(f.type)+'</div>'+
-        '<div class="fcard-name-row"><span class="fcard-name">'+f.name+'</span>'+(f.rx?'<span class="badge rx">처방식</span>':'')+'</div>'+
-        '<div class="fcard-bottom">'+scoreSVG(f.score,36)+'<div class="fcard-price">'+priceStr(f)+'</div></div>'+
-      '</div></div>';
-  }).join('');
+function hCard(f, i){
+  return `<div class="hcard" style="animation-delay:${(i||0)*45}ms" onclick="openDetail('${f.id}')">
+    ${thumb(f,'hcard-thumb',36)}
+    <div class="hcard-brand">${f.brand}</div>
+    <div class="hcard-name">${f.name}</div>
+    <div class="hcard-tags">${funcTags(f,2)}${warnBadge(f)}${rxBadge(f)}</div>
+  </div>`;
 }
-function pickFood(id){
-  if(pickerTarget==='A')cmpA=id;else if(pickerTarget==='B')cmpB=id;
-  closeOverlay();renderCompare();
+function fCard(f, i){
+  const ft = funcTags(f, 3);
+  return `<div class="fcard" style="animation-delay:${(i||0)*35}ms" onclick="openDetail('${f.id}')">
+    ${thumb(f,'fthumb',28)}
+    <div class="finfo">
+      <div class="fbrand">${f.brand}</div>
+      <div class="fname-row"><span class="fname">${f.name}</span>${warnBadge(f)}${rxBadge(f)}</div>
+      ${ft ? `<div class="fmeta">${ft}</div>` : ''}
+    </div>
+  </div>`;
 }
 
-function renderContent(){
-  var cats=['all'].concat(ARTICLES.map(function(a){return a.cat}).filter(function(v,i,arr){return arr.indexOf(v)===i}));
-  document.getElementById('contentChips').innerHTML=cats.map(function(c){
-    return '<button class="chip'+(c===contentFilterCat?' on':'')+'" onclick="setContentCat(\''+c+'\')">'+(c==='all'?'전체':c)+'</button>';
-  }).join('');
-  var list=contentFilterCat==='all'?ARTICLES:ARTICLES.filter(function(a){return a.cat===contentFilterCat});
-  document.getElementById('contentList').innerHTML=list.map(function(a){
-    var rt=Math.max(1,Math.round((a.body.length+a.excerpt.length)/350));
-    return '<div class="content-card" onclick="openArticle(\''+a.id+'\')">'+
-      '<div class="content-icon">'+a.ico+'</div>'+
-      '<div style="flex:1;min-width:0">'+
-        '<div class="content-cat">'+a.cat+'</div>'+
-        '<div class="content-title">'+a.title+'</div>'+
-        '<div class="content-desc">'+a.excerpt+'</div>'+
-        '<div class="content-meta">⏱ 약 '+rt+'분</div>'+
-      '</div></div>';
-  }).join('');
+/* ═══ HOME ═══ */
+function renderChips(){
+  document.getElementById('concernChips').innerHTML = CONCERNS.map(c=>
+    `<button class="chip${c.key===activeConcern?' on':''}" onclick="selectConcern('${c.key}')">${c.label}</button>`
+  ).join('');
 }
-function setContentCat(cat){contentFilterCat=cat;renderContent();}
-function renderArticleDetail(id){
-  var a=ARTICLES.find(function(x){return x.id===id});if(!a)return;
-  document.getElementById('contentDetailBody').innerHTML=
-    '<div class="article-cover">'+a.ico+'</div>'+
-    '<div class="article-header"><div class="article-cat">'+a.cat+'</div><div class="article-title">'+a.title+'</div></div>'+
-    '<div class="article-body">'+renderArticleBody(a.body)+'</div>'+
-    '<div class="note">이 콘텐츠는 정보 제공 목적이에요. 건강 문제는 수의사와 상담하세요.</div>';
+function byConcern(key){
+  if(key === 'senior') return FOODS.filter(f=>f.ages.includes('senior')||f.ages.includes('all'));
+  if(key === 'puppy')  return FOODS.filter(f=>f.ages.includes('puppy') ||f.ages.includes('all'));
+  return FOODS.filter(f=>(f.concerns||[]).includes(key));
 }
-function renderArticleBody(text){
-  var lines=text.split('\n'),html='',inUl=false,inOl=false,firstP=true;
-  for(var i=0;i<lines.length;i++){
-    var line=lines[i].trim();
-    if(!line){if(inUl){html+='</ul>';inUl=false;}if(inOl){html+='</ol>';inOl=false;}continue;}
-    if(/^#{1,3} /.test(line)){html+='<h3>'+md(line.replace(/^#+\s/,''))+'</h3>';}
-    else if(line.indexOf('> ')===0){html+='<div class="highlight">'+md(line.slice(2))+'</div>';}
-    else if(line.indexOf('- ')===0||line.indexOf('* ')===0){if(!inUl){html+='<ul>';inUl=true;}html+='<li>'+md(line.slice(2))+'</li>';}
-    else if(/^\d+\. /.test(line)){if(!inOl){html+='<ol>';inOl=true;}html+='<li>'+md(line.replace(/^\d+\. /,''))+'</li>';}
-    else{if(inUl){html+='</ul>';inUl=false;}if(inOl){html+='</ol>';inOl=false;}html+='<p'+(firstP?' class="lead"':'')+'>'+(md(line))+'</p>';firstP=false;}
+function selectConcern(key){
+  activeConcern = key;
+  renderChips();
+  const secs = document.getElementById('homeSections');
+  const filt = document.getElementById('homeFiltered');
+  if(key === 'all'){
+    secs.hidden = false; filt.hidden = true; filt.innerHTML = '';
+    return;
   }
-  if(inUl)html+='</ul>';if(inOl)html+='</ol>';return html;
+  secs.hidden = true; filt.hidden = false;
+  const list = byConcern(key).slice(0, 8);
+  filt.innerHTML = list.length
+    ? list.map((f,i)=>fCard(f,i)).join('')
+    : `<div class="empty">${icon('search',44)}해당하는 사료가 없어요</div>`;
 }
-function md(t){return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank">$1</a>');}
+function renderHome(){
+  const nonRx = FOODS.filter(f=>!f.rx);
+  const rank  = nonRx.slice(0, 10);
+  const value = nonRx.filter(f=>f.price&&f.price.pKg).sort((a,b)=>a.price.pKg-b.price.pKg).slice(0, 8);
+  const rx    = FOODS.filter(f=>f.rx);
+  document.getElementById('rankList').innerHTML  = rank.map(hCard).join('');
+  document.getElementById('valueList').innerHTML = value.map(hCard).join('');
+  document.getElementById('rxList').innerHTML    = rx.length
+    ? rx.map(hCard).join('') : `<div class="note" style="padding:0 20px">처방식 데이터가 없어요</div>`;
+}
 
-function renderMydog(){if(mydogState)renderMydogResult();else renderMydogForm();}
-function renderMydogForm(){
-  document.getElementById('mydogBody').innerHTML=
-    '<div class="mydog-form">'+
-      '<div class="form-title">우리 아이를 알려주세요 🐶</div>'+
-      '<div class="form-sub">딱 몇 가지만 알려주시면 맞춤 사료를 찾아드려요. 회원가입 없이도 돼요.</div>'+
-      '<div class="form-row"><label class="form-label">아이 이름</label>'+
-        '<input class="form-input" id="dogName" placeholder="이름 (선택)" value="'+mydogForm.name+'"></div>'+
-      '<div class="form-row"><label class="form-label">체형</label>'+
-        '<div class="seg-btns">'+
-          '<button class="seg-btn'+(mydogForm.size==='small'?' on':'')+'" onclick="setSeg(\'size\',\'small\',this)">소형<br><span style="font-size:10px;font-weight:400">10kg 미만</span></button>'+
-          '<button class="seg-btn'+(mydogForm.size==='medium'?' on':'')+'" onclick="setSeg(\'size\',\'medium\',this)">중형<br><span style="font-size:10px;font-weight:400">10~25kg</span></button>'+
-          '<button class="seg-btn'+(mydogForm.size==='large'?' on':'')+'" onclick="setSeg(\'size\',\'large\',this)">대형<br><span style="font-size:10px;font-weight:400">25kg 초과</span></button>'+
-        '</div></div>'+
-      '<div class="form-row"><label class="form-label">나이</label>'+
-        '<div class="seg-btns">'+
-          '<button class="seg-btn'+(mydogForm.stage==='puppy'?' on':'')+'" onclick="setSeg(\'stage\',\'puppy\',this)">퍼피<br><span style="font-size:10px;font-weight:400">~1세</span></button>'+
-          '<button class="seg-btn'+(mydogForm.stage==='adult'?' on':'')+'" onclick="setSeg(\'stage\',\'adult\',this)">성견<br><span style="font-size:10px;font-weight:400">1~7세</span></button>'+
-          '<button class="seg-btn'+(mydogForm.stage==='senior'?' on':'')+'" onclick="setSeg(\'stage\',\'senior\',this)">시니어<br><span style="font-size:10px;font-weight:400">7세+</span></button>'+
-        '</div></div>'+
-      '<div class="form-row"><label class="form-label">지금 고민이 있다면 <span>(복수 선택)</span></label>'+
-        '<div class="concern-grid">'+CONCERN_OPTS.map(function(c){
-          return '<button class="concern-opt'+(mydogForm.concerns.includes(c.key)?' on':'')+'" onclick="toggleConcernOpt(\''+c.key+'\',this)">'+c.ico+' '+c.label+'</button>';
-        }).join('')+'</div></div>'+
-      '<div class="form-row"><label class="form-label">알러지 있는 원료 <span>(선택하면 해당 사료 제외)</span></label>'+
-        '<div class="allergen-grid">'+ALLERGENS.map(function(a){
-          return '<button class="allergen-opt'+(mydogForm.allergens.includes(a.key)?' on':'')+'" onclick="toggleAllergen(\''+a.key+'\',this)">'+a.label+'</button>';
-        }).join('')+'</div></div>'+
-      '<div class="form-row"><label class="form-label">지금 먹는 사료 <span>(선택 시 비교 분석)</span></label>'+
-        '<input class="form-input" id="curFoodSearch" placeholder="사료 이름을 검색하세요" oninput="filterCurFood()" autocomplete="off">'+
-        '<div id="curFoodResults" style="display:none"></div>'+
-        '<div id="curFoodSelected" style="display:none"></div></div>'+
-      '<button class="mydog-submit" onclick="submitMydog()">맞춤 사료 추천받기 →</button>'+
-    '</div>';
-  if(mydogForm.curFood)showSelectedCurFood();
+/* ═══ SEARCH ═══ */
+function filterSearch(){
+  const q = (document.getElementById('searchInput').value||'').trim();
+  const res = q ? FOODS.filter(f=>(f.brand+f.name).includes(q)) : FOODS;
+  document.getElementById('searchCount').textContent =
+    q ? `검색 결과 ${res.length}개` : `전체 ${res.length}개`;
+  document.getElementById('searchList').innerHTML = res.length
+    ? res.map((f,i)=>fCard(f,i)).join('')
+    : `<div class="empty">${icon('search',44)}검색 결과가 없어요</div>`;
 }
-function setSeg(field,val,btn){
-  mydogForm[field]=val;
-  btn.closest('.seg-btns').querySelectorAll('.seg-btn').forEach(function(b){b.classList.remove('on')});
-  btn.classList.add('on');
-}
-function toggleConcernOpt(key,btn){
-  var idx=mydogForm.concerns.indexOf(key);
-  if(idx>=0)mydogForm.concerns.splice(idx,1);else mydogForm.concerns.push(key);
-  btn.classList.toggle('on');
-}
-function toggleAllergen(key,btn){
-  var idx=mydogForm.allergens.indexOf(key);
-  if(idx>=0)mydogForm.allergens.splice(idx,1);else mydogForm.allergens.push(key);
-  btn.classList.toggle('on');
-}
-function filterCurFood(){
-  var q=(document.getElementById('curFoodSearch').value||'').trim().toLowerCase();
-  var res=document.getElementById('curFoodResults');
-  if(!q){res.style.display='none';return;}
-  var list=FOODS.filter(function(f){return (f.brand+f.name).toLowerCase().includes(q)}).slice(0,5);
-  if(!list.length){res.style.display='none';return;}
-  res.style.display='';
-  res.innerHTML='<div class="foodpick-results">'+list.map(function(f){
-    return '<div class="foodpick-result-item" onclick="selectCurFood(\''+f.id+'\')">'+f.brand+' '+f.name+'</div>';
-  }).join('')+'</div>';
-}
-function selectCurFood(id){
-  mydogForm.curFood=id;
-  document.getElementById('curFoodResults').style.display='none';
-  document.getElementById('curFoodSearch').value='';
-  showSelectedCurFood();
-}
-function showSelectedCurFood(){
-  var f=FOODS.find(function(x){return x.id===mydogForm.curFood});if(!f)return;
-  var el=document.getElementById('curFoodSelected');if(!el)return;
-  el.style.display='';
-  el.innerHTML='<div class="foodpick-selected"><span class="foodpick-selected-name">'+f.brand+' '+f.name+'</span>'+
-    '<button class="foodpick-remove" onclick="clearCurFood()">✕</button></div>';
-}
-function clearCurFood(){mydogForm.curFood=null;var el=document.getElementById('curFoodSelected');if(el)el.style.display='none';}
-function submitMydog(){
-  var nameEl=document.getElementById('dogName');
-  mydogForm.name=nameEl?nameEl.value:'';
-  mydogState=calcMydogMatch();
-  renderMydogResult();
-}
-function calcMydogMatch(){
-  var allergenFoodIds=new Set();
-  if(mydogForm.allergens.length&&typeof DETAIL!=='undefined'&&DETAIL){
-    FOODS.forEach(function(f){
-      var d=DETAIL[f.id];if(!d||!d.ingr)return;
-      var names=d.ingr.map(function(i){return (i.name||'').toLowerCase()}).join(' ');
-      var hit=mydogForm.allergens.some(function(ak){
-        var allergen=ALLERGENS.find(function(a){return a.key===ak});
-        return allergen&&allergen.kw.some(function(kw){return names.includes(kw)});
-      });
-      if(hit)allergenFoodIds.add(f.id);
-    });
-  }
-  var CONCERN_MSG={healthy:'전반적인 원료 품질이 우수해요',picky_eater:'기호성이 좋은 사료예요',weight:'체중 관리에 도움되는 사료예요',
-    eye_tear:'눈물·피부 개선에 도움되는 성분이 있어요',allergy:'저자극 원료를 사용해요',digestive:'소화에 좋은 사료예요',
-    joint:'관절 건강에 도움되는 성분이 있어요',post_surgery:'회복 중인 아이에게 적합한 사료예요'};
-  var scored=FOODS
-    .filter(function(f){
-      if(allergenFoodIds.has(f.id))return false;
-      if(mydogForm.stage!=='all'&&f.ages&&!f.ages.includes(mydogForm.stage)&&!f.ages.includes('all'))return false;
-      if(mydogForm.size!=='all'&&f.sizes&&!f.sizes.includes(mydogForm.size)&&!f.sizes.includes('all'))return false;
-      return true;
-    })
-    .map(function(f){
-      var concernMatch=mydogForm.concerns.length?
-        mydogForm.concerns.filter(function(c){return f.concerns&&f.concerns.includes(c)}).length/mydogForm.concerns.length:0.5;
-      var match=Math.min(99,Math.round(concernMatch*50+(f.score/10)*30+10));
-      var reasons=mydogForm.concerns.filter(function(c){return f.concerns&&f.concerns.includes(c)&&CONCERN_MSG[c]}).map(function(c){return CONCERN_MSG[c]}).slice(0,3);
-      if(!reasons.length)reasons=['전반적인 성분 품질이 우수해요'];
-      return Object.assign({},f,{match:match,reasons:reasons});
-    })
-    .sort(function(a,b){return b.match-a.match});
-  return {recs:scored.slice(0,4)};
-}
-function renderMydogResult(){
-  if(!mydogState)return;
-  var name=mydogForm.name||'우리 아이';
-  var curF=mydogForm.curFood?FOODS.find(function(x){return x.id===mydogForm.curFood}):null;
-  var allergenLabels=mydogForm.allergens.map(function(k){var a=ALLERGENS.find(function(a){return a.key===k});return a?a.label:null}).filter(Boolean);
-  var concernIcos=mydogForm.concerns.map(function(k){var c=CONCERN_OPTS.find(function(o){return o.key===k});return c?c.ico:''}).join('');
-  document.getElementById('mydogBody').innerHTML=
-    '<div class="mydog-result-header">'+
-      '<div><div class="mydog-result-title">'+name+'에게 맞는 사료</div>'+
-        '<div class="mydog-result-sub">'+concernIcos+' 고민 기반 추천'+(allergenLabels.length?'<br>🚫 '+allergenLabels.join(', ')+' 제외':'')+'</div></div>'+
-      '<button class="reset-btn" onclick="resetMydog()">다시 설정</button>'+
-    '</div>'+
-    (curF?renderCurAnalysis(curF):'')+
-    '<div style="padding:0 16px 6px"><div style="font-size:12px;color:var(--muted)">추천 사료 '+mydogState.recs.length+'개</div></div>'+
-    mydogState.recs.map(function(f,i){return renderRecCard(f,i,curF)}).join('')+
-    '<div class="note">추천 결과는 성분 데이터 기반 참고용이에요. 건강 문제는 수의사와 상담하세요.</div>';
-}
-function renderCurAnalysis(f){
-  var d=typeof DETAIL!=='undefined'&&DETAIL?DETAIL[f.id]:null,ingr=d&&d.ingr||[];
-  var issues=[];
-  if(ingr.length&&!ingr[0].isMain)issues.push({dot:'red',title:'첫 번째 재료가 고기가 아니에요',desc:"'"+ingr[0].name+"'이 가장 많이 들어있어요"});
-  if(f.ratings&&f.ratings.carb<=2)issues.push({dot:'red',title:'탄수화물 함량이 높아요',desc:'탄수화물이 많으면 혈당 부담이 생길 수 있어요'});
-  if(f.ratings&&f.ratings.additive<=2)issues.push({dot:'yellow',title:'첨가물 평가가 낮아요',desc:'인공 첨가물이 포함돼 있을 수 있어요'});
-  if(f.warnCount>0)issues.push({dot:'red',title:'주의 성분 '+f.warnCount+'개가 있어요',desc:'상세 화면에서 성분을 확인해보세요'});
-  if(!issues.length)return '';
-  return '<div class="cur-analysis">'+
-    '<div class="cur-analysis-header" onclick="toggleCurAnalysis(this)">'+
-      '<span style="font-size:16px">⚠️</span>'+
-      '<div class="cur-analysis-title">현재 사료에서 '+issues.length+'가지 아쉬운 점이 있어요</div>'+
-      '<span class="cur-analysis-arr">▾</span></div>'+
-    '<div class="cur-analysis-body">'+
-      issues.map(function(i){
-        return '<div class="cur-issue"><div class="cur-issue-dot" style="background:'+(i.dot==='red'?'var(--bad)':'var(--warn)')+'"></div>'+
-          '<div><div class="cur-issue-title">'+i.title+'</div><div class="cur-issue-desc">'+i.desc+'</div></div></div>';
-      }).join('')+
-    '</div></div>';
-}
-function toggleCurAnalysis(header){
-  var body=header.nextElementSibling,arr=header.querySelector('.cur-analysis-arr');
-  body.classList.toggle('open');arr.classList.toggle('open');
-}
-function renderRecCard(f,idx,curF){
-  var recD=typeof DETAIL!=='undefined'&&DETAIL?DETAIL[f.id]:null;
-  var curD=curF&&typeof DETAIL!=='undefined'&&DETAIL?DETAIL[curF.id]:null;
-  var rn=recD&&recD.nutrient||{},cn=curD&&curD.nutrient||{};
-  var diffHTML='';
-  if(curF&&rn.protein&&cn.protein){
-    var pdiff=rn.protein-cn.protein,cdiff=rn.carb&&cn.carb?rn.carb-cn.carb:null;
-    diffHTML='<div class="rec-diffs">'+
-      '<div class="rec-diff"><div class="rec-diff-label">단백질</div>'+
-        '<div class="rec-diff-val '+(pdiff>=0?'up':'dn')+'">'+(pdiff>=0?'+':'')+pdiff.toFixed(1)+'%</div></div>'+
-      (cdiff!=null?'<div class="rec-diff"><div class="rec-diff-label">탄수화물</div>'+
-        '<div class="rec-diff-val '+(cdiff<=0?'up':'dn')+'">'+(cdiff>=0?'+':'')+cdiff.toFixed(1)+'%</div></div>':'')+
-    '</div>';
-  }
-  return '<div class="rec-card">'+
-    '<div class="rec-card-main" onclick="openDetail(\''+f.id+'\')">'+
-      (idx===0?'<div class="rec-badge">Best Pick</div>':'')+
-      '<div style="display:flex;gap:12px;align-items:center">'+
-        '<div style="font-size:32px">'+foodThumb(f)+'</div>'+
-        '<div style="flex:1;min-width:0">'+
-          '<div style="font-size:11px;color:var(--sub)">'+f.brand+' · '+typeLabel(f.type)+'</div>'+
-          '<div style="font-size:14px;font-weight:700">'+f.name+'</div>'+
-          (f.price?'<div style="font-size:12px;color:var(--sub);margin-top:2px">'+priceStr(f)+'</div>':'')+
-        '</div>'+
-      '</div>'+
-      '<div class="rec-match-row">'+
-        '<div class="rec-match-bar"><div class="rec-match-fill" style="width:'+f.match+'%"></div></div>'+
-        '<div class="rec-match-pct">'+f.match+'%</div>'+
-      '</div>'+
-      '<div class="rec-reasons">'+f.reasons.map(function(r){return '<div class="rec-reason">'+r+'</div>'}).join('')+'</div>'+
-      diffHTML+
-    '</div></div>';
-}
-function resetMydog(){mydogState=null;renderMydogForm();}
 
-renderConcernChips();
-renderHomeCarousels();
+/* ═══ DETAIL (STEP 3에서 구현) ═══ */
+function openDetail(id){
+  const f = FOODS.find(x=>x.id===id); if(!f) return;
+  document.getElementById('detailBody').innerHTML =
+    `<div class="empty">${icon('microscope',44)}상세 화면은 다음 단계에서 만들어요<br><b style="color:var(--ink)">${f.brand} ${f.name}</b></div>`;
+  openOv('detail');
+}
+
+/* ═══ TOPBAR SHADOW ═══ */
+document.querySelectorAll('.screen').forEach(s=>{
+  s.addEventListener('scroll', ()=>{
+    const tb = s.querySelector('.topbar');
+    if(tb) tb.classList.toggle('stuck', s.scrollTop > 4);
+  }, {passive:true});
+});
+
+/* ═══ INIT ═══ */
+renderChips();
+renderHome();
+hydrateIcons();
 </script>
 </body>
 </html>
