@@ -13,7 +13,12 @@ const opts = (o,sel,ph) => (ph?`<option value="">${ph}</option>`:'')
 let toastT;
 function toast(m){ const t=el('toast'); t.textContent=m; t.classList.add('on');
   clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),1900); }
-function save(){ store.save(); markDirty(); }
+function save(){
+  const ok = store.save();
+  markDirty();
+  if(ok === false) toast('브라우저 저장 용량이 가득 찼어요 — 내보내기로 파일을 받아주세요');
+  return ok;
+}
 function markDirty(){ el('dirtyDot').innerHTML = store.dirty ? '<span class="dirty-dot"></span>' : ''; }
 
 /* ═══ NAV ═══ */
@@ -97,7 +102,7 @@ function pgDash(){
     <div class="card">
       <div class="sec-t">최근 등록 사료</div>
       ${recent.map(f=>`<div class="rec-i">
-        <div class="rec-ic">${ico(BS.deriveIco(f),16)}</div>
+        <div class="rec-ic">${hasThumb(f)?`<img src="${f.thumb}" alt="">`:ico(BS.deriveIco(f),16)}</div>
         <div style="min-width:0">
           <div class="rec-n">${esc(f.name)}</div>
           <div class="rec-m">${esc(f.brand)} · ${TYPE_KO[f.type]||f.type}</div>
@@ -142,7 +147,7 @@ function pgFoods(){
     ${rows.map(f=>{
       const warn = f.ingr.filter(i=>{const m=store.ingByName(i.name);return m&&m.safe!=='safe';}).length;
       return `<tr>
-        <td>${ico(BS.deriveIco(f),17)}</td>
+        <td>${hasThumb(f)?`<img src="${at(f.thumb)}" style="width:26px;height:26px;border-radius:6px;object-fit:cover;display:block">`:ico(BS.deriveIco(f),17)}</td>
         <td><div class="t-main">${esc(f.name)}</div>
             <div class="t-sub">${esc(f.brand)}${f.country?' · '+(COUNTRY_KO[f.country]||f.country):''}</div></td>
         <td><span class="tag mute">${TYPE_KO[f.type]||f.type}</span>${f.rx?' <span class="tag info">처방식</span>':''}</td>
@@ -226,6 +231,25 @@ function wS1(){
         <input class="inp" value="${at(wF.name)}" placeholder="오리지널 독"
                oninput="wF.name=this.value;save()"></div>
     </div>
+    <div class="fld"><label>사료 썸네일 <span>로고 또는 포장지 사진</span></label>
+      <div class="thumbrow">
+        <div class="thumbbox">${hasThumb(wF)
+          ? `<img src="${at(wF.thumb)}" alt="">`
+          : ico(BS.deriveIco(wF),30)}</div>
+        <div style="flex:1;min-width:0">
+          <input type="file" id="thumbFile" accept="image/jpeg,image/png,image/webp"
+                 style="display:none" onchange="pickThumb(this)">
+          <div style="display:flex;gap:7px">
+            <button class="btn sm" onclick="el('thumbFile').click()">${ico('package',13)}사진 업로드</button>
+            ${hasThumb(wF)?`<button class="btn sm dan" onclick="wF.thumb=null;save();wS1()">삭제</button>`:''}
+          </div>
+          <div class="hint">${hasThumb(wF)
+            ? `업로드 완료 ${ico('check',11)} <b style="color:var(--good)">${thumbKB(wF.thumb)}KB</b> · 320px로 자동 압축돼요`
+            : 'JPG·PNG·WebP, 최대 5MB · 320px로 자동 압축돼요'}</div>
+        </div>
+      </div>
+      ${hasThumb(wF)?'':`<div class="hint" style="margin-top:6px">비워두면 주원료에 맞는 아이콘이 자동으로 쓰여요.</div>`}
+    </div>
     <div class="fld"><label>처방식 여부</label>
       <div class="swrow"><label class="sw"><input type="checkbox" ${wF.rx?'checked':''}
         onchange="wF.rx=this.checked;save();renderWizard()"><i></i></label>
@@ -247,6 +271,38 @@ function wS1(){
     ${wFoot()}</div>`;
 }
 function tglArr(arr,k){ const i=arr.indexOf(k); i>=0?arr.splice(i,1):arr.push(k); save(); }
+
+/* 썸네일 — 서버가 없어 이미지를 data URL 로 보관한다.
+   원본 크기 그대로 두면 용량이 감당이 안 되므로 320px·WebP 로 압축해서 저장한다. */
+const THUMB_MAX = 320, THUMB_Q = 0.82;
+function hasThumb(f){ return f.thumb && /^(data:|https?:)/.test(f.thumb); }
+function thumbKB(u){ return Math.round((u.length*3/4)/1024); }
+function pickThumb(input){
+  const file = input.files && input.files[0];
+  input.value = '';
+  if(!file) return;
+  if(!/^image\/(jpeg|png|webp)$/.test(file.type)){ toast('JPG·PNG·WebP만 올릴 수 있어요'); return; }
+  if(file.size > 5*1024*1024){ toast('5MB 이하 파일만 올릴 수 있어요'); return; }
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = ()=>{
+    const s = Math.min(1, THUMB_MAX/Math.max(img.width, img.height));
+    const w = Math.max(1,Math.round(img.width*s)), h = Math.max(1,Math.round(img.height*s));
+    const c = document.createElement('canvas'); c.width=w; c.height=h;
+    const cx = c.getContext('2d');
+    cx.fillStyle = '#fff'; cx.fillRect(0,0,w,h);   // 투명 PNG 는 흰 배경으로
+    cx.drawImage(img, 0, 0, w, h);
+    let out = c.toDataURL('image/webp', THUMB_Q);
+    if(out.indexOf('data:image/webp') !== 0) out = c.toDataURL('image/jpeg', 0.85);
+    URL.revokeObjectURL(url);
+    wF.thumb = out;
+    if(save() === false){ wF.thumb = null; wS1(); return; }
+    wS1();
+    toast(`썸네일 등록했어요 (${thumbKB(out)}KB)`);
+  };
+  img.onerror = ()=>{ URL.revokeObjectURL(url); toast('이미지를 읽지 못했어요'); };
+  img.src = url;
+}
 
 /* Step 2 — 영양성분 */
 function wS2(){
@@ -835,6 +891,8 @@ function openExport(){
     <div class="card" style="background:var(--panel2);margin-bottom:14px">
       <div style="font-size:12px;line-height:2">
         발행 사료 <b>${pub}종</b>${draft?` <span style="color:var(--muted)">(임시저장 ${draft}종은 제외)</span>`:''}<br>
+        썸네일 <b>${store.foods.filter(f=>f.thumb&&f.thumb.indexOf('data:')===0).length}장</b>
+          <span style="color:var(--muted)">(${Math.round(store.thumbBytes()/1024)}KB)</span><br>
         성분 사전 <b>${store.ingredients.length}종</b><br>
         발행 콘텐츠 <b>${artPub}편</b></div></div>
     <div style="display:flex;gap:8px">

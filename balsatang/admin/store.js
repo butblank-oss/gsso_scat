@@ -175,10 +175,21 @@ const store = {
   },
   save(){
     this.dirty = true;
-    try { localStorage.setItem(LS, JSON.stringify({
-      foods:this.foods, ingredients:this.ingredients, articles:this.articles,
-      tags:this.tags, recalls:this.recalls
-    })); } catch(e){ console.warn('임시저장 실패', e); }
+    try {
+      localStorage.setItem(LS, JSON.stringify({
+        foods:this.foods, ingredients:this.ingredients, articles:this.articles,
+        tags:this.tags, recalls:this.recalls
+      }));
+      return true;
+    } catch(e){
+      console.warn('임시저장 실패', e);
+      return false;                       // 대개 브라우저 저장 용량(약 5MB) 초과
+    }
+  },
+  /* 썸네일이 차지하는 용량 */
+  thumbBytes(){
+    return this.foods.reduce((a,f)=>
+      a + (f.thumb && f.thumb.indexOf('data:')===0 ? f.thumb.length*3/4 : 0), 0);
   },
   discard(){ localStorage.removeItem(LS); this.init(); },
 
