@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>발사탕 · 발행 심사</title>
+<style>
+:root{--bg:#0D0F14;--panel:#151922;--panel2:#1B2029;--line:#252B38;--ink:#E8EBF0;--sub:#7C8698;--muted:#5A6376;
+--pri:#2F6FED;--pri-d:#245BC9;--pri-soft:#16233D;--good:#22C55E;--good-soft:#0F2A1A;
+--warn:#F59E0B;--warn-soft:#2A2010;--bad:#EF4444;--bad-soft:#2A1315;--r:8px;--r-lg:12px;--t:.16s cubic-bezier(.4,0,.2,1)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+  font-size:14px;line-height:1.5;padding-bottom:120px;-webkit-font-smoothing:antialiased}
+a{color:var(--pri);text-decoration:none}
+a:hover{text-decoration:underline}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+
+.top{position:sticky;top:0;z-index:20;background:rgba(13,15,20,.92);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);padding:14px 16px;padding-top:calc(14px + env(safe-area-inset-top))}
+.top h1{font-size:16px;font-weight:700;letter-spacing:-.02em}
+.top .meta{color:var(--sub);font-size:12px;margin-top:3px}
+.wrap{max-width:860px;margin:0 auto;padding:16px}
+
+.stat{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.stat div{flex:1;min-width:88px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px}
+.stat b{display:block;font-size:20px;font-weight:700;letter-spacing:-.02em}
+.stat span{color:var(--sub);font-size:11px}
+
+.batch{margin-bottom:26px}
+.batch>h2{font-size:12px;color:var(--sub);font-weight:600;margin-bottom:10px;letter-spacing:.02em}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);margin-bottom:12px;overflow:hidden}
+.card.blocked{opacity:.72}
+.hd{display:flex;align-items:flex-start;gap:10px;padding:14px;cursor:pointer;user-select:none}
+.hd:hover{background:var(--panel2)}
+.hd .t{flex:1;min-width:0}
+.hd .t b{display:block;font-size:15px;font-weight:600;letter-spacing:-.01em}
+.hd .t .sub{color:var(--sub);font-size:12px;margin-top:2px}
+.chev{color:var(--muted);transition:transform var(--t);flex-shrink:0;margin-top:2px}
+.card.open .chev{transform:rotate(90deg)}
+
+.badges{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.b{font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px;border:1px solid}
+.b.ok{background:var(--good-soft);border-color:var(--good);color:var(--good)}
+.b.no{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.b.wa{background:var(--warn-soft);border-color:var(--warn);color:var(--warn)}
+
+.body{display:none;border-top:1px solid var(--line);padding:14px}
+.card.open .body{display:block}
+.sec{margin-bottom:16px}
+.sec:last-child{margin-bottom:0}
+.sec>h3{font-size:11px;color:var(--sub);font-weight:700;letter-spacing:.04em;margin-bottom:7px;text-transform:uppercase}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--sub);font-weight:600;font-size:11px}
+td.num{font-variant-numeric:tabular-nums}
+tr.diff td{background:var(--bad-soft)}
+tr.diff td:first-child{color:var(--bad);font-weight:600}
+
+.srcbox{background:var(--panel2);border:1px solid var(--line);border-radius:var(--r);padding:10px;margin-bottom:8px}
+.srcbox .role{font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;background:var(--pri-soft);color:var(--pri);border:1px solid var(--pri)}
+.srcbox .role.b{background:#2A2010;color:var(--warn);border-color:var(--warn)}
+.srcbox .u{display:block;margin-top:6px;font-size:12px;word-break:break-all}
+.srcbox .d{color:var(--muted);font-size:11px;margin-top:4px}
+.quote{border-left:2px solid var(--line);padding-left:9px;margin-top:6px;color:var(--sub);font-size:12px}
+.quote b{color:var(--ink);font-weight:600;display:block;font-size:11px;margin-bottom:2px}
+
+.msg{font-size:12px;padding:7px 10px;border-radius:var(--r);margin-bottom:5px;border:1px solid}
+.msg.f{background:var(--bad-soft);border-color:#4a2226;color:#FCA5A5}
+.msg.w{background:var(--warn-soft);border-color:#4a3a16;color:#FCD34D}
+
+.act{display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--line);background:var(--panel2)}
+.act button{flex:1;padding:10px;border-radius:var(--r);border:1px solid var(--line);background:transparent;
+  color:var(--sub);font-size:13px;font-weight:600;cursor:pointer;transition:all var(--t);font-family:inherit}
+.act button:hover:not(:disabled){border-color:var(--muted);color:var(--ink)}
+.act button:disabled{opacity:.35;cursor:not-allowed}
+.act button.sel-pub{background:var(--good-soft);border-color:var(--good);color:var(--good)}
+.act button.sel-rej{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(21,25,34,.96);backdrop-filter:blur(10px);
+  border-top:1px solid var(--line);padding:12px 16px;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+.bar .in{max-width:860px;margin:0 auto;display:flex;gap:10px;align-items:center}
+.bar .c{flex:1;font-size:12px;color:var(--sub)}
+.bar .c b{color:var(--ink)}
+.bar button{padding:11px 18px;border-radius:var(--r);border:none;background:var(--pri);color:#fff;
+  font-size:13px;font-weight:700;cursor:pointer;transition:background var(--t);font-family:inherit}
+.bar button:hover:not(:disabled){background:var(--pri-d)}
+.bar button:disabled{opacity:.4;cursor:not-allowed}
+
+.empty{text-align:center;padding:56px 20px;color:var(--muted)}
+.empty b{display:block;color:var(--sub);font-size:15px;margin-bottom:6px}
+.note{background:var(--pri-soft);border:1px solid #23386b;border-radius:var(--r);padding:11px 13px;
+  font-size:12px;color:#9DBBF5;margin-bottom:16px;line-height:1.6}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:96px;z-index:40;background:var(--ink);color:var(--bg);
+  padding:10px 18px;border-radius:99px;font-size:13px;font-weight:600;opacity:0;transition:opacity var(--t);pointer-events:none}
+.toast.on{opacity:1}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>발행 심사</h1>
+  <div class="meta" id="meta">불러오는 중…</div>
+</div>
+
+<div class="wrap" id="wrap"></div>
+
+<div class="bar" hidden id="bar">
+  <div class="in">
+    <div class="c" id="count"></div>
+    <button id="copy" disabled>발행 명령 복사</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const RATING_LABEL={quality:'원료',carb:'탄수화물',additive:'첨가물',value:'가성비'};
+/* evidence 키('ratings.quality','price.p')를 사람이 읽는 이름으로 */
+const EV_LABEL={'price.p':'가격','price.wg':'중량'};
+const evLabel=k=>EV_LABEL[k]||RATING_LABEL[k.split('.')[1]]||k;
+const ROLE_LABEL={official:'제조사 공식',importer:'수입사 공식',authority:'정부·기관',retail:'판매처'};
+const decision={};  // stagingId -> 'publish' | 'reject'
+let DATA=null;
+
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const won=n=>n==null?'—':Number(n).toLocaleString('ko-KR')+'원';
+
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');
+  clearTimeout(t._x);t._x=setTimeout(()=>t.classList.remove('on'),1900);}
+
+/* 수집 AI 값과 심사 AI 값을 나란히 놓는다. 다른 줄은 빨갛게 표시한다. */
+function auditTable(it){
+  const ind=it.audit?.independent||{};
+  const rows=[];
+  for(const k of ['quality','carb','additive','value']){
+    const a=it.proposed?.ratings?.[k], b=ind.ratings?.[k];
+    rows.push([RATING_LABEL[k],a,b??'—',b!=null&&a!==b]);
+  }
+  rows.push(['가격',won(it.proposed?.price?.p),ind.price?.p!=null?won(ind.price.p):'—',
+             ind.price?.p!=null&&ind.price.p!==it.proposed?.price?.p]);
+  rows.push(['중량',(it.proposed?.price?.wg??'—')+'g',ind.price?.wg!=null?ind.price.wg+'g':'—',
+             ind.price?.wg!=null&&ind.price.wg!==it.proposed?.price?.wg]);
+  return `<table><thead><tr><th>항목</th><th>수집 AI</th><th>심사 AI (독립 재조사)</th></tr></thead><tbody>${
+    rows.map(([l,a,b,d])=>`<tr class="${d?'diff':''}"><td>${esc(l)}</td><td class="num">${esc(a)}</td><td class="num">${esc(b)}</td></tr>`).join('')
+  }</tbody></table>`;
+}
+
+function sourceBlock(it){
+  return (it.sources||[]).map((s,i)=>{
+    const quotes=Object.entries(it.evidence||{}).filter(([,e])=>e.src===i);
+    return `<div class="srcbox">
+      <span class="role ${s.role==='retail'?'b':''}">${esc(ROLE_LABEL[s.role]||s.role)}</span>
+      <a class="u" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.url)} ↗</a>
+      <div class="d">확인: ${esc((s.fetchedAt||'').slice(0,10))}${s.title?' · '+esc(s.title):''}</div>
+      ${quotes.map(([k,e])=>`<div class="quote"><b>${esc(evLabel(k))}</b>${esc(e.quote)}</div>`).join('')}
+    </div>`;
+  }).join('') || '<div class="msg f">출처가 없습니다</div>';
+}
+
+function card(it){
+  const g=it.gates;
+  const badges=[
+    `<span class="b ${g.g1==='pass'?'ok':'no'}">게이트1 ${g.g1==='pass'?'통과':'탈락'}</span>`,
+    `<span class="b ${g.g2==='match'?'ok':'no'}">게이트2 ${g.g2==='match'?'일치':'불일치'}</span>`,
+    g.g3warn.length?`<span class="b wa">게이트3 경고 ${g.g3warn.length}</span>`:`<span class="b ok">게이트3 정상</span>`
+  ].join('');
+  const p=it.proposed||{};
+  return `<div class="card ${it.ready?'':'blocked'}" data-id="${esc(it.stagingId)}">
+    <div class="hd">
+      <span class="chev">▸</span>
+      <div class="t">
+        <b>${esc(it.label)}</b>
+        <div class="sub">${esc(p.type||'')} · ${won(p.price?.p)} / ${p.price?.wg??'—'}g · ${p.score??'—'}점</div>
+        <div class="badges">${badges}</div>
+      </div>
+    </div>
+    <div class="body">
+      ${g.g1fail.map(f=>`<div class="msg f">✗ ${esc(f.msg)}</div>`).join('')}
+      ${g.g1warn.map(w=>`<div class="msg w">⚠ ${esc(w.msg)}</div>`).join('')}
+      ${g.g3warn.map(w=>`<div class="msg w">⚠ ${esc(w)}</div>`).join('')}
+      <div class="sec"><h3>대조</h3>${auditTable(it)}</div>
+      <div class="sec"><h3>출처와 근거</h3>${sourceBlock(it)}</div>
+    </div>
+    <div class="act">
+      <button data-act="reject">반려</button>
+      <button data-act="publish" ${it.ready?'':'disabled'}>${it.ready?'발행':'게이트 미통과'}</button>
+    </div>
+  </div>`;
+}
+
+function render(){
+  const wrap=document.getElementById('wrap');
+  const s=DATA.summary;
+  document.getElementById('meta').textContent =
+    `${DATA.builtAt.slice(0,16).replace('T',' ')} 기준${DATA.live?' · URL 실접속 검사 포함':''}`;
+
+  if(!s.total){
+    wrap.innerHTML=`<div class="empty"><b>발행 대기 중인 사료가 없습니다</b>수집 루틴이 돌면 여기에 나타납니다.</div>`;
+    return;
+  }
+  wrap.innerHTML=`
+    <div class="note">
+      게이트 1·2·3을 통과한 건만 <b>발행</b>할 수 있습니다.
+      출처 링크를 직접 열어 값이 맞는지 확인한 뒤 판단하세요.
+      결정을 마치면 아래 <b>발행 명령 복사</b>를 눌러 PR 코멘트에 붙여넣습니다.
+    </div>
+    <div class="stat">
+      <div><b>${s.total}</b><span>전체</span></div>
+      <div><b style="color:var(--good)">${s.ready}</b><span>발행 후보</span></div>
+      <div><b style="color:var(--bad)">${s.blocked}</b><span>보류</span></div>
+    </div>
+    ${DATA.batches.map(b=>`<div class="batch">
+      <h2>${esc(b.file)}${b.collectedAt?' · 수집 '+esc(b.collectedAt.slice(0,10)):''}</h2>
+      ${b.items.map(card).join('')}
+    </div>`).join('')}`;
+  document.getElementById('bar').hidden=false;
+  updateBar();
+}
+
+function updateBar(){
+  const pub=Object.values(decision).filter(v=>v==='publish').length;
+  const rej=Object.values(decision).filter(v=>v==='reject').length;
+  document.getElementById('count').innerHTML=`발행 <b>${pub}</b> · 반려 <b>${rej}</b>`;
+  document.getElementById('copy').disabled=!(pub+rej);
+}
+
+document.addEventListener('click',e=>{
+  const hd=e.target.closest('.hd');
+  if(hd){hd.closest('.card').classList.toggle('open');return;}
+
+  const btn=e.target.closest('.act button');
+  if(btn&&!btn.disabled){
+    const card=btn.closest('.card'), id=card.dataset.id, act=btn.dataset.act;
+    decision[id]=decision[id]===act?undefined:act;
+    if(!decision[id])delete decision[id];
+    card.querySelectorAll('.act button').forEach(b=>{
+      b.classList.toggle('sel-pub',decision[id]==='publish'&&b.dataset.act==='publish');
+      b.classList.toggle('sel-rej',decision[id]==='reject'&&b.dataset.act==='reject');
+    });
+    updateBar();
+  }
+});
+
+document.getElementById('copy').addEventListener('click',async()=>{
+  const pub=Object.entries(decision).filter(([,v])=>v==='publish').map(([k])=>k);
+  const rej=Object.entries(decision).filter(([,v])=>v==='reject').map(([k])=>k);
+  const lines=['/publish'];
+  if(pub.length)lines.push('approve: '+pub.join(' '));
+  if(rej.length)lines.push('reject: '+rej.join(' '));
+  const text=lines.join('\n');
+  try{await navigator.clipboard.writeText(text);toast('복사됨 — PR 코멘트에 붙여넣으세요');}
+  catch{prompt('아래를 복사해 PR 코멘트에 붙여넣으세요',text);}
+});
+
+fetch('../../data/staging/_review.json',{cache:'no-store'})
+  .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+  .then(d=>{DATA=d;render();})
+  .catch(err=>{
+    document.getElementById('meta').textContent='불러오기 실패';
+    document.getElementById('wrap').innerHTML=
+      `<div class="empty"><b>심사 데이터를 불러오지 못했습니다</b>
+       <code>data/staging/_review.json</code> 이 없습니다.<br><br>
+       <code>node scripts/build-review.mjs</code> 를 실행하면 생성됩니다.<br>
+       <span style="color:var(--muted);font-size:12px">(${esc(err.message)})</span></div>`;
+  });
+</script>
+</body>
+</html>
