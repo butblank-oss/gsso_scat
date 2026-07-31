@@ -15,6 +15,28 @@ export const ENUM = {
   sourceRole: ['official', 'importer', 'retail', 'authority']
 };
 
+/* 가격 출처로 인정하는 도메인 — DATA-POLICY 3.2. 쿠팡만 인정한다. */
+export const RETAIL_HOST = 'coupang.com';
+
+export function isRetailHost(url) {
+  try { const h = new URL(url).hostname.toLowerCase();
+        return h === RETAIL_HOST || h.endsWith('.' + RETAIL_HOST); }
+  catch { return false; }
+}
+
+/* 국내 출처인지 — 성분은 국내 유통 제품 기준이어야 한다 (DATA-POLICY 3.2). */
+export function isDomesticSource(url) {
+  try { const h = new URL(url).hostname.toLowerCase();
+        return h.endsWith('.kr') || h.endsWith('.co.kr') || isRetailHost(url); }
+  catch { return false; }
+}
+
+/* 쿠팡 상품 URL 형식 — 쿠팡은 봇 차단이 강해 실접속 검증이 불가능하므로 형식으로 검증한다. */
+export function isCoupangProductUrl(url) {
+  try { return isRetailHost(url) && /^\/vp\/products\/\d+/.test(new URL(url).pathname); }
+  catch { return false; }
+}
+
 /* 출처 등급 — DATA-POLICY 3.1 */
 export const SOURCE_GRADE = {
   official: 'A', importer: 'A', authority: 'A', retail: 'B'

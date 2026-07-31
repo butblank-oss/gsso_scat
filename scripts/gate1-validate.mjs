@@ -16,7 +16,8 @@ import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   ENUM, SOURCE_GRADE, computeScore, PRICE_KG, TTL_DAYS, daysSince,
-  REQUIRED_ITEM_FIELDS, REQUIRED_FOOD_FIELDS, REQUIRED_RATING_KEYS, isHttpUrl, norm, loadFoods
+  REQUIRED_ITEM_FIELDS, REQUIRED_FOOD_FIELDS, REQUIRED_RATING_KEYS, isHttpUrl, norm, loadFoods,
+  isRetailHost, RETAIL_HOST, isDomesticSource, isCoupangProductUrl
 } from './lib/schema.mjs';
 import { rateAll, RUBRIC_TEXT, REQUIRED_FACT_KEYS } from './lib/rubric.mjs';
 
@@ -97,6 +98,17 @@ function checkItem(item, published, seen) {
   const pr = p.price || {};
   if (!(pr.p > 0)) F('E_PRICE', `가격이 유효하지 않습니다: ${pr.p}`);
   if (!(pr.wg > 0)) F('E_PRICE', `중량(g)이 유효하지 않습니다: ${pr.wg}`);
+  /* 가격 기준 용량은 판매 중인 용량 중 최소 — DATA-POLICY 3.4 */
+  if (!Array.isArray(pr.wgOptions) || pr.wgOptions.length === 0) {
+    F('E_PRICE_OPTS', 'price.wgOptions 가 없습니다 — 확인한 판매 용량을 모두 적어야 합니다');
+  } else if (pr.wg != null) {
+    const min = Math.min(...pr.wgOptions);
+    if (pr.wg !== min) {
+      F('E_PRICE_MINWG',
+        `가격 기준 용량이 최소 용량이 아닙니다. 제출 ${pr.wg}g / 최소 ${min}g (확인된 용량: ${pr.wgOptions.join(', ')}g)`);
+    }
+  }
+
   if (pr.p > 0 && pr.wg > 0) {
     const expect = Math.round(pr.p / (pr.wg / 1000));
     if (pr.pKg != null && Math.abs(pr.pKg - expect) / expect > 0.01) {
@@ -122,8 +134,25 @@ function checkItem(item, published, seen) {
     if (gA < 1 && gB < 2) {
       F('E_SRC_GRADE', `성분 근거 부족 — A등급 ${gA}곳, B등급 ${gB}곳 (A 1곳 또는 B 2곳 필요)`);
     }
-    /* 가격 근거: 판매처 1곳 */
-    if (!srcs.some(s => s.role === 'retail')) F('E_SRC_PRICE', '가격 근거(판매처 출처)가 없습니다');
+    /* 가격 근거: 쿠팡 상품 페이지 1곳 — DATA-POLICY 3.2 */
+    const retails = srcs.filter(s => s.role === 'retail');
+    if (!retails.length) F('E_SRC_PRICE', '가격 근거(쿠팡 상품 출처)가 없습니다');
+    for (const r of retails) {
+      if (!isRetailHost(r.url)) {
+        F('E_SRC_RETAIL_HOST',
+          `가격 출처는 ${RETAIL_HOST} 만 인정합니다. 가격비교 사이트는 출처가 될 수 없습니다: ${r.url}`);
+      } else if (!isCoupangProductUrl(r.url)) {
+        F('E_SRC_RETAIL_SHAPE',
+          `쿠팡 상품 페이지 형식이 아닙니다 (/vp/products/{상품ID}): ${r.url}`);
+      }
+    }
+
+    /* 성분은 국내 유통 제품 기준 — 해외 공식 사이트만으로는 배합 동일성을 보장할 수 없다 */
+    const specSrcs = srcs.filter(s => SOURCE_GRADE[s.role] === 'A');
+    if (specSrcs.length && !specSrcs.some(s => isDomesticSource(s.url))) {
+      F('E_SRC_NOT_DOMESTIC',
+        '성분 출처가 전부 해외입니다. 국내 수입사 또는 국내 판매처의 표기를 1곳 이상 포함해야 합니다');
+    }
 
     /* 유효기간 */
     for (const s of srcs) {
@@ -168,6 +197,8 @@ async function checkLive(item) {
 
   for (const [i, s] of (item.sources || []).entries()) {
     if (!isHttpUrl(s.url)) continue;
+    /* 쿠팡은 봇 차단으로 서버에서 항상 403이다. 형식 검증은 checkItem 이 이미 했으므로 건너뛴다. */
+    if (isRetailHost(s.url)) continue;
     try {
       const res = await fetch(s.url, {
         redirect: 'follow',

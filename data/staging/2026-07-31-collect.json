@@ -42,10 +42,13 @@
         "warnN": 2,
         "concerns": [],
         "price": {
-          "p": 39150,
+          "p": 43000,
           "wg": 1800,
-          "shop": "other",
-          "pKg": 21750
+          "wgOptions": [
+            1800
+          ],
+          "shop": "coupang",
+          "pKg": 23889
         }
       },
       "sources": [
@@ -57,9 +60,9 @@
         },
         {
           "role": "retail",
-          "url": "https://search.danawa.com/dsearch.php?query=%EC%9D%B8%EC%8A%A4%ED%8C%85%ED%8A%B8+%EC%98%A4%EB%A6%AC%EC%A7%80%EB%82%A0+%EC%B9%98%ED%82%A8+%EB%8F%85+%ED%82%A4%EB%B8%94",
-          "fetchedAt": "2026-07-31T14:30:00Z",
-          "title": "다나와 가격비교"
+          "url": "https://www.coupang.com/vp/products/7013247890?itemId=4072409549&vendorItemId=84413495289",
+          "fetchedAt": "2026-07-31T15:00:00Z",
+          "title": "쿠팡 상품 페이지"
         }
       ],
       "evidence": {
@@ -85,7 +88,7 @@
         },
         "price.p": {
           "src": 1,
-          "quote": "네이처스버라이어티 인스팅트 오리지날 치킨 독 키블 1.8kg — 39,150원 (다나와 최저가, 2026-07-31 확인)"
+          "quote": "네이처스버라이어티 전연령 인스팅트 오리지날 치킨 독 키블 건식사료 닭 1.8kg 1개 — 43,000원 (쿠팡, 2026-07-31 확인). 쿠팡 확인 용량: 1.8kg"
         }
       },
       "audit": {
@@ -104,7 +107,7 @@
             "dangerN": 0
           },
           "price": {
-            "p": 39150,
+            "p": 43000,
             "wg": 1800
           }
         },
@@ -136,12 +139,12 @@
         ],
         "ico": "fish",
         "thumb": null,
-        "score": 7.2,
+        "score": 7.1,
         "ratings": {
           "quality": 4,
           "carb": 2,
           "additive": 4,
-          "value": 4
+          "value": 3
         },
         "facts": {
           "dmCarb": 50,
@@ -154,10 +157,14 @@
         "warnN": 2,
         "concerns": [],
         "price": {
-          "p": 135130,
-          "wg": 10800,
-          "shop": "other",
-          "pKg": 12512
+          "p": 22790,
+          "wg": 1000,
+          "wgOptions": [
+            1000,
+            10800
+          ],
+          "shop": "coupang",
+          "pKg": 22790
         }
       },
       "sources": [
@@ -169,9 +176,9 @@
         },
         {
           "role": "retail",
-          "url": "https://search.danawa.com/dsearch.php?query=%EC%9D%B8%EC%8A%A4%ED%8C%85%ED%8A%B8+BE+%EB%82%B4%EC%B6%94%EB%9F%B4+%EC%97%B0%EC%96%B4+%EB%8F%85+%ED%82%A4%EB%B8%94",
-          "fetchedAt": "2026-07-31T14:30:00Z",
-          "title": "다나와 가격비교"
+          "url": "https://www.coupang.com/vp/products/5492674898?itemId=8508520566&vendorItemId=95004164550",
+          "fetchedAt": "2026-07-31T15:00:00Z",
+          "title": "쿠팡 상품 페이지"
         }
       ],
       "evidence": {
@@ -197,7 +204,7 @@
         },
         "price.p": {
           "src": 1,
-          "quote": "인스팅트 BE 내추럴 연어 독 키블 10.8kg — 135,130원 (다나와 최저가, 2026-07-31 확인)"
+          "quote": "인스팅트 전연령용 BE 내추럴 독 키블 연어 1kg 1개 — 22,790원 (쿠팡, 2026-07-31 확인). 쿠팡 확인 용량: 1kg / 10.8kg → 최소 1kg 기준"
         }
       },
       "audit": {
@@ -216,8 +223,8 @@
             "dangerN": 0
           },
           "price": {
-            "p": 135130,
-            "wg": 10800
+            "p": 22790,
+            "wg": 1000
           }
         },
         "verdict": "match",
@@ -231,5 +238,10 @@
       },
       "status": "draft"
     }
-  ]
+  ],
+  "blocked": {
+    "reason": "국내 성분 출처 미확보",
+    "detail": "가격은 쿠팡에서 최소 용량 기준으로 확보했으나, 성분표가 미국 공식 사이트 기준이다. 국내 공식 사이트(instinctpetfood.co.kr, naturesvariety.co.kr)와 쿠팡 상품 상세는 모두 봇 차단으로 접근되지 않아 국내 유통품의 배합을 확인하지 못했다.",
+    "nextStep": "국내 수입사 표기를 확인할 수 있는 경로 확보. 확인 전까지 발행하지 않는다."
+  }
 }
