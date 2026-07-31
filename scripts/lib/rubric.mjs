@@ -60,3 +60,12 @@ export const RUBRIC_TEXT = {
 
 /* 사실 항목의 필수 키 — 이게 없으면 채점을 검증할 수 없다. */
 export const REQUIRED_FACT_KEYS = ['dmCarb', 'protein', 'firstIngrCat', 'cautionN', 'dangerN'];
+
+/* 건물기준 탄수 계산. 기존 41종이 쓰는 방식과 동일하게 조회분은 제외한다
+   (41종 중 34종이 조회분 미표기이고, 표기된 건도 계산에 반영되지 않았다).
+   조회분을 빼면 dmCarb 가 약 9%p 낮아져 루브릭 경계가 어긋난다. */
+export function computeDmCarb({ protein, fat, fiber, moisture }) {
+  if ([protein, fat, fiber, moisture].some(v => v == null)) return null;
+  const carb = 100 - (protein + fat + fiber + moisture);
+  return Math.round((carb / (100 - moisture)) * 1000) / 10;
+}

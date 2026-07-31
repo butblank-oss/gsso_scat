@@ -44,6 +44,27 @@ svg.i{display:inline-block;vertical-align:-.14em;fill:none;stroke:currentColor;
   position:sticky;top:0;z-index:20;background:rgba(250,250,248,.88);backdrop-filter:blur(12px);
   border-bottom:1px solid transparent;transition:border-color var(--t)}
 .topbar.stuck{border-bottom-color:var(--line)}
+/* 증상 키워드로 찾아준 결과를 알리는 안내 */
+.obadge{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;
+  padding:3px 8px;border-radius:99px;margin-left:6px;vertical-align:middle;white-space:nowrap}
+.obadge.ov{background:#FFF6E8;border:1px solid #F2D9AE;color:#9A6B12}
+.obadge.dm{background:#EDF7EE;border:1px solid #CDE7D0;color:#2A7A35}
+.onote{display:flex;gap:9px;align-items:flex-start;margin:0 20px 14px;padding:11px 13px;
+  background:#FFF9EF;border:1px solid #F0DDBB;border-radius:11px;
+  font-size:12.5px;line-height:1.55;color:#7A5A16}
+.onote b{font-weight:700}
+.onote svg{flex-shrink:0;margin-top:1px}
+.blogo{width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  background:#fff;border-radius:inherit;padding:14%;box-sizing:border-box}
+.blogo img{width:100%;height:100%;object-fit:contain;border-radius:0}
+.bmark{width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:800;letter-spacing:-.02em;border-radius:inherit;
+  font-family:'Pretendard',-apple-system,sans-serif;user-select:none}
+.shint{display:flex;align-items:center;gap:6px;margin:0 20px 10px;padding:9px 12px;
+  background:var(--accent-soft,#F0F6FF);border:1px solid var(--accent-line,#D6E4FB);
+  border-radius:10px;font-size:12.5px;color:var(--accent,#2F6FED);line-height:1.4}
+.shint b{font-weight:700}
+.esub{margin-top:7px;font-size:12.5px;color:var(--sub);font-weight:400}
 /* 네이티브 앱에서만 상태바 높이를 더한다 (native.js 가 html.native 를 붙임) */
 .native .topbar{padding-top:calc(14px + env(safe-area-inset-top))}
 .logo{font-size:19px;font-weight:900;letter-spacing:-.6px}
@@ -730,10 +751,11 @@ svg.i{display:inline-block;vertical-align:-.14em;fill:none;stroke:currentColor;
   <div class="searchwrap">
     <div class="sbox" style="cursor:text">
       <span data-ico="search" data-sz="18"></span>
-      <input id="searchInput" placeholder="오리젠, 아카나, 로얄캐닌..." oninput="filterSearch()" autocomplete="off">
+      <input id="searchInput" placeholder="브랜드명 또는 눈물, 다이어트, 신장..." oninput="filterSearch()" autocomplete="off">
     </div>
   </div>
   <div class="count" id="searchCount"></div>
+  <div id="searchHint"></div>
   <div class="flist" id="searchList"></div>
   <div style="height:24px;flex-shrink:0"></div>
 </section>
@@ -891,10 +913,79 @@ function openSearch(){
 
 /* ═══ CARD PARTS ═══ */
 function hasThumb(f){ return f.thumb && /^(data:|https?:)/.test(f.thumb); }
+
+/* ═══ 성분 출처 표시 ═══
+   해외 공식 성분표는 국내 유통품과 배합이 다를 수 있다. 사용자에게 그대로 알린다. */
+function specOriginBadge(f){
+  if(f.specOrigin === 'overseas')
+    return `<span class="obadge ov">${icon('info',11)}해외 성분표 기준</span>`;
+  if(f.specOrigin === 'domestic')
+    return `<span class="obadge dm">${icon('check',11)}국내 기준</span>`;
+  return '';
+}
+
+function specOriginNote(f){
+  if(f.specOrigin !== 'overseas') return '';
+  return `<div class="onote">${icon('info',14)}<div>
+    이 사료의 성분 정보는 <b>제조사 해외 공식 사이트</b> 기준이에요.
+    국내 유통 제품은 배합이 다를 수 있으니, 정확한 성분은 <b>제품 봉투 표기</b>를 확인해 주세요.
+  </div></div>`;
+}
+
+/* ═══ 브랜드 마크 ═══
+   제품 사진이 없을 때 브랜드를 알아볼 수 있게 이니셜 마크를 보여준다.
+   실제 브랜드 로고 이미지는 상표권 문제가 있어 임의로 싣지 않는다.
+   사용 허락을 받은 로고가 있으면 BRAND_LOGO 에 경로를 넣으면 그쪽이 우선한다. */
+/* 브랜드 로고 파일. balsatang/assets/brands/ 에 파일을 넣고 여기에 등록하면
+   이니셜 마크 대신 로고가 나온다. 파일이 없거나 로드에 실패하면 자동으로 마크로 되돌아간다.
+   정적 사이트라 디렉터리를 훑을 수 없어 명시적으로 적는다.
+   로고는 상표이므로 공식 미디어킷이나 라이선스가 확인된 것만 넣는다. */
+const BRAND_LOGO = {
+  'royal-canin': 'assets/brands/royal-canin.svg'   // Wikimedia Commons, Public domain
+};
+
+/* 브랜드별 고정 색. 없는 브랜드는 슬러그 해시로 색을 만든다. */
+const BRAND_COLOR = {
+  orijen:'#8B1E2D', acana:'#1F5B4E', 'royal-canin':'#B8232F', harim:'#C8102E',
+  ziwipeak:'#2E4057', instinct:'#C1571F'
+};
+
+function brandHue(slug){
+  let h = 0;
+  for(let i=0;i<slug.length;i++) h = (h*31 + slug.charCodeAt(i)) % 360;
+  return `hsl(${h} 42% 34%)`;
+}
+
+function brandColor(f){
+  return BRAND_COLOR[f.brandSlug] || brandHue(f.brandSlug || f.brand || '?');
+}
+
+/* 한글은 첫 글자, 영문은 앞 두 글자를 쓴다. */
+function brandInitial(f){
+  const name = (f.brand || '').replace(/[()（）\s]/g,'');
+  if(!name) return '?';
+  return /[가-힣]/.test(name[0]) ? name[0] : name.slice(0,2).toUpperCase();
+}
+
+/* 이니셜 마크. 로고가 없을 때, 그리고 로고 로드가 실패했을 때의 대체물이다. */
+function initialMark(f, size){
+  const fs = Math.round(size * 0.42);
+  return `<div class="bmark" style="background:${brandColor(f)};font-size:${fs}px"
+            title="${esc(f.brand)}">${esc(brandInitial(f))}</div>`;
+}
+
+function brandMark(f, size){
+  const logo = BRAND_LOGO[f.brandSlug];
+  if(!logo) return initialMark(f, size);
+  /* 로고 파일이 없거나 깨졌으면 이니셜 마크로 교체한다 */
+  const fallback = initialMark(f, size).replace(/"/g, '&quot;');
+  return `<div class="blogo"><img src="${logo}" alt="${esc(f.brand)}" loading="lazy"
+            onerror="this.closest('.blogo').outerHTML='${fallback}'"></div>`;
+}
 function thumb(f, cls, sz){
   return hasThumb(f)
     ? `<div class="${cls}"><img src="${f.thumb}" alt="" loading="lazy"></div>`
-    : `<div class="${cls}">${icon(f.ico, sz)}</div>`;
+    : `<div class="${cls}">${brandMark(f, sz * 2.2)}</div>`;
 }
 function funcTags(f, max){
   return (f.func||[]).filter(k=>FUNC_META[k]).slice(0, max||3)
@@ -966,14 +1057,73 @@ function renderHome(){
 }
 
 /* ═══ SEARCH ═══ */
+/* 증상·목적 키워드로도 사료를 찾을 수 있게 한다.
+   사용자는 브랜드명을 모르는 채로 "눈물", "신장" 처럼 고민을 입력하는 경우가 많다.
+   각 키워드는 concerns / func / ages 태그로 이어진다. */
+const SEARCH_SYNONYM = [
+  {tags:['eye_tear'],     words:['눈물','눈물자국','눈물착색','착색','피부','피모','털','가려움','아토피','눈곱']},
+  {tags:['weight'],       words:['다이어트','체중','비만','살','감량','뚱뚱','체중관리','저칼로리','칼로리']},
+  {tags:['kidney'],       words:['신장','콩팥','신부전','요로','방광','결석','유리너리']},
+  {tags:['liver'],        words:['간','간수치','간질환','헤파틱','담낭']},
+  {tags:['joint'],        words:['관절','슬개골','고관절','다리','절뚝','연골','관절염']},
+  {tags:['digestive'],    words:['소화','장','설사','무른변','구토','위장','장염','변']},
+  {tags:['allergy'],      words:['알러지','알레르기','두드러기','가수분해','단일단백','저알러지']},
+  {tags:['picky_eater'],  words:['입맛','편식','안먹','기호성','까다','잘안먹']},
+  {tags:['senior'],       words:['시니어','노견','노령','늙은','고령','노화']},
+  {tags:['post_surgery'], words:['수술','회복','병후','요양','아픈']},
+  {tags:['healthy'],      words:['건강','일반','평범','유지']},
+  {tags:['heart'],        words:['심장','심장병','심부전']},
+  {tags:['immune'],       words:['면역','면역력','기력','활력']},
+  {tags:['dental'],       words:['치아','이빨','구강','치석','입냄새']},
+  {tags:['skin'],         words:['피부병','습진','각질']}
+];
+
+/* 검색어에서 매칭되는 태그를 뽑는다.
+   한 글자 단어는 정확히 일치할 때만 인정한다 — '신장' 안의 '장'이 소화 태그를 끌어오는 것을 막는다. */
+function wordHit(n, w){
+  if(w.length <= 1) return n === w;
+  return n.includes(w) || w.includes(n);
+}
+
+function tagsFromQuery(q){
+  const n = q.replace(/\s/g,'');
+  if(!n) return [];
+  const hit = new Set();
+  for(const row of SEARCH_SYNONYM){
+    if(row.words.some(w=>wordHit(n,w))) row.tags.forEach(t=>hit.add(t));
+  }
+  return [...hit];
+}
+
+function matchTag(f, tag){
+  if(tag === 'senior' || tag === 'puppy') return (f.ages||[]).includes(tag);
+  return (f.concerns||[]).includes(tag) || (f.func||[]).includes(tag);
+}
+
 function filterSearch(){
   const q = (document.getElementById('searchInput').value||'').trim();
-  const res = q ? FOODS.filter(f=>(f.brand+f.name).includes(q)) : FOODS;
-  document.getElementById('searchCount').textContent =
-    q ? `검색 결과 ${res.length}개` : `전체 ${res.length}개`;
+  if(!q){
+    document.getElementById('searchCount').textContent = `전체 ${FOODS.length}개`;
+    document.getElementById('searchHint').innerHTML = '';
+    document.getElementById('searchList').innerHTML = FOODS.map((f,i)=>fCard(f,i)).join('');
+    return;
+  }
+  const byName = FOODS.filter(f=>(f.brand+f.name).includes(q));
+  const tags = tagsFromQuery(q);
+  /* 이름으로 찾은 것을 앞에, 증상으로 찾은 것을 뒤에 둔다 */
+  const byTag = tags.length
+    ? FOODS.filter(f=>!byName.includes(f) && tags.some(t=>matchTag(f,t)))
+           .sort((a,b)=>b.score-a.score)
+    : [];
+  const res = [...byName, ...byTag];
+
+  document.getElementById('searchCount').textContent = `검색 결과 ${res.length}개`;
+  document.getElementById('searchHint').innerHTML = (tags.length && byTag.length)
+    ? `<div class="shint">${icon('bulb',13)}<b>${esc(q)}</b> 관련 사료 ${byTag.length}개를 함께 보여드려요</div>`
+    : '';
   document.getElementById('searchList').innerHTML = res.length
     ? res.map((f,i)=>fCard(f,i)).join('')
-    : `<div class="empty">${icon('search',44)}검색 결과가 없어요</div>`;
+    : `<div class="empty">${icon('search',44)}검색 결과가 없어요<div class="esub">눈물, 다이어트, 신장, 관절처럼 고민을 입력해도 돼요</div></div>`;
 }
 
 /* ═══ DETAIL ═══ */
@@ -1081,9 +1231,9 @@ function openDetail(id){
 
   document.getElementById('detailBody').innerHTML = `
   <div class="dhero">
-    <div class="dthumb">${hasThumb(f)?`<img src="${f.thumb}" alt="">`:icon(f.ico,32)}</div>
+    <div class="dthumb">${hasThumb(f)?`<img src="${f.thumb}" alt="">`:brandMark(f,64)}</div>
     <div style="flex:1;min-width:0">
-      <div class="dbrand">${f.brand}${f.country?` · ${COUNTRY_KO[f.country]||f.country}`:''}</div>
+      <div class="dbrand">${f.brand}${f.country?` · ${COUNTRY_KO[f.country]||f.country}`:''}${specOriginBadge(f)}</div>
       <div class="dname">${f.name}</div>
       <div class="dtags">
         <span class="dtag ${f.warnN>0?'warn':'good'}">${f.warnN>0
@@ -1093,6 +1243,8 @@ function openDetail(id){
       </div>
     </div>
   </div>
+
+  ${specOriginNote(f)}
 
   <div class="dtabs">
     <div class="dtab on" id="dt-analysis" onclick="switchDtab('analysis')">성분 분석</div>
@@ -1413,7 +1565,7 @@ function pickFood(id){
 
 function slotHTML(f, which){
   if(!f) return `<div class="slot-ph">${icon('plus',28)}<div style="margin-top:6px">사료 선택</div></div>`;
-  return `<div class="slot-thumb">${hasThumb(f)?`<img src="${f.thumb}" alt="">`:icon(f.ico,26)}</div>
+  return `<div class="slot-thumb">${hasThumb(f)?`<img src="${f.thumb}" alt="">`:brandMark(f,52)}</div>
     <div class="slot-brand">${f.brand}</div>
     <div class="slot-name">${f.name}</div>
     <div class="slot-chg">바꾸기</div>`;
@@ -1920,7 +2072,7 @@ function renderRecCard(f, idx, curF){
     <div class="recmain" onclick="openDetail('${f.id}')">
       ${idx===0?`<div class="recbadge">${icon('trophy',12)}Best Pick</div>`:''}
       <div class="rechead">
-        <div class="recthumb">${hasThumb(f)?`<img src="${f.thumb}" alt="">`:icon(f.ico,24)}</div>
+        <div class="recthumb">${hasThumb(f)?`<img src="${f.thumb}" alt="">`:brandMark(f,48)}</div>
         <div style="flex:1;min-width:0">
           <div class="recbrand">${f.brand} · ${TYPE_KO[f.type]||f.type}</div>
           <div class="recname-row"><span class="recname">${f.name}</span>${warnBadge(f)}${rxBadge(f)}</div>

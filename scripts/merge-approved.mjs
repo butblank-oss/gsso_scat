@@ -83,6 +83,7 @@ for (const file of files) {
       score: computeScore(p.ratings),   // 제출값이 아니라 항상 공식으로 다시 계산한다
       ratings: p.ratings, func: p.func, warnN: p.warnN ?? 0,
       concerns: p.concerns, price: p.price,
+      specOrigin: p.specOrigin,     // 성분표가 국내 기준인지 해외 기준인지 — 사용자에게 표시된다
       status: 'published',
       srcState: 'sourced',
       src: {

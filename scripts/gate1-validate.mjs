@@ -5,6 +5,10 @@
    사용:
      node scripts/gate1-validate.mjs                 형식·수식·출처 구조만 검사
      node scripts/gate1-validate.mjs --live          출처 URL 실제 접속까지 검사
+
+   프록시 뒤(클라우드 세션)에서는 NODE_USE_ENV_PROXY=1 이 필요하다.
+   Node 내장 fetch 가 HTTPS_PROXY 를 스스로 읽지 않기 때문이다.
+   npm run gate1:live 를 쓰면 자동으로 붙는다. CI 에는 프록시가 없어 그냥 동작한다.
      node scripts/gate1-validate.mjs --json out.json 결과를 파일로 저장
 */
 import { readFile, readdir, writeFile } from 'node:fs/promises';
@@ -12,7 +16,8 @@ import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   ENUM, SOURCE_GRADE, computeScore, PRICE_KG, TTL_DAYS, daysSince,
-  REQUIRED_ITEM_FIELDS, REQUIRED_FOOD_FIELDS, REQUIRED_RATING_KEYS, isHttpUrl, norm, loadFoods
+  REQUIRED_ITEM_FIELDS, REQUIRED_FOOD_FIELDS, REQUIRED_RATING_KEYS, isHttpUrl, norm, loadFoods,
+  isRetailHost, RETAIL_HOST, isDomesticSource, isCoupangProductUrl
 } from './lib/schema.mjs';
 import { rateAll, RUBRIC_TEXT, REQUIRED_FACT_KEYS } from './lib/rubric.mjs';
 
@@ -93,6 +98,17 @@ function checkItem(item, published, seen) {
   const pr = p.price || {};
   if (!(pr.p > 0)) F('E_PRICE', `가격이 유효하지 않습니다: ${pr.p}`);
   if (!(pr.wg > 0)) F('E_PRICE', `중량(g)이 유효하지 않습니다: ${pr.wg}`);
+  /* 가격 기준 용량은 판매 중인 용량 중 최소 — DATA-POLICY 3.4 */
+  if (!Array.isArray(pr.wgOptions) || pr.wgOptions.length === 0) {
+    F('E_PRICE_OPTS', 'price.wgOptions 가 없습니다 — 확인한 판매 용량을 모두 적어야 합니다');
+  } else if (pr.wg != null) {
+    const min = Math.min(...pr.wgOptions);
+    if (pr.wg !== min) {
+      F('E_PRICE_MINWG',
+        `가격 기준 용량이 최소 용량이 아닙니다. 제출 ${pr.wg}g / 최소 ${min}g (확인된 용량: ${pr.wgOptions.join(', ')}g)`);
+    }
+  }
+
   if (pr.p > 0 && pr.wg > 0) {
     const expect = Math.round(pr.p / (pr.wg / 1000));
     if (pr.pKg != null && Math.abs(pr.pKg - expect) / expect > 0.01) {
@@ -118,8 +134,33 @@ function checkItem(item, published, seen) {
     if (gA < 1 && gB < 2) {
       F('E_SRC_GRADE', `성분 근거 부족 — A등급 ${gA}곳, B등급 ${gB}곳 (A 1곳 또는 B 2곳 필요)`);
     }
-    /* 가격 근거: 판매처 1곳 */
-    if (!srcs.some(s => s.role === 'retail')) F('E_SRC_PRICE', '가격 근거(판매처 출처)가 없습니다');
+    /* 가격 근거: 쿠팡 상품 페이지 1곳 — DATA-POLICY 3.2 */
+    const retails = srcs.filter(s => s.role === 'retail');
+    if (!retails.length) F('E_SRC_PRICE', '가격 근거(쿠팡 상품 출처)가 없습니다');
+    for (const r of retails) {
+      if (!isRetailHost(r.url)) {
+        F('E_SRC_RETAIL_HOST',
+          `가격 출처는 ${RETAIL_HOST} 만 인정합니다. 가격비교 사이트는 출처가 될 수 없습니다: ${r.url}`);
+      } else if (!isCoupangProductUrl(r.url)) {
+        F('E_SRC_RETAIL_SHAPE',
+          `쿠팡 상품 페이지 형식이 아닙니다 (/vp/products/{상품ID}): ${r.url}`);
+      }
+    }
+
+    /* 성분 출처가 국내인지 해외인지 표시해야 한다 — DATA-POLICY 3.5.
+       해외 성분표도 등록은 하되, 국내 유통품과 배합이 다를 수 있음을 사용자에게 알린다.
+       표시가 실제 출처와 어긋나면 탈락시킨다. */
+    const specSrcs = srcs.filter(s => SOURCE_GRADE[s.role] === 'A');
+    if (specSrcs.length) {
+      const actual = specSrcs.some(s => isDomesticSource(s.url)) ? 'domestic' : 'overseas';
+      if (!ENUM.specOrigin.includes(p.specOrigin)) {
+        F('E_SPEC_ORIGIN', `specOrigin 은 ${ENUM.specOrigin.join(' 또는 ')} 여야 합니다 (현재: ${p.specOrigin})`);
+      } else if (p.specOrigin !== actual) {
+        F('E_SPEC_ORIGIN_MISMATCH',
+          `specOrigin 이 실제 출처와 다릅니다. 제출 ${p.specOrigin} / 실제 ${actual}` +
+          (actual === 'overseas' ? ' — A등급 출처가 전부 해외입니다' : ' — 국내 출처가 포함되어 있습니다'));
+      }
+    }
 
     /* 유효기간 */
     for (const s of srcs) {
@@ -150,18 +191,34 @@ function checkItem(item, published, seen) {
   return { fail, warn };
 }
 
-/* 출처 URL이 살아 있는지, 그 페이지에 브랜드명이 실제로 있는지 확인한다. */
+/* 출처 URL이 살아 있는지, 그 페이지에 브랜드명이 실제로 있는지 확인한다.
+   기본 User-Agent 로는 대부분의 제조사·판매처가 403을 돌려주므로 브라우저 UA 를 쓴다. */
+const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 ' +
+                   '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
 async function checkLive(item) {
   const fail = [];
+  const p = item.proposed ?? {};
+  /* 한글 브랜드명(인스팅트)과 영문 슬러그(instinct) 중 하나만 있으면 인정한다 —
+     해외 제조사 공식 페이지는 영문이고, 국내 판매처는 한글이다. */
+  const names = [p.brand, p.brandSlug].filter(Boolean).map(norm).filter(n => n.length >= 2);
+
   for (const [i, s] of (item.sources || []).entries()) {
     if (!isHttpUrl(s.url)) continue;
+    /* 쿠팡은 봇 차단으로 서버에서 항상 403이다. 형식 검증은 checkItem 이 이미 했으므로 건너뛴다. */
+    if (isRetailHost(s.url)) continue;
     try {
-      const res = await fetch(s.url, { redirect: 'follow', signal: AbortSignal.timeout(15000) });
+      const res = await fetch(s.url, {
+        redirect: 'follow',
+        signal: AbortSignal.timeout(20000),
+        headers: { 'user-agent': BROWSER_UA, 'accept': 'text/html,application/xhtml+xml,*/*;q=0.8',
+                   'accept-language': 'ko-KR,ko;q=0.9,en;q=0.8' }
+      });
       if (!res.ok) { fail.push({ code: 'E_URL_DEAD', msg: `sources[${i}] HTTP ${res.status}: ${s.url}` }); continue; }
-      const body = (await res.text()).toLowerCase();
-      const brand = norm(item.proposed?.brand);
-      if (brand && !norm(body).includes(brand)) {
-        fail.push({ code: 'E_URL_BRAND', msg: `sources[${i}] 페이지에 브랜드명("${item.proposed.brand}")이 없습니다: ${s.url}` });
+      const body = norm(await res.text());
+      if (names.length && !names.some(n => body.includes(n))) {
+        fail.push({ code: 'E_URL_BRAND',
+          msg: `sources[${i}] 페이지에 브랜드명(${names.join(' / ')})이 없습니다: ${s.url}` });
       }
     } catch (err) {
       fail.push({ code: 'E_URL_FETCH', msg: `sources[${i}] 접속 실패 (${err.name}): ${s.url}` });
