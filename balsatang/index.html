@@ -382,6 +382,68 @@ svg.i{display:inline-block;vertical-align:-.14em;fill:none;stroke:currentColor;
   box-shadow:0 4px 14px rgba(62,78,102,.28)}
 .btn-o:active,.btn-s:active{transform:scale(.97)}
 
+/* ══ COMPARE ══ */
+.slots{display:flex;align-items:stretch;gap:11px;padding:16px 20px 0;flex-shrink:0}
+.vs{align-self:center;font-size:13px;font-weight:900;color:var(--muted);letter-spacing:-.3px}
+.slot{flex:1;min-width:0;min-height:128px;background:var(--card);border:1.5px dashed var(--line);
+  border-radius:var(--r-lg);display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:6px;padding:14px 12px;cursor:pointer;text-align:center;transition:all .22s var(--ease)}
+.slot:active{transform:scale(.97)}
+.slot.filled{border-style:solid;border-color:var(--brand-mid);background:var(--card);
+  box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.slot-ph{font-size:13px;color:var(--muted);font-weight:700}
+.slot-ph .i{color:var(--muted)}
+.slot-thumb{width:52px;height:52px;border-radius:13px;background:var(--bg);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;color:var(--ink2);margin-bottom:2px}
+.slot-brand{font-size:10.5px;color:var(--muted);font-weight:700}
+.slot-name{font-size:13px;font-weight:800;letter-spacing:-.4px;line-height:1.3;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.slot-chg{margin-top:3px;font-size:10.5px;color:var(--brand);font-weight:700}
+.reset-btn{display:flex;align-items:center;gap:5px;padding:7px 12px;border:1px solid var(--line);
+  border-radius:10px;background:var(--card);font:inherit;font-size:12px;font-weight:700;
+  color:var(--sub);cursor:pointer;transition:all var(--t)}
+.reset-btn:active{background:var(--card2)}
+.reset-btn .i{color:var(--muted)}
+
+.ctxsec{padding:22px 20px 0}
+.ctxsec-t{font-size:17px;font-weight:800;letter-spacing:-.5px;margin-bottom:13px}
+.ctxcards{display:flex;flex-direction:column;gap:10px}
+.ctxcard{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:15px 16px;animation:cardIn .34s var(--ease) both}
+.ctxsit{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;
+  color:var(--ink2);background:var(--bg);border:1px solid var(--line);border-radius:99px;
+  padding:5px 11px;margin-bottom:11px;letter-spacing:-.3px}
+.ctxsit .i{color:var(--sub)}
+.ctxwin{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:8px}
+.ctxbadge{font-size:12px;font-weight:800;padding:4px 10px;border-radius:8px;letter-spacing:-.3px}
+.ctxbadge.a{background:var(--brand-soft);color:var(--brand)}
+.ctxbadge.b{background:#F3EFFB;color:#6D4AAF}
+.ctxlabel{font-size:13.5px;font-weight:800;letter-spacing:-.4px}
+.ctxreason{font-size:12.5px;color:var(--sub);line-height:1.6;letter-spacing:-.2px}
+
+.cmp-head{display:flex;align-items:center;gap:6px;padding:26px 20px 12px;
+  font-size:15px;font-weight:800;letter-spacing:-.5px}
+.cmp-head .i{color:var(--brand)}
+.cmptable{margin:0 20px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--card)}
+.cmprow{display:grid;grid-template-columns:1fr 84px 1fr;border-bottom:1px solid var(--line)}
+.cmprow:last-child{border-bottom:none}
+.cmprow.head{background:var(--ink);color:#fff;border-bottom:none}
+.cmprow.head .cmpcell{padding:13px 8px;font-size:12px;font-weight:800;letter-spacing:-.3px}
+.cmprow.head .cmpcell.lbl{background:#2A2A2A;color:#ffffff9c;font-size:10.5px}
+.cmpcell{padding:13px 8px;text-align:center;font-size:14px;font-weight:600;letter-spacing:-.3px;
+  display:flex;align-items:center;justify-content:center}
+.cmpcell.lbl{background:var(--card2);color:var(--sub);font-size:11.5px;font-weight:700}
+.cmpcell.win{color:var(--brand);font-weight:900}
+.cmpopen{display:flex;gap:10px;padding:20px 20px 0}
+.cmpopen-b{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:3px;
+  background:var(--brand-soft);color:var(--brand);border:1px solid var(--brand-mid);
+  border-radius:14px;padding:12px 14px;cursor:pointer;font:inherit;text-align:left;
+  transition:transform var(--t)}
+.cmpopen-b:active{transform:scale(.97)}
+.cmpopen-b span:first-child{font-size:10.5px;font-weight:700;opacity:.75}
+.cmpopen-b span:last-child{font-size:13px;font-weight:800;letter-spacing:-.4px;max-width:100%;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
 /* ── BOTTOM NAV ── */
 #nav{position:absolute;left:0;right:0;bottom:0;z-index:50;display:flex;
   height:calc(var(--nav-h) + env(safe-area-inset-bottom));
@@ -437,10 +499,38 @@ svg.i{display:inline-block;vertical-align:-.14em;fill:none;stroke:currentColor;
   <p class="note">※ 모든 분석은 라벨 표기 성분 기준 참고용이에요. 건강 문제는 수의사와 상담하세요.</p>
 </section>
 
-<!-- ══ COMPARE (STEP 4) ══ -->
+<!-- ══ COMPARE ══ -->
 <section class="screen" id="s-compare">
   <header class="topbar"><div class="logo">발<em>사탕</em></div><span class="pill">사료 비교</span></header>
-  <div class="empty"><span data-ico="compare" data-sz="44"></span>비교 화면은 다음 단계에서 만들어요</div>
+  <div style="padding:6px 20px 4px;flex-shrink:0">
+    <h1 style="font-size:22px;font-weight:900;letter-spacing:-.8px">두 사료, 뭐가 더 나을까?</h1>
+    <p style="font-size:13.5px;color:var(--sub);margin-top:7px;letter-spacing:-.2px">비교할 사료를 두 개 선택해주세요</p>
+  </div>
+  <div class="slots">
+    <div class="slot" id="slotA" onclick="openPicker('A')"></div>
+    <div class="vs">VS</div>
+    <div class="slot" id="slotB" onclick="openPicker('B')"></div>
+  </div>
+  <div style="padding:12px 20px 0;display:flex;justify-content:flex-end;flex-shrink:0">
+    <button class="reset-btn" onclick="resetCompare()"><span data-ico="refresh" data-sz="14"></span>비교 초기화</button>
+  </div>
+  <div id="cmpResult"></div>
+</section>
+
+<!-- ══ PICKER (overlay) ══ -->
+<section class="screen ov" id="s-picker">
+  <header class="topbar">
+    <button class="back" onclick="closeOv()" aria-label="뒤로"><span data-ico="chevronRight" data-sz="20" style="transform:rotate(180deg)"></span></button>
+    <div class="tb-title">비교할 사료 선택</div>
+  </header>
+  <div class="searchwrap">
+    <div class="sbox" style="cursor:text">
+      <span data-ico="search" data-sz="18"></span>
+      <input id="pickerInput" placeholder="사료 이름을 검색하세요" oninput="filterPicker()" autocomplete="off">
+    </div>
+  </div>
+  <div class="flist" id="pickerList"></div>
+  <div style="height:24px;flex-shrink:0"></div>
 </section>
 
 <!-- ══ CONTENT (STEP 5) ══ -->
@@ -556,6 +646,7 @@ function goTab(id){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
   document.getElementById('t-'+id).classList.add('on');
   activeTab = id;
+  if(id === 'compare') renderCompare();
 }
 function openOv(id){
   const el = document.getElementById('s-'+id);
@@ -1025,9 +1116,227 @@ function recalcFeeding(){
     `${gLabel(calc.bagG)} 한 봉지로 하루 ${calc.meals}끼 급여 시 약 <b>${days}</b>일`;
 }
 
-/* STEP 4에서 구현 */
-function addToCompare(){ alert('비교 기능은 다음 단계에서 만들어요'); }
-function compareWithCurrent(){ alert('비교 기능은 다음 단계에서 만들어요'); }
+/* ═══ COMPARE ═══ */
+const LEGUME_NAMES = ['렌틸콩','완두콩','대두','병아리콩','강낭콩','이집트콩','완두','콩'];
+let cmpA = null, cmpB = null, pickTarget = 'A';
+
+function cmpData(f){
+  const d = DETAIL[f.id] || {};
+  const n = d.nutrient || {};
+  const ingr = d.ingr || [];
+  return {
+    f, d, n,
+    protein: n.protein ?? 0, fat: n.fat ?? 0, carb: n.carb ?? 0, meat: n.meat,
+    legumes: [...new Set(ingr.filter(i=>LEGUME_NAMES.some(l=>(i.name||'').includes(l)))
+                             .map(i=>i.name))],
+    warnN: ingr.filter(i=>i.safe==='caution'||i.safe==='danger').length,
+    dangerN: ingr.filter(i=>i.safe==='danger').length,
+    pKg: f.price && f.price.pKg ? f.price.pKg : null
+  };
+}
+
+function addToCompare(){
+  const f = FOODS.find(x=>x.id===activeDetailId); if(!f) return;
+  if(cmpA && cmpA.id === f.id || cmpB && cmpB.id === f.id){ toast('이미 비교 목록에 있어요'); return; }
+  if(!cmpA) cmpA = f;
+  else if(!cmpB) cmpB = f;
+  else cmpB = f;
+  closeOv();
+  goTab('compare');
+  renderCompare();
+}
+function compareWithCurrent(){
+  const f = FOODS.find(x=>x.id===activeDetailId); if(!f) return;
+  cmpA = f; cmpB = null;
+  closeOv();
+  goTab('compare');
+  renderCompare();
+  openPicker('B');
+}
+function resetCompare(){ cmpA = null; cmpB = null; renderCompare(); }
+
+function openPicker(target){
+  pickTarget = target;
+  document.getElementById('pickerInput').value = '';
+  filterPicker();
+  openOv('picker');
+  setTimeout(()=>document.getElementById('pickerInput').focus(), 380);
+}
+function filterPicker(){
+  const q = (document.getElementById('pickerInput').value||'').trim();
+  const other = pickTarget === 'A' ? cmpB : cmpA;
+  const list = FOODS.filter(f=>(!q || (f.brand+f.name).includes(q)) && (!other || f.id !== other.id));
+  document.getElementById('pickerList').innerHTML = list.length
+    ? list.map((f,i)=>`<div class="fcard" style="animation-delay:${i*30}ms" onclick="pickFood('${f.id}')">
+        ${thumb(f,'fthumb',28)}
+        <div class="finfo">
+          <div class="fbrand">${f.brand}</div>
+          <div class="fname-row"><span class="fname">${f.name}</span>${warnBadge(f)}${rxBadge(f)}</div>
+          ${funcTags(f,3) ? `<div class="fmeta">${funcTags(f,3)}</div>` : ''}
+        </div></div>`).join('')
+    : `<div class="empty">${icon('search',44)}검색 결과가 없어요</div>`;
+}
+function pickFood(id){
+  const f = FOODS.find(x=>x.id===id); if(!f) return;
+  if(pickTarget === 'A') cmpA = f; else cmpB = f;
+  closeOv();
+  renderCompare();
+}
+
+function slotHTML(f, which){
+  if(!f) return `<div class="slot-ph">${icon('plus',28)}<div style="margin-top:6px">사료 선택</div></div>`;
+  return `<div class="slot-thumb">${icon(f.ico,26)}</div>
+    <div class="slot-brand">${f.brand}</div>
+    <div class="slot-name">${f.name}</div>
+    <div class="slot-chg">바꾸기</div>`;
+}
+function renderCompare(){
+  const sa = document.getElementById('slotA'), sb = document.getElementById('slotB');
+  sa.innerHTML = slotHTML(cmpA,'A'); sa.classList.toggle('filled', !!cmpA);
+  sb.innerHTML = slotHTML(cmpB,'B'); sb.classList.toggle('filled', !!cmpB);
+  const box = document.getElementById('cmpResult');
+  if(!cmpA || !cmpB){
+    box.innerHTML = `<div class="empty">${icon('compare',44)}두 사료를 선택하면<br>나란히 비교해드려요</div>`;
+    return;
+  }
+  const A = cmpData(cmpA), B = cmpData(cmpB);
+  const a = cmpA, b = cmpB;
+  const sit = [];
+
+  /* 1. 눈물 */
+  const aEye = a.func.includes('eye_tear'), bEye = b.func.includes('eye_tear');
+  if(aEye || bEye){
+    if(aEye && !bEye) sit.push({ico:'droplet',label:'눈물이 많은 아이라면',winner:'a',
+      reason:`${a.name}에 오메가3 원료가 포함되어 있어요. 눈물·피부 개선에 도움이 될 수 있어요.`});
+    else if(!aEye && bEye) sit.push({ico:'droplet',label:'눈물이 많은 아이라면',winner:'b',
+      reason:`${b.name}에 오메가3 원료가 포함되어 있어요. 눈물·피부 개선에 도움이 될 수 있어요.`});
+    else sit.push({ico:'droplet',label:'눈물이 많은 아이라면',winner:'tie',
+      reason:'두 사료 모두 오메가3 원료를 포함하고 있어요.'});
+  }
+  /* 2. 관절 */
+  const aJ = a.func.includes('joint'), bJ = b.func.includes('joint');
+  if(aJ !== bJ){
+    const w = aJ ? 'a' : 'b';
+    sit.push({ico:'bone',label:'관절이 걱정된다면',winner:w,
+      reason:`${(w==='a'?a:b).name}에 관절 건강에 도움되는 원료가 들어있어요. 글루코사민·콘드로이틴 계열이 관절을 지지해줘요.`});
+  }
+  /* 3. 체중 관리 */
+  const fatDiff = Math.abs(A.fat - B.fat), carbDiff = Math.abs(A.carb - B.carb);
+  if(fatDiff >= 2 || carbDiff >= 5){
+    const w = (A.fat + A.carb*0.5) < (B.fat + B.carb*0.5) ? 'a' : 'b';
+    sit.push({ico:'scale',label:'체중 관리 중이라면',winner:w,
+      reason:`${(w==='a'?a:b).name}이 지방 ${fatDiff.toFixed(1).replace(/\.0$/,'')}%p, 탄수화물 ${carbDiff.toFixed(1).replace(/\.0$/,'')}%p 낮아요. 살이 찌기 쉬운 아이에게 더 적합해요.`});
+  }
+  /* 4. 알러지 */
+  const aLeg = A.legumes.length > 0, bLeg = B.legumes.length > 0;
+  if(aLeg !== bLeg || Math.abs(A.warnN - B.warnN) >= 2){
+    const w = (!aLeg && A.warnN <= B.warnN) ? 'a'
+            : (!bLeg && B.warnN <= A.warnN) ? 'b'
+            : (A.warnN < B.warnN ? 'a' : 'b');
+    const wF = w==='a'?a:b, lF = w==='a'?b:a, lD = w==='a'?B:A;
+    sit.push({ico:'wind',label:'알러지가 의심된다면',winner:w,
+      reason: lD.legumes.length
+        ? `${lF.name}엔 콩류(${lD.legumes.join(', ')})가 있지만 ${wF.name}은 없어요.`
+        : `${wF.name}의 주의 원료가 더 적어요.`});
+  }
+  /* 5. 기호성 (생육 함량) */
+  if(A.meat != null && B.meat != null && Math.abs(A.meat - B.meat) >= 15){
+    const w = A.meat > B.meat ? 'a' : 'b';
+    sit.push({ico:'utensils',label:'입맛이 까다롭다면',winner:w,
+      reason:`${(w==='a'?a:b).name}의 생육 함량이 ${w==='a'?A.meat:B.meat}%로 훨씬 높아요. 고기 냄새가 진해서 기호성이 더 좋아요.`});
+  }
+  /* 6. 성분 안전성 */
+  const scoreDiff = Math.abs(a.score - b.score);
+  if(A.dangerN !== B.dangerN || scoreDiff >= 1.5){
+    const w = (a.score > b.score && A.dangerN <= B.dangerN) ? 'a'
+            : (b.score > a.score && B.dangerN <= A.dangerN) ? 'b'
+            : A.dangerN < B.dangerN ? 'a' : 'b';
+    const wF = w==='a'?a:b, wD = w==='a'?A:B, lD = w==='a'?B:A;
+    sit.push({ico:'shield',label:'성분 안전성이 우선이라면',winner:w,
+      reason: wD.warnN < lD.warnN
+        ? `${wF.name}의 주의 원료가 ${lD.warnN - wD.warnN}개 더 적어요. 성분 안전성 면에서 더 안심할 수 있어요.`
+        : `${wF.name}의 성분 점수가 더 높아요. 전반적인 원료 구성에서 앞서요.`});
+  }
+  /* 7. 단백질 */
+  const pDiff = Math.abs(A.protein - B.protein);
+  if(pDiff >= 5){
+    const w = A.protein > B.protein ? 'a' : 'b';
+    sit.push({ico:'dumbbell',label:'단백질이 중요하다면',winner:w,
+      reason:`${(w==='a'?a:b).name}의 단백질이 ${w==='a'?A.protein:B.protein}%로 ${pDiff.toFixed(1).replace(/\.0$/,'')}%p 더 높아요. 근육 유지나 활동량 많은 아이에게 유리해요.`});
+  }
+
+  const row = (label, va, vb, higher, unit)=>{
+    if(va == null && vb == null) return '';
+    const aw = va!=null && vb!=null && (higher ? va>vb : va<vb);
+    const bw = va!=null && vb!=null && (higher ? vb>va : vb<va);
+    const fmt = v => v == null ? '-' : v.toLocaleString()+(unit||'');
+    return `<div class="cmprow">
+      <div class="cmpcell${aw?' win':''}">${fmt(va)}</div>
+      <div class="cmpcell lbl">${label}</div>
+      <div class="cmpcell${bw?' win':''}">${fmt(vb)}</div>
+    </div>`;
+  };
+
+  box.innerHTML = `
+  ${sit.length ? `<div class="ctxsec">
+    <div class="ctxsec-t">상황별로 누가 더 맞을까요?</div>
+    <div class="ctxcards">
+      ${sit.slice(0,7).map((s,i)=>`
+      <div class="ctxcard" style="animation-delay:${i*55}ms">
+        <div class="ctxsit">${icon(s.ico,15)}${s.label}</div>
+        <div class="ctxwin">${s.winner==='tie'
+          ? `<span class="ctxbadge a">${a.brand}</span>
+             <span style="font-size:13px;color:var(--muted);font-weight:800">=</span>
+             <span class="ctxbadge b">${b.brand}</span>
+             <span class="ctxlabel" style="color:var(--muted)">비슷해요</span>`
+          : `<span class="ctxbadge ${s.winner}">${s.winner==='a'?a.brand:b.brand}</span>
+             <span class="ctxlabel">더 좋아요</span>`}</div>
+        <div class="ctxreason">${s.reason}</div>
+      </div>`).join('')}
+    </div></div>` : ''}
+
+  <div class="cmp-head">${icon('chart',15)}숫자로 자세히 비교하기</div>
+  <div class="cmptable">
+    <div class="cmprow head">
+      <div class="cmpcell">${a.brand}</div>
+      <div class="cmpcell lbl">항목</div>
+      <div class="cmpcell">${b.brand}</div>
+    </div>
+    ${row('조단백', A.n.protein, B.n.protein, true, '%')}
+    ${row('생육 함량', A.meat, B.meat, true, '%')}
+    ${row('탄수화물', A.n.carb, B.n.carb, false, '%')}
+    ${row('조지방', A.n.fat, B.n.fat, false, '%')}
+    ${row('kg당 가격', A.pKg, B.pKg, false, '원')}
+  </div>
+
+  <div style="padding:22px 20px 0">
+    <div style="font-size:13.5px;font-weight:800;letter-spacing:-.4px">각 사료 자세히 보고 구매하기</div>
+  </div>
+  <div class="cmpopen">
+    <button class="cmpopen-b" onclick="openDetail('${a.id}')"><span>${a.brand}</span><span>${a.name} ›</span></button>
+    <button class="cmpopen-b" onclick="openDetail('${b.id}')"><span>${b.brand}</span><span>${b.name} ›</span></button>
+  </div>
+  <p class="note">비교 결과는 라벨 성분 기준 참고용이에요.</p>`;
+}
+
+/* ═══ TOAST ═══ */
+let toastT;
+function toast(msg){
+  let el = document.getElementById('toast');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'toast';
+    el.style.cssText = 'position:absolute;left:50%;bottom:88px;transform:translateX(-50%) translateY(8px);'
+      + 'z-index:90;background:var(--ink);color:#fff;font-size:13px;font-weight:700;letter-spacing:-.3px;'
+      + 'padding:11px 18px;border-radius:99px;opacity:0;pointer-events:none;'
+      + 'transition:opacity .24s var(--ease),transform .24s var(--ease);white-space:nowrap';
+    document.getElementById('app').appendChild(el);
+  }
+  el.textContent = msg;
+  requestAnimationFrame(()=>{ el.style.opacity='1'; el.style.transform='translateX(-50%) translateY(0)'; });
+  clearTimeout(toastT);
+  toastT = setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateX(-50%) translateY(8px)'; }, 1900);
+}
 
 /* ═══ TOPBAR SHADOW ═══ */
 document.querySelectorAll('.screen').forEach(s=>{
