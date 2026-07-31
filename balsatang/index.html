@@ -154,7 +154,8 @@ svg.i{display:inline-block;vertical-align:-.14em;fill:none;stroke:currentColor;
 #s-detail{padding-bottom:calc(74px + env(safe-area-inset-bottom))}
 .dhero{display:flex;gap:14px;align-items:flex-start;padding:6px 20px 20px;flex-shrink:0}
 .dthumb{width:64px;height:64px;flex-shrink:0;border-radius:15px;background:var(--card);
-  border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink2)}
+  border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink2);overflow:hidden}
+.dthumb img{width:100%;height:100%;object-fit:cover}
 .dbrand{font-size:11.5px;color:var(--muted);font-weight:700;margin-bottom:4px}
 .dname{font-size:22px;font-weight:900;letter-spacing:-.8px;line-height:1.25;margin-bottom:9px}
 .dtags{display:flex;flex-wrap:wrap;gap:5px}
@@ -394,7 +395,8 @@ svg.i{display:inline-block;vertical-align:-.14em;fill:none;stroke:currentColor;
 .slot-ph{font-size:13px;color:var(--muted);font-weight:700}
 .slot-ph .i{color:var(--muted)}
 .slot-thumb{width:52px;height:52px;border-radius:13px;background:var(--bg);border:1px solid var(--line);
-  display:flex;align-items:center;justify-content:center;color:var(--ink2);margin-bottom:2px}
+  display:flex;align-items:center;justify-content:center;color:var(--ink2);margin-bottom:2px;overflow:hidden}
+.slot-thumb img{width:100%;height:100%;object-fit:cover}
 .slot-brand{font-size:10.5px;color:var(--muted);font-weight:700}
 .slot-name{font-size:13px;font-weight:800;letter-spacing:-.4px;line-height:1.3;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -558,7 +560,8 @@ svg.i{display:inline-block;vertical-align:-.14em;fill:none;stroke:currentColor;
   letter-spacing:-.2px}
 .rechead{display:flex;gap:12px;align-items:flex-start}
 .recthumb{width:48px;height:48px;flex-shrink:0;border-radius:12px;background:var(--bg);
-  border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink2)}
+  border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink2);overflow:hidden}
+.recthumb img{width:100%;height:100%;object-fit:cover}
 .recbrand{font-size:11px;color:var(--muted);font-weight:700;margin-bottom:3px}
 .recname-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px}
 .recname{font-size:14.5px;font-weight:800;letter-spacing:-.4px}
@@ -836,8 +839,11 @@ function openSearch(){
 }
 
 /* ═══ CARD PARTS ═══ */
+function hasThumb(f){ return f.thumb && /^(data:|https?:)/.test(f.thumb); }
 function thumb(f, cls, sz){
-  return `<div class="${cls}">${icon(f.ico, sz)}</div>`;
+  return hasThumb(f)
+    ? `<div class="${cls}"><img src="${f.thumb}" alt="" loading="lazy"></div>`
+    : `<div class="${cls}">${icon(f.ico, sz)}</div>`;
 }
 function funcTags(f, max){
   return (f.func||[]).filter(k=>FUNC_META[k]).slice(0, max||3)
@@ -1024,7 +1030,7 @@ function openDetail(id){
 
   document.getElementById('detailBody').innerHTML = `
   <div class="dhero">
-    <div class="dthumb">${icon(f.ico,32)}</div>
+    <div class="dthumb">${hasThumb(f)?`<img src="${f.thumb}" alt="">`:icon(f.ico,32)}</div>
     <div style="flex:1;min-width:0">
       <div class="dbrand">${f.brand}${f.country?` · ${COUNTRY_KO[f.country]||f.country}`:''}</div>
       <div class="dname">${f.name}</div>
@@ -1354,7 +1360,7 @@ function pickFood(id){
 
 function slotHTML(f, which){
   if(!f) return `<div class="slot-ph">${icon('plus',28)}<div style="margin-top:6px">사료 선택</div></div>`;
-  return `<div class="slot-thumb">${icon(f.ico,26)}</div>
+  return `<div class="slot-thumb">${hasThumb(f)?`<img src="${f.thumb}" alt="">`:icon(f.ico,26)}</div>
     <div class="slot-brand">${f.brand}</div>
     <div class="slot-name">${f.name}</div>
     <div class="slot-chg">바꾸기</div>`;
@@ -1861,7 +1867,7 @@ function renderRecCard(f, idx, curF){
     <div class="recmain" onclick="openDetail('${f.id}')">
       ${idx===0?`<div class="recbadge">${icon('trophy',12)}Best Pick</div>`:''}
       <div class="rechead">
-        <div class="recthumb">${icon(f.ico,24)}</div>
+        <div class="recthumb">${hasThumb(f)?`<img src="${f.thumb}" alt="">`:icon(f.ico,24)}</div>
         <div style="flex:1;min-width:0">
           <div class="recbrand">${f.brand} · ${TYPE_KO[f.type]||f.type}</div>
           <div class="recname-row"><span class="recname">${f.name}</span>${warnBadge(f)}${rxBadge(f)}</div>
