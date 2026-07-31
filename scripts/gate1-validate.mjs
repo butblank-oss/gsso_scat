@@ -5,6 +5,10 @@
    사용:
      node scripts/gate1-validate.mjs                 형식·수식·출처 구조만 검사
      node scripts/gate1-validate.mjs --live          출처 URL 실제 접속까지 검사
+
+   프록시 뒤(클라우드 세션)에서는 NODE_USE_ENV_PROXY=1 이 필요하다.
+   Node 내장 fetch 가 HTTPS_PROXY 를 스스로 읽지 않기 때문이다.
+   npm run gate1:live 를 쓰면 자동으로 붙는다. CI 에는 프록시가 없어 그냥 동작한다.
      node scripts/gate1-validate.mjs --json out.json 결과를 파일로 저장
 */
 import { readFile, readdir, writeFile } from 'node:fs/promises';
@@ -150,18 +154,32 @@ function checkItem(item, published, seen) {
   return { fail, warn };
 }
 
-/* 출처 URL이 살아 있는지, 그 페이지에 브랜드명이 실제로 있는지 확인한다. */
+/* 출처 URL이 살아 있는지, 그 페이지에 브랜드명이 실제로 있는지 확인한다.
+   기본 User-Agent 로는 대부분의 제조사·판매처가 403을 돌려주므로 브라우저 UA 를 쓴다. */
+const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 ' +
+                   '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
 async function checkLive(item) {
   const fail = [];
+  const p = item.proposed ?? {};
+  /* 한글 브랜드명(인스팅트)과 영문 슬러그(instinct) 중 하나만 있으면 인정한다 —
+     해외 제조사 공식 페이지는 영문이고, 국내 판매처는 한글이다. */
+  const names = [p.brand, p.brandSlug].filter(Boolean).map(norm).filter(n => n.length >= 2);
+
   for (const [i, s] of (item.sources || []).entries()) {
     if (!isHttpUrl(s.url)) continue;
     try {
-      const res = await fetch(s.url, { redirect: 'follow', signal: AbortSignal.timeout(15000) });
+      const res = await fetch(s.url, {
+        redirect: 'follow',
+        signal: AbortSignal.timeout(20000),
+        headers: { 'user-agent': BROWSER_UA, 'accept': 'text/html,application/xhtml+xml,*/*;q=0.8',
+                   'accept-language': 'ko-KR,ko;q=0.9,en;q=0.8' }
+      });
       if (!res.ok) { fail.push({ code: 'E_URL_DEAD', msg: `sources[${i}] HTTP ${res.status}: ${s.url}` }); continue; }
-      const body = (await res.text()).toLowerCase();
-      const brand = norm(item.proposed?.brand);
-      if (brand && !norm(body).includes(brand)) {
-        fail.push({ code: 'E_URL_BRAND', msg: `sources[${i}] 페이지에 브랜드명("${item.proposed.brand}")이 없습니다: ${s.url}` });
+      const body = norm(await res.text());
+      if (names.length && !names.some(n => body.includes(n))) {
+        fail.push({ code: 'E_URL_BRAND',
+          msg: `sources[${i}] 페이지에 브랜드명(${names.join(' / ')})이 없습니다: ${s.url}` });
       }
     } catch (err) {
       fail.push({ code: 'E_URL_FETCH', msg: `sources[${i}] 접속 실패 (${err.name}): ${s.url}` });

@@ -6,10 +6,10 @@
   "type": "module",
   "scripts": {
     "gate1": "node scripts/gate1-validate.mjs",
-    "gate1:live": "node scripts/gate1-validate.mjs --live",
+    "gate1:live": "NODE_USE_ENV_PROXY=1 node scripts/gate1-validate.mjs --live",
     "gate3": "node scripts/gate3-consistency.mjs",
     "review": "node scripts/build-review.mjs",
-    "review:live": "node scripts/build-review.mjs --live",
+    "review:live": "NODE_USE_ENV_PROXY=1 node scripts/build-review.mjs --live",
     "publish": "node scripts/merge-approved.mjs",
     "check": "npm run gate1 && npm run gate3"
   }

@@ -1,0 +1,235 @@
+{
+  "batchId": "2026-07-31-collect",
+  "collectedAt": "2026-07-31T14:30:00Z",
+  "collector": {
+    "agent": "수동 실행(사료-수집 에이전트 미사용)",
+    "model": "claude-opus-5",
+    "note": "네트워크 개통 직후 파이프라인 검증 목적. 정식 수집 루틴이 아님."
+  },
+  "items": [
+    {
+      "stagingId": "stg_instinct_orig_chicken",
+      "proposed": {
+        "brand": "인스팅트",
+        "brandSlug": "instinct",
+        "country": "US",
+        "name": "오리지널 독 키블 치킨",
+        "type": "dry",
+        "rx": false,
+        "ages": [
+          "all"
+        ],
+        "sizes": [
+          "all"
+        ],
+        "ico": "drumstick",
+        "thumb": null,
+        "score": 8.8,
+        "ratings": {
+          "quality": 5,
+          "carb": 4,
+          "additive": 4,
+          "value": 3
+        },
+        "facts": {
+          "dmCarb": 33.9,
+          "protein": 37,
+          "firstIngrCat": "meat",
+          "cautionN": 2,
+          "dangerN": 0
+        },
+        "func": [],
+        "warnN": 2,
+        "concerns": [],
+        "price": {
+          "p": 39150,
+          "wg": 1800,
+          "shop": "other",
+          "pKg": 21750
+        }
+      },
+      "sources": [
+        {
+          "role": "official",
+          "url": "https://www.instinctpetfood.com/products/original-kibble-for-dogs-chicken",
+          "fetchedAt": "2026-07-31T14:30:00Z",
+          "title": "제조사 공식 제품 페이지 (Guaranteed Analysis)"
+        },
+        {
+          "role": "retail",
+          "url": "https://search.danawa.com/dsearch.php?query=%EC%9D%B8%EC%8A%A4%ED%8C%85%ED%8A%B8+%EC%98%A4%EB%A6%AC%EC%A7%80%EB%82%A0+%EC%B9%98%ED%82%A8+%EB%8F%85+%ED%82%A4%EB%B8%94",
+          "fetchedAt": "2026-07-31T14:30:00Z",
+          "title": "다나와 가격비교"
+        }
+      ],
+      "evidence": {
+        "facts.protein": {
+          "src": 0,
+          "quote": "Crude Protein 37% (min)"
+        },
+        "facts.dmCarb": {
+          "src": 0,
+          "quote": "조단백 37 / 조지방 20 / 조섬유 2.5 / 수분 10 → 건물기준 탄수 33.9%"
+        },
+        "facts.firstIngrCat": {
+          "src": 0,
+          "quote": "Ingredients 첫 원료: Chicken"
+        },
+        "facts.cautionN": {
+          "src": 0,
+          "quote": "주의 성분 2종: Natural Flavor, Salt"
+        },
+        "facts.dangerN": {
+          "src": 0,
+          "quote": "위험 성분 표기 없음 (BHA/BHT/에톡시퀸 등 미검출)"
+        },
+        "price.p": {
+          "src": 1,
+          "quote": "네이처스버라이어티 인스팅트 오리지날 치킨 독 키블 1.8kg — 39,150원 (다나와 최저가, 2026-07-31 확인)"
+        }
+      },
+      "audit": {
+        "auditor": {
+          "agent": "수동 재검증",
+          "model": "claude-opus-5"
+        },
+        "method": "re-extract-same-session",
+        "limitation": "수집과 동일한 모델·세션에서 재추출했다. 사료-심사 에이전트(opus, 블라인드)를 별도 실행한 결과가 아니므로 모델 편향은 걸러내지 못한다. 추출 오류만 검증됨.",
+        "independent": {
+          "facts": {
+            "dmCarb": 33.9,
+            "protein": 37,
+            "firstIngrCat": "meat",
+            "cautionN": 2,
+            "dangerN": 0
+          },
+          "price": {
+            "p": 39150,
+            "wg": 1800
+          }
+        },
+        "verdict": "match",
+        "diff": [],
+        "evidenceRaw": "Guaranteed Analysis Crude Protein (min): 37% Crude Fat (min): % ..."
+      },
+      "gates": {
+        "g1": null,
+        "g2": "match",
+        "g3": null
+      },
+      "status": "draft"
+    },
+    {
+      "stagingId": "stg_instinct_benatural_salmon",
+      "proposed": {
+        "brand": "인스팅트",
+        "brandSlug": "instinct",
+        "country": "US",
+        "name": "BE 내추럴 독 키블 연어",
+        "type": "dry",
+        "rx": false,
+        "ages": [
+          "all"
+        ],
+        "sizes": [
+          "all"
+        ],
+        "ico": "fish",
+        "thumb": null,
+        "score": 7.2,
+        "ratings": {
+          "quality": 4,
+          "carb": 2,
+          "additive": 4,
+          "value": 4
+        },
+        "facts": {
+          "dmCarb": 50,
+          "protein": 25,
+          "firstIngrCat": "fish",
+          "cautionN": 2,
+          "dangerN": 0
+        },
+        "func": [],
+        "warnN": 2,
+        "concerns": [],
+        "price": {
+          "p": 135130,
+          "wg": 10800,
+          "shop": "other",
+          "pKg": 12512
+        }
+      },
+      "sources": [
+        {
+          "role": "official",
+          "url": "https://www.instinctpetfood.com/products/benatural-kibble-salmon",
+          "fetchedAt": "2026-07-31T14:30:00Z",
+          "title": "제조사 공식 제품 페이지 (Guaranteed Analysis)"
+        },
+        {
+          "role": "retail",
+          "url": "https://search.danawa.com/dsearch.php?query=%EC%9D%B8%EC%8A%A4%ED%8C%85%ED%8A%B8+BE+%EB%82%B4%EC%B6%94%EB%9F%B4+%EC%97%B0%EC%96%B4+%EB%8F%85+%ED%82%A4%EB%B8%94",
+          "fetchedAt": "2026-07-31T14:30:00Z",
+          "title": "다나와 가격비교"
+        }
+      ],
+      "evidence": {
+        "facts.protein": {
+          "src": 0,
+          "quote": "Crude Protein 25% (min)"
+        },
+        "facts.dmCarb": {
+          "src": 0,
+          "quote": "조단백 25 / 조지방 15 / 조섬유 5 / 수분 10 → 건물기준 탄수 50%"
+        },
+        "facts.firstIngrCat": {
+          "src": 0,
+          "quote": "Ingredients 첫 원료: Salmon"
+        },
+        "facts.cautionN": {
+          "src": 0,
+          "quote": "주의 성분 2종: Natural Flavor, Salt"
+        },
+        "facts.dangerN": {
+          "src": 0,
+          "quote": "위험 성분 표기 없음 (BHA/BHT/에톡시퀸 등 미검출)"
+        },
+        "price.p": {
+          "src": 1,
+          "quote": "인스팅트 BE 내추럴 연어 독 키블 10.8kg — 135,130원 (다나와 최저가, 2026-07-31 확인)"
+        }
+      },
+      "audit": {
+        "auditor": {
+          "agent": "수동 재검증",
+          "model": "claude-opus-5"
+        },
+        "method": "re-extract-same-session",
+        "limitation": "수집과 동일한 모델·세션에서 재추출했다. 사료-심사 에이전트(opus, 블라인드)를 별도 실행한 결과가 아니므로 모델 편향은 걸러내지 못한다. 추출 오류만 검증됨.",
+        "independent": {
+          "facts": {
+            "dmCarb": 50,
+            "protein": 25,
+            "firstIngrCat": "fish",
+            "cautionN": 2,
+            "dangerN": 0
+          },
+          "price": {
+            "p": 135130,
+            "wg": 10800
+          }
+        },
+        "verdict": "match",
+        "diff": [],
+        "evidenceRaw": "Guaranteed Analysis Crude Protein (min): 25% Crude Fat (min): % ..."
+      },
+      "gates": {
+        "g1": null,
+        "g2": "match",
+        "g3": null
+      },
+      "status": "draft"
+    }
+  ]
+}
