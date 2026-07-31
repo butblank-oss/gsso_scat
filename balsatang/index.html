@@ -150,6 +150,238 @@ svg.i{display:inline-block;vertical-align:-.14em;fill:none;stroke:currentColor;
   letter-spacing:-.2px;flex-shrink:0}
 .count{padding:2px 20px 12px;font-size:12px;color:var(--muted);font-weight:600;flex-shrink:0}
 
+/* ══ DETAIL ══ */
+#s-detail{padding-bottom:calc(74px + env(safe-area-inset-bottom))}
+.dhero{display:flex;gap:14px;align-items:flex-start;padding:6px 20px 20px;flex-shrink:0}
+.dthumb{width:64px;height:64px;flex-shrink:0;border-radius:15px;background:var(--card);
+  border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink2)}
+.dbrand{font-size:11.5px;color:var(--muted);font-weight:700;margin-bottom:4px}
+.dname{font-size:22px;font-weight:900;letter-spacing:-.8px;line-height:1.25;margin-bottom:9px}
+.dtags{display:flex;flex-wrap:wrap;gap:5px}
+.dtag{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;
+  padding:4px 8px;border-radius:7px;letter-spacing:-.2px}
+.dtag.good{background:var(--good-soft);color:var(--good)}
+.dtag.warn{background:var(--warn-soft);color:var(--warn)}
+.dtag.rx{background:var(--blue-soft);color:var(--blue)}
+.dtag.type{background:var(--card2);color:var(--sub)}
+
+/* tabs */
+.dtabs{display:flex;position:sticky;top:56px;z-index:15;background:var(--bg);
+  border-bottom:1px solid var(--line);flex-shrink:0}
+.dtab{flex:1;padding:14px 0;text-align:center;font-size:14.5px;font-weight:700;letter-spacing:-.3px;
+  color:var(--muted);cursor:pointer;position:relative;transition:color var(--t)}
+.dtab.on{color:var(--ink)}
+.dtab::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--ink);
+  transform:scaleX(0);transition:transform .28s var(--ease)}
+.dtab.on::after{transform:scaleX(1)}
+.dpanel{display:none;flex-direction:column;animation:screenIn .24s var(--ease) both}
+.dpanel.on{display:flex}
+
+/* verdict hero */
+.vhero{margin:18px 20px 4px;background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r-lg);padding:18px 18px}
+.vhero-t{font-size:17px;font-weight:900;letter-spacing:-.6px;line-height:1.4}
+.vhero-s{margin-top:5px;font-size:12px;color:var(--muted);letter-spacing:-.2px}
+
+/* consumer cards */
+.ccards{display:flex;flex-direction:column;gap:9px;padding:14px 20px 4px}
+.ccard{display:flex;gap:11px;padding:14px;border-radius:var(--r-lg);border:1px solid;
+  animation:cardIn .32s var(--ease) both}
+.ccard.good{background:var(--good-soft);border-color:var(--good-mid)}
+.ccard.warn{background:var(--warn-soft);border-color:var(--warn-mid)}
+.ccard.bad {background:var(--bad-soft); border-color:var(--bad-mid)}
+.ccard-ico{flex-shrink:0;margin-top:1px}
+.ccard.good .ccard-ico{color:var(--good)}
+.ccard.warn .ccard-ico{color:var(--warn)}
+.ccard.bad  .ccard-ico{color:var(--bad)}
+.ccard-t{font-size:13.5px;font-weight:800;letter-spacing:-.4px;line-height:1.4;margin-bottom:4px}
+.ccard-b{font-size:12.5px;line-height:1.6;color:var(--ink2);letter-spacing:-.2px}
+
+/* rx notice */
+.rxbox{margin:14px 20px 0;background:var(--blue-soft);border:1px solid #BFDBFE;
+  border-radius:var(--r-lg);padding:14px 16px}
+.rxbox-t{display:flex;align-items:center;gap:5px;font-size:13px;font-weight:800;
+  color:var(--blue);margin-bottom:5px}
+.rxbox-b{font-size:12.5px;color:#1E40AF;line-height:1.6}
+
+/* rating grid */
+.rgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:18px 20px 4px}
+.rcell{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:14px}
+.rcell-l{font-size:11.5px;color:var(--sub);font-weight:700;margin-bottom:7px}
+.rcell-s{display:flex;gap:1px;color:#FFB800;margin-bottom:6px}
+.rcell-s .i{fill:none;stroke-width:1.6}
+.rcell-s .i.f{fill:#FFB800}
+.rcell-c{font-size:12px;font-weight:700;letter-spacing:-.3px}
+
+/* func chart */
+.fsec{margin:22px 20px 4px;background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r-lg);padding:18px 16px}
+.fsec-l{font-size:11.5px;font-weight:700;color:var(--muted);letter-spacing:.3px;margin-bottom:5px}
+.fsec-s{font-size:15px;font-weight:800;letter-spacing:-.5px;line-height:1.4;margin-bottom:18px}
+.fchart{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.fchart::-webkit-scrollbar{display:none}
+.fcol{flex:1 0 62px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.fcnt{font-size:15px;font-weight:900;letter-spacing:-.5px;margin-bottom:6px}
+.fcnt.zero{color:var(--muted);font-weight:700}
+.fbar-o{height:58px;width:38px;display:flex;align-items:flex-end;justify-content:center;margin-bottom:9px}
+.fbar-i{width:100%;border-radius:7px;transition:height .5s var(--ease)}
+.fbar-i.has{background:linear-gradient(180deg,var(--brand) 0%,var(--brand-deep) 100%)}
+.fbar-i.none{background:var(--line)}
+.flab{font-size:11px;font-weight:700;color:var(--ink2);line-height:1.4;letter-spacing:-.3px}
+.flab .i{color:var(--sub);margin-bottom:2px}
+.fitems{margin-top:4px;font-size:10px;color:var(--muted);line-height:1.4;word-break:keep-all}
+
+/* fit profiles */
+.fitsec{margin:22px 20px 4px}
+.fitsec-t{font-size:17px;font-weight:800;letter-spacing:-.5px;margin-bottom:14px}
+.fitgl{display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:800;margin:14px 0 8px}
+.fitgl.fit{color:var(--good)}
+.fitgl.caution{color:var(--warn)}
+.fitrows{display:flex;flex-direction:column;gap:8px}
+.fitrow{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:13px 15px}
+.fitrow-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.fitrow-l{display:flex;align-items:center;gap:5px;font-size:13.5px;font-weight:800;
+  letter-spacing:-.4px;flex:1;min-width:0}
+.fitrow-l .i{color:var(--sub);flex-shrink:0}
+.fitdots{display:flex;gap:3px;flex-shrink:0}
+.fitdot{width:6px;height:6px;border-radius:50%;background:var(--line)}
+.fitdot.on-fit{background:var(--good)}
+.fitdot.on-caution{background:var(--warn)}
+.fitbadge{font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:6px;flex-shrink:0}
+.fitbadge.fit{background:var(--good-soft);color:var(--good)}
+.fitbadge.caution{background:var(--warn-soft);color:var(--warn)}
+.fitrow-r{font-size:12.5px;color:var(--sub);line-height:1.55;letter-spacing:-.2px}
+
+/* tech collapsible */
+.tech{margin:22px 20px 4px;background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r-lg);overflow:hidden}
+.tech-tg{display:flex;align-items:center;padding:15px 16px;cursor:pointer;user-select:none}
+.tech-tg-l{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:800;
+  letter-spacing:-.4px;flex:1}
+.tech-tg-l .i{color:var(--brand)}
+.tech-tg-a{color:var(--muted);display:flex;transform:rotate(90deg);transition:transform .3s var(--ease)}
+.tech.open .tech-tg-a{transform:rotate(-90deg)}
+.tech-b{display:grid;grid-template-rows:0fr;transition:grid-template-rows .34s var(--ease)}
+.tech.open .tech-b{grid-template-rows:1fr}
+.tech-b>div{overflow:hidden}
+.tech-in{padding:0 16px 18px}
+.sublabel{font-size:11.5px;font-weight:700;color:var(--muted);letter-spacing:.3px;
+  padding-top:6px;margin-bottom:10px}
+.ngrid{display:grid;grid-template-columns:1fr 1fr;gap:14px 12px}
+.nitem{min-width:0}
+.nlab{font-size:11.5px;color:var(--sub);font-weight:600;margin-bottom:3px}
+.nval{font-size:22px;font-weight:900;letter-spacing:-1px;line-height:1.1;margin-bottom:6px}
+.nval span{font-size:12px;font-weight:700;color:var(--sub);margin-left:1px}
+.nval.na{font-size:13px;color:var(--muted);font-weight:700;letter-spacing:-.3px}
+.nbar{height:5px;border-radius:3px;background:var(--line);overflow:hidden;margin-bottom:5px}
+.nbar i{display:block;height:100%;border-radius:3px;transition:width .6s var(--ease)}
+.nnote{font-size:10px;color:var(--muted);line-height:1.4;letter-spacing:-.2px}
+.irow{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--line)}
+.irow:last-of-type{border-bottom:none}
+.irank{width:20px;height:20px;flex-shrink:0;border-radius:50%;background:var(--ink);color:#fff;
+  font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.iname{flex:1;font-size:13.5px;font-weight:700;letter-spacing:-.3px;min-width:0}
+.ibadge{font-size:10.5px;font-weight:800;padding:3px 7px;border-radius:6px;flex-shrink:0}
+.ibadge.safe{background:var(--good-soft);color:var(--good)}
+.ibadge.caution{background:var(--warn-soft);color:var(--warn)}
+.ibadge.danger{background:var(--bad-soft);color:var(--bad)}
+.ipop-wrap{position:relative;flex-shrink:0}
+.ipop-btn{width:22px;height:22px;border:none;background:none;color:var(--muted);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;padding:0;border-radius:50%;transition:all var(--t)}
+.ipop-btn:active{background:var(--card2);color:var(--brand)}
+.ipop{display:none;position:absolute;right:0;top:26px;z-index:30;width:230px;background:var(--ink);
+  color:#fff;font-size:11.5px;line-height:1.55;font-weight:500;padding:10px 12px;border-radius:10px;
+  box-shadow:0 8px 24px rgba(0,0,0,.24);letter-spacing:-.2px}
+.ipop.show{display:block;animation:cardIn .2s var(--ease) both}
+.recall-box{display:flex;align-items:flex-start;gap:7px;margin-top:16px;padding:12px 14px;
+  border-radius:12px;font-size:12px;line-height:1.55;font-weight:600;letter-spacing:-.2px}
+.recall-box.clear{background:var(--good-soft);color:var(--good)}
+.recall-box.alert{background:var(--bad-soft);color:var(--bad)}
+.disclaimer{margin:22px 20px 8px;font-size:11.5px;line-height:1.65;color:var(--muted);letter-spacing:-.2px}
+.disclaimer b{color:var(--sub)}
+
+/* ══ INFO TAB ══ */
+.isec{margin:18px 20px 0}
+.isec-t{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:800;
+  letter-spacing:-.5px;margin-bottom:11px}
+.isec-t .i{color:var(--brand)}
+.igrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.icell{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.icell-l{font-size:11px;color:var(--muted);font-weight:700;margin-bottom:4px}
+.icell-v{font-size:13.5px;font-weight:800;letter-spacing:-.4px}
+.calc{margin:20px 20px 0;background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r-lg);padding:18px 16px}
+.calc-t{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:800;letter-spacing:-.5px}
+.calc-t .i{color:var(--brand)}
+.calc-s{margin-top:4px;font-size:12px;color:var(--muted);letter-spacing:-.2px}
+.cfield{margin-top:18px}
+.cfield-l{font-size:12.5px;font-weight:700;color:var(--ink2);margin-bottom:9px}
+.wrow{display:flex;align-items:center;gap:9px;margin-bottom:12px}
+.wnum{width:96px;border:1px solid var(--line);border-radius:12px;padding:11px 13px;
+  font:inherit;font-size:19px;font-weight:900;letter-spacing:-.6px;text-align:center;
+  outline:none;background:var(--bg);transition:border-color var(--t)}
+.wnum:focus{border-color:var(--brand)}
+.wunit{font-size:13.5px;font-weight:700;color:var(--sub)}
+.wslider{width:100%;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;
+  background:var(--line);outline:none}
+.wslider::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+  background:var(--brand);cursor:pointer;box-shadow:0 2px 6px rgba(47,60,80,.3);
+  transition:transform .16s var(--ease)}
+.wslider::-webkit-slider-thumb:active{transform:scale(1.15)}
+.wslider::-moz-range-thumb{width:20px;height:20px;border:none;border-radius:50%;
+  background:var(--brand);cursor:pointer}
+.segs{display:flex;gap:7px}
+.seg{flex:1;padding:11px 0;border:1px solid var(--line);border-radius:12px;background:var(--card);
+  font:inherit;font-size:13px;font-weight:700;color:var(--sub);cursor:pointer;
+  transition:all .22s var(--ease)}
+.seg:active{transform:scale(.96)}
+.seg.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.chl{display:flex;align-items:center;margin-top:18px;background:var(--brand-soft);
+  border-radius:16px;padding:16px 0}
+.chl-c{flex:1;text-align:center}
+.chl-l{font-size:11.5px;color:var(--sub);font-weight:700;margin-bottom:5px}
+.chl-v{font-size:29px;font-weight:900;color:var(--brand);letter-spacing:-1.4px;line-height:1}
+.chl-v span{font-size:14px;margin-left:1px}
+.chl-d{width:1px;align-self:stretch;background:var(--brand-mid);margin:2px 0}
+.bagrow{display:flex;align-items:center;gap:9px;margin-top:10px}
+.bagrow-l{font-size:12px;color:var(--sub);font-weight:700;flex-shrink:0}
+.bagnum{flex:1;max-width:96px;border:1px solid var(--line);border-radius:10px;padding:9px 11px;
+  font:inherit;font-size:14px;font-weight:700;text-align:center;outline:none;background:var(--bg)}
+.bagnum:focus{border-color:var(--brand)}
+.bagdays{margin-top:12px;font-size:12.5px;color:var(--sub);text-align:center;letter-spacing:-.2px}
+.bagdays b{color:var(--brand);font-size:15px;font-weight:900}
+.calc-hint{margin-top:14px;font-size:11px;color:var(--muted);line-height:1.5;letter-spacing:-.2px}
+.ccta{display:flex;align-items:center;gap:12px;margin:20px 20px 0;padding:16px 18px;
+  background:var(--ink);color:#fff;border-radius:var(--r-lg);cursor:pointer;
+  transition:transform var(--t)}
+.ccta:active{transform:scale(.985)}
+.ccta-t{flex:1;min-width:0}
+.ccta-t b{display:block;font-size:14px;font-weight:800;letter-spacing:-.4px;margin-bottom:2px}
+.ccta-t span{font-size:11.5px;color:#ffffffb0;letter-spacing:-.2px}
+.ccta .arr{opacity:.6;flex-shrink:0}
+.prow{display:flex;align-items:center;gap:12px;padding:13px 15px;background:var(--card);
+  border:1px solid var(--line);border-radius:14px;margin-bottom:8px}
+.pinfo{flex:1;min-width:0}
+.pshop{font-size:11.5px;color:var(--muted);font-weight:700;margin-bottom:3px}
+.pamt b{font-size:16px;font-weight:900;letter-spacing:-.6px}
+.punit{font-size:11px;color:var(--sub);font-weight:600;margin-left:3px}
+.pbtn{flex-shrink:0;padding:9px 15px;border:1px solid var(--brand);border-radius:10px;
+  background:var(--brand);color:#fff;font:inherit;font-size:12.5px;font-weight:800;cursor:pointer;
+  transition:opacity var(--t)}
+.pbtn:disabled{background:var(--card2);border-color:var(--line);color:var(--muted);cursor:default}
+.pbtn:active:not(:disabled){opacity:.8}
+
+/* detail bottom bar */
+.dbar{position:absolute;left:0;right:0;bottom:0;z-index:40;display:flex;gap:9px;
+  padding:11px 20px calc(11px + env(safe-area-inset-bottom));
+  background:rgba(255,255,255,.94);backdrop-filter:blur(14px);border-top:1px solid var(--line)}
+.btn-o,.btn-s{padding:14px 0;border-radius:14px;font:inherit;font-size:14.5px;font-weight:800;
+  letter-spacing:-.4px;cursor:pointer;transition:transform .16s var(--ease),opacity var(--t)}
+.btn-o{flex:0 0 108px;border:1px solid var(--line);background:var(--card2);color:var(--ink)}
+.btn-s{flex:1;border:none;background:var(--brand);color:#fff;
+  box-shadow:0 4px 14px rgba(62,78,102,.28)}
+.btn-o:active,.btn-s:active{transform:scale(.97)}
+
 /* ── BOTTOM NAV ── */
 #nav{position:absolute;left:0;right:0;bottom:0;z-index:50;display:flex;
   height:calc(var(--nav-h) + env(safe-area-inset-bottom));
@@ -247,6 +479,10 @@ svg.i{display:inline-block;vertical-align:-.14em;fill:none;stroke:currentColor;
     <div class="tb-title">사료 분석</div>
   </header>
   <div id="detailBody" style="flex:1"></div>
+  <div class="dbar">
+    <button class="btn-o" onclick="addToCompare()">비교담기</button>
+    <button class="btn-s" onclick="switchDtab('info')">급여량 · 가격 보기</button>
+  </div>
 </section>
 
 <!-- ══ NAV ══ -->
@@ -423,13 +659,375 @@ function filterSearch(){
     : `<div class="empty">${icon('search',44)}검색 결과가 없어요</div>`;
 }
 
-/* ═══ DETAIL (STEP 3에서 구현) ═══ */
+/* ═══ DETAIL ═══ */
+const RATING_LABEL = {quality:'원료 품질', carb:'탄수화물', additive:'주의성분', value:'가성비'};
+const RATING_COMMENT = {
+  quality:{5:'동물성만 사용',4:'대부분 동물성',3:'보통 수준',2:'곡물 위주',1:'출처 불명'},
+  carb:   {5:'20% 미만',4:'20~30%',3:'30~40%',2:'40~50%',1:'50% 이상'},
+  additive:{5:'주의성분 없음',4:'거의 없음',3:'논쟁 성분',2:'위험 1개',1:'위험 다수'},
+  value:  {5:'매우 저렴',4:'가성비 좋음',3:'보통',2:'비싼 편',1:'프리미엄'}
+};
+const FUNC_BUCKETS = [
+  {key:'eye_tear', label:'눈물·피모', ico:'eye'},
+  {key:'joint',    label:'관절 건강', ico:'bone'},
+  {key:'digestive',label:'소화·장',   ico:'heart'},
+  {key:'immune',   label:'면역·활력', ico:'zap'},
+  {key:'heart',    label:'심장',     ico:'heartPulse'},
+  {key:'weight',   label:'체중 관리', ico:'scale'},
+  {key:'kidney',   label:'신장',     ico:'stethoscope'},
+  {key:'liver',    label:'간',       ico:'heartPulse'},
+  {key:'dental',   label:'치아',     ico:'smile'}
+];
+const CONCERN_EMOJI = {healthy:'smile',picky_eater:'utensils',weight:'scale',eye_tear:'droplet',
+  allergy:'wind',digestive:'soup',joint:'bone',post_surgery:'cross',senior:'paw',baby:'baby',
+  puppy:'baby',liver:'heartPulse',kidney:'stethoscope'};
+const CONCERN_LABEL = {healthy:'건강한 아이',picky_eater:'입맛 까다로운',weight:'체중 관리 중',
+  eye_tear:'눈물 많은 아이',allergy:'알러지 의심',digestive:'소화가 약한',joint:'관절이 걱정',
+  post_surgery:'수술·회복 중',senior:'시니어',puppy:'어린 강아지',liver:'간 질환 아이',
+  kidney:'신장 케어'};
+
+function verdictSummary(f){
+  if(f.rx) return '특정 질환 아이를 위한 처방식이에요. 반드시 수의사 처방 후 급여하세요';
+  const s = f.score || 0;
+  if(s >= 9) return '성분만 보면 최상위권 사료예요';
+  if(s >= 8) return '전반적으로 우수한 성분 구성이에요';
+  if(s >= 6) return '괜찮은 사료지만 아쉬운 점도 있어요';
+  return '성분 구성에서 아쉬운 점이 많아요';
+}
+function stars(n){
+  n = Math.max(1, Math.min(5, Math.round(n||0)));
+  let out = '';
+  for(let i=1;i<=5;i++)
+    out += `<svg class="i${i<=n?' f':''}" width="14" height="14" viewBox="0 0 24 24">${ICONS.star}</svg>`;
+  return out;
+}
+/* 칼로리 없으면 수정 Atwater 계수로 추정 (단백 3.5 / 지방 8.5 / 탄수 3.5 kcal/g) */
+function kcalPerKg(f, n){
+  if(n.calKg) return {v:n.calKg, est:false};
+  const p = n.protein||0, fa = n.fat||0, c = n.carb||0;
+  const v = Math.round((p*3.5 + fa*8.5 + c*3.5) * 10);
+  return {v: v > 0 ? v : 3600, est:true};
+}
+function nc(v, hi, mid){ return v >= hi ? 'var(--good)' : v >= mid ? 'var(--warn)' : 'var(--bad)'; }
+function won(n){ return Math.round(n).toLocaleString(); }
+function gLabel(g){ return g >= 1000 ? (g/1000)+'kg' : g+'g'; }
+
+let activeDetailId = null;
+const calc = {w:5, meals:2, bagG:0, calKg:3600};
+
 function openDetail(id){
   const f = FOODS.find(x=>x.id===id); if(!f) return;
-  document.getElementById('detailBody').innerHTML =
-    `<div class="empty">${icon('microscope',44)}상세 화면은 다음 단계에서 만들어요<br><b style="color:var(--ink)">${f.brand} ${f.name}</b></div>`;
+  activeDetailId = id;
+  const d = DETAIL[id] || {};
+  const n = d.nutrient || {};
+  const cal = kcalPerKg(f, n);
+
+  /* 목적별 원료 버킷 — 핵심 4종 + 데이터 있는 확장종 */
+  const fi = d.funcIngr || {};
+  const buckets = FUNC_BUCKETS
+    .filter((b,i)=> i < 4 || (fi[b.key] && fi[b.key].length))
+    .map(b=>({...b, items:(fi[b.key]||[]).map(x=>x.n).filter(Boolean)}));
+  const maxC = Math.max(...buckets.map(b=>b.items.length), 1);
+  const present = buckets.filter(b=>b.items.length).map(b=>b.label);
+  const funcSummary = present.length
+    ? `${present.join(', ')}에 도움되는 원료가 있어요`
+    : '기능성 원료는 확인되지 않았어요';
+
+  /* 적합 / 주의 프로필 */
+  const strengthFor = s => s >= 9 ? 5 : s >= 8 ? 4 : 3;
+  const fits = (d.fit||[]).map(p=>({
+    label: CONCERN_LABEL[p.concernType] || p.concernType,
+    ico: CONCERN_EMOJI[p.concernType] || 'paw',
+    type:'fit', strength: strengthFor(f.score), reason: p.label
+  }));
+  const cautions = (d.fitCaution||[]).map(p=>({
+    label: CONCERN_LABEL[p.concernType] || p.concernType,
+    ico: CONCERN_EMOJI[p.concernType] || 'alert',
+    type:'caution', strength:2, reason: p.label
+  }));
+  const fitRow = p => `<div class="fitrow">
+    <div class="fitrow-top">
+      <div class="fitrow-l">${icon(p.ico,16)}${p.label}</div>
+      <div class="fitdots">${[0,1,2,3,4].map(i=>
+        `<div class="fitdot${i<p.strength?' on-'+p.type:''}"></div>`).join('')}</div>
+      <div class="fitbadge ${p.type}">${p.type==='fit'?(p.strength===5?'강력 추천':'잘 맞아요'):'주의해요'}</div>
+    </div>
+    <div class="fitrow-r">${p.reason}</div>
+  </div>`;
+
+  /* 주원료 (rank 순) */
+  const ingr = (d.ingr||[]).slice().sort((a,b)=>(a.rank||99)-(b.rank||99)).slice(0,8);
+
+  calc.w = 5; calc.meals = 2; calc.calKg = cal.v;
+  calc.bagG = (d.weightOpts && d.weightOpts[0] && d.weightOpts[0].g)
+    || (d.prices && d.prices[0] && d.prices[0].wg) || 2000;
+
+  document.getElementById('detailBody').innerHTML = `
+  <div class="dhero">
+    <div class="dthumb">${icon(f.ico,32)}</div>
+    <div style="flex:1;min-width:0">
+      <div class="dbrand">${f.brand}${f.country?` · ${COUNTRY_KO[f.country]||f.country}`:''}</div>
+      <div class="dname">${f.name}</div>
+      <div class="dtags">
+        <span class="dtag ${f.warnN>0?'warn':'good'}">${f.warnN>0
+          ? `${icon('alert',12)}주의성분 ${f.warnN}` : `${icon('shieldCheck',12)}주의 성분이 없어요`}</span>
+        ${f.rx?`<span class="dtag rx">${icon('stethoscope',12)}처방식</span>`:''}
+        <span class="dtag type">${TYPE_KO[f.type]||f.type}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="dtabs">
+    <div class="dtab on" id="dt-analysis" onclick="switchDtab('analysis')">성분 분석</div>
+    <div class="dtab" id="dt-info" onclick="switchDtab('info')">급여량 · 가격</div>
+  </div>
+
+  <!-- ══ 성분 분석 ══ -->
+  <div class="dpanel on" id="dp-analysis">
+    <div class="vhero">
+      <div class="vhero-t">${verdictSummary(f)}</div>
+      <div class="vhero-s">라벨 기준 추정치예요</div>
+    </div>
+
+    ${f.rx && d.rxInfo && d.rxInfo.vetGuidance ? `
+    <div class="rxbox">
+      <div class="rxbox-t">${icon('stethoscope',14)}처방식 안내</div>
+      <div class="rxbox-b">${d.rxInfo.vetGuidance}</div>
+    </div>` : ''}
+
+    <div class="ccards">
+      ${[['pos','good','shieldCheck'],['cau','warn','alert'],['bad','bad','siren']]
+        .flatMap(([k,cls,ic])=>((d.verdict&&d.verdict[k])||[]).map((c,i)=>
+          `<div class="ccard ${cls}" style="animation-delay:${i*50}ms">
+            <span class="ccard-ico">${icon(ic,18)}</span>
+            <div><div class="ccard-t">${c.title}</div>
+              ${c.body?`<div class="ccard-b">${c.body}</div>`:''}</div>
+          </div>`)).join('')}
+    </div>
+
+    <div class="rgrid">
+      ${['quality','carb','additive','value'].map(k=>{
+        const v = Math.max(1, Math.min(5, Math.round((f.ratings||{})[k]||0)));
+        return `<div class="rcell">
+          <div class="rcell-l">${RATING_LABEL[k]}</div>
+          <div class="rcell-s">${stars(v)}</div>
+          <div class="rcell-c">${RATING_COMMENT[k][v]}</div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div class="fsec">
+      <div class="fsec-l">목적별 원료</div>
+      <div class="fsec-s">${funcSummary}</div>
+      <div class="fchart">
+        ${buckets.map(b=>{
+          const c = b.items.length;
+          const h = c > 0 ? Math.max(Math.round(c/maxC*56), 16) : 6;
+          return `<div class="fcol">
+            <div class="fcnt${c===0?' zero':''}">${c}</div>
+            <div class="fbar-o"><div class="fbar-i ${c>0?'has':'none'}" style="height:${h}px"></div></div>
+            <div class="flab">${icon(b.ico,18)}<br>${b.label}</div>
+            <div class="fitems">${b.items.length?b.items.join(', '):'해당 없음'}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    ${fits.length||cautions.length ? `
+    <div class="fitsec">
+      <div class="fitsec-t">이런 아이에게 어떨까요?</div>
+      ${fits.length?`<div class="fitgl fit">${icon('shieldCheck',13)}잘 맞아요</div>
+        <div class="fitrows">${fits.map(fitRow).join('')}</div>`:''}
+      ${cautions.length?`<div class="fitgl caution">${icon('alert',13)}주의해요</div>
+        <div class="fitrows">${cautions.map(fitRow).join('')}</div>`:''}
+    </div>`:''}
+
+    <div class="tech" id="tech">
+      <div class="tech-tg" onclick="document.getElementById('tech').classList.toggle('open')">
+        <div class="tech-tg-l">${icon('microscope',16)}성분 상세 분석</div>
+        <span class="tech-tg-a">${icon('chevronRight',16)}</span>
+      </div>
+      <div class="tech-b"><div><div class="tech-in">
+        <div class="sublabel">영양 프로파일</div>
+        <div class="ngrid">
+          ${nutrItem('조단백', n.protein, 45, v=>nc(v,28,18), '권장 최소 18% · 프리미엄 28%+')}
+          ${nutrItem('탄수화물 추정', n.carb, 60, v=>nc(60-v,35,20), '25% 이하 좋음 · 40% 이상 주의')}
+          ${nutrItem('생육 함량', n.meat, 100, v=>nc(v,70,40), '70%+ 고품질')}
+          ${nutrItem('조지방', n.fat, 35, v=>nc(22-v,8,0), '권장 최소 5.5% · 20% 이하 적정')}
+        </div>
+        <div class="sublabel" style="margin-top:20px">주원료 TOP ${ingr.length}</div>
+        ${ingr.map((it,i)=>{
+          const fb = it.safe==='safe' ? '일반적으로 안전한 원료로 분류돼요'
+                   : it.safe==='caution' ? '안전성에 논쟁이 있는 원료예요'
+                   : '주의가 필요한 원료예요';
+          const info = it.basis || it.warn || it.desc || fb;
+          const bl = it.safe==='safe'?'양호':it.safe==='caution'?'논쟁중':'주의';
+          return `<div class="irow">
+            <div class="irank">${i+1}</div>
+            <div class="iname">${it.name}</div>
+            <span class="ibadge ${it.safe}">${bl}</span>
+            <span class="ipop-wrap">
+              <button class="ipop-btn" onclick="togglePop(this)" aria-label="성분 정보">${icon('info',14)}</button>
+              <span class="ipop">${esc(info)}</span>
+            </span>
+          </div>`;
+        }).join('')}
+        ${d.recall
+          ? `<div class="recall-box alert">${icon('siren',15)}<span>${d.recall}</span></div>`
+          : `<div class="recall-box clear">${icon('shieldCheck',15)}<span>현재 등록된 리콜·회수 이력이 없어요</span></div>`}
+      </div></div></div>
+    </div>
+
+    <div class="disclaimer"><b>분석 기준</b> — 라벨 표기 성분 기준 추정치예요. 소화율·생체이용률은 포함되지 않아요. 건강 문제는 수의사와 상담하세요.</div>
+  </div>
+
+  <!-- ══ 급여량 · 가격 ══ -->
+  <div class="dpanel" id="dp-info">
+    <div class="isec">
+      <div class="isec-t">${icon('package',15)}기본 정보</div>
+      <div class="igrid">
+        <div class="icell"><div class="icell-l">분류</div><div class="icell-v">${f.rx?'처방식':'일반식'} · ${TYPE_KO[f.type]||f.type}</div></div>
+        <div class="icell"><div class="icell-l">원산지</div><div class="icell-v">${COUNTRY_KO[f.country]||f.country||'-'}</div></div>
+        <div class="icell"><div class="icell-l">단백질 / 지방</div><div class="icell-v">${n.protein??'-'}% / ${n.fat??'-'}%</div></div>
+        <div class="icell"><div class="icell-l">탄수화물(추정)</div><div class="icell-v">${n.carb??'-'}%</div></div>
+      </div>
+    </div>
+
+    <div class="calc">
+      <div class="calc-t">${icon('utensils',15)}하루에 얼마나 줄까요?</div>
+      <div class="calc-s">몸무게와 하루 끼니 수를 입력해주세요</div>
+      <div class="cfield">
+        <div class="cfield-l">우리 아이 몸무게</div>
+        <div class="wrow">
+          <input type="number" class="wnum" id="wNum" min="0.5" max="80" step="0.5" value="5"
+                 oninput="setWeight(this.value)">
+          <span class="wunit">kg</span>
+        </div>
+        <input type="range" class="wslider" id="wSlider" min="1" max="50" step="0.5" value="5"
+               oninput="setWeight(this.value)">
+      </div>
+      <div class="cfield">
+        <div class="cfield-l">하루 끼니 수</div>
+        <div class="segs">${[1,2,3,4].map(m=>
+          `<button class="seg${m===2?' on':''}" data-meal="${m}" onclick="setMeals(${m})">${m}끼</button>`).join('')}</div>
+      </div>
+      <div class="chl" id="chl"></div>
+      <div class="cfield">
+        <div class="cfield-l">봉지 용량</div>
+        <div class="segs" id="bagSegs">${
+          (d.weightOpts&&d.weightOpts.length?d.weightOpts:[{g:calc.bagG,label:gLabel(calc.bagG)}])
+          .map((o,i)=>`<button class="seg${i===0?' on':''}" data-bag="${o.g}" onclick="setBag(${o.g},this)">${o.label}</button>`).join('')}</div>
+        <div class="bagrow">
+          <span class="bagrow-l">직접 입력</span>
+          <input type="number" class="bagnum" id="bagNum" min="0.1" step="0.1" placeholder="예: 6"
+                 oninput="setBagCustom(this.value)">
+          <span class="wunit">kg</span>
+        </div>
+        <div class="bagdays" id="bagDays"></div>
+      </div>
+      <div class="calc-hint">성견 유지 기준(RER×1.6) 계산값이에요. 활동량·나이에 따라 달라져요.${
+        cal.est?'<br>이 사료는 칼로리 표기가 없어 영양성분으로 추정한 값(약 '+cal.v.toLocaleString()+' kcal/kg)을 썼어요.':''}</div>
+    </div>
+
+    <div class="ccta" onclick="compareWithCurrent()">
+      ${icon('compare',22)}
+      <div class="ccta-t"><b>지금 먹는 사료와 비교하기</b><span>성분을 나란히 놓고 비교해드려요</span></div>
+      <span class="arr">${icon('chevronRight',18)}</span>
+    </div>
+
+    <div class="isec" style="margin-bottom:20px">
+      <div class="isec-t">${icon('coins',15)}최저가 비교</div>
+      ${(d.prices&&d.prices.length) ? d.prices.map(p=>`
+        <div class="prow">
+          <div class="pinfo">
+            <div class="pshop">${SHOP_KO[p.shop]||p.shop||'판매처'}${p.wg?` · ${gLabel(p.wg)}`:''}</div>
+            <div class="pamt"><b>${won(p.price)}원</b>${p.pKg?`<span class="punit">(kg당 ${won(p.pKg)}원)</span>`:''}</div>
+          </div>
+          ${p.url
+            ? `<button class="pbtn" onclick="window.open('${String(p.url).replace(/'/g,"\\'")}','_blank','noopener')">구매</button>`
+            : `<button class="pbtn" disabled>링크 없음</button>`}
+        </div>`).join('') : `<div class="prow"><div class="pinfo"><div class="pshop">등록된 판매처 가격이 없어요</div></div></div>`}
+      <p class="note" style="padding:8px 0 0">제휴 수수료를 받지만 점수에는 영향 없어요.</p>
+    </div>
+  </div>`;
+
+  recalcFeeding();
   openOv('detail');
+  document.getElementById('s-detail').scrollTop = 0;
 }
+
+function nutrItem(label, val, max, colorFn, note){
+  if(val == null) return `<div class="nitem">
+    <div class="nlab">${label}</div>
+    <div class="nval na">정보 없음</div>
+    <div class="nbar"><i style="width:0"></i></div>
+    <div class="nnote">${note}</div></div>`;
+  return `<div class="nitem">
+    <div class="nlab">${label}</div>
+    <div class="nval">${val}<span>%</span></div>
+    <div class="nbar"><i style="width:${Math.min(val/max*100,100)}%;background:${colorFn(val)}"></i></div>
+    <div class="nnote">${note}</div></div>`;
+}
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function togglePop(btn){
+  const pop = btn.nextElementSibling;
+  const open = pop.classList.contains('show');
+  document.querySelectorAll('.ipop.show').forEach(p=>p.classList.remove('show'));
+  if(!open) pop.classList.add('show');
+}
+document.addEventListener('click', e=>{
+  if(!e.target.closest('.ipop-wrap'))
+    document.querySelectorAll('.ipop.show').forEach(p=>p.classList.remove('show'));
+});
+function switchDtab(tab){
+  ['analysis','info'].forEach(t=>{
+    document.getElementById('dt-'+t)?.classList.toggle('on', t===tab);
+    document.getElementById('dp-'+t)?.classList.toggle('on', t===tab);
+  });
+  document.getElementById('s-detail').scrollTo({top:0, behavior:'smooth'});
+}
+function setWeight(v){
+  calc.w = Math.max(0, +v || 0);
+  const num = document.getElementById('wNum'), sl = document.getElementById('wSlider');
+  if(num && num.value != v) num.value = v;
+  if(sl && calc.w >= 1 && calc.w <= 50) sl.value = calc.w;
+  recalcFeeding();
+}
+function setMeals(m){
+  calc.meals = m;
+  document.querySelectorAll('[data-meal]').forEach(b=>b.classList.toggle('on', +b.dataset.meal===m));
+  recalcFeeding();
+}
+function setBag(g, btn){
+  calc.bagG = g;
+  document.getElementById('bagNum').value = '';
+  document.querySelectorAll('[data-bag]').forEach(b=>b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  recalcFeeding();
+}
+function setBagCustom(v){
+  const kg = +v; if(!kg || kg <= 0) return;
+  calc.bagG = kg * 1000;
+  document.querySelectorAll('[data-bag]').forEach(b=>b.classList.remove('on'));
+  recalcFeeding();
+}
+function recalcFeeding(){
+  const hl = document.getElementById('chl'); if(!hl) return;
+  const w = calc.w;
+  const dailyG = w > 0 ? Math.round(70 * Math.pow(w, 0.75) * 1.6 / calc.calKg * 1000) : 0;
+  const mealG = calc.meals > 0 ? Math.round(dailyG / calc.meals) : dailyG;
+  hl.innerHTML = `
+    <div class="chl-c"><div class="chl-l">하루 권장량</div><div class="chl-v">${dailyG}<span>g</span></div></div>
+    <div class="chl-d"></div>
+    <div class="chl-c"><div class="chl-l">1회 (하루 ${calc.meals}끼)</div><div class="chl-v">${mealG}<span>g</span></div></div>`;
+  const days = dailyG > 0 ? Math.floor(calc.bagG / dailyG) : 0;
+  document.getElementById('bagDays').innerHTML =
+    `${gLabel(calc.bagG)} 한 봉지로 하루 ${calc.meals}끼 급여 시 약 <b>${days}</b>일`;
+}
+
+/* STEP 4에서 구현 */
+function addToCompare(){ alert('비교 기능은 다음 단계에서 만들어요'); }
+function compareWithCurrent(){ alert('비교 기능은 다음 단계에서 만들어요'); }
 
 /* ═══ TOPBAR SHADOW ═══ */
 document.querySelectorAll('.screen').forEach(s=>{
