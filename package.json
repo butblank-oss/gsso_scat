@@ -1,0 +1,16 @@
+{
+  "name": "balsatang-data",
+  "version": "1.0.0",
+  "private": true,
+  "description": "발사탕 사료 데이터 파이프라인 — 수집·검증·발행",
+  "type": "module",
+  "scripts": {
+    "gate1": "node scripts/gate1-validate.mjs",
+    "gate1:live": "node scripts/gate1-validate.mjs --live",
+    "gate3": "node scripts/gate3-consistency.mjs",
+    "review": "node scripts/build-review.mjs",
+    "review:live": "node scripts/build-review.mjs --live",
+    "publish": "node scripts/merge-approved.mjs",
+    "check": "npm run gate1 && npm run gate3"
+  }
+}
