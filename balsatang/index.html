@@ -54,6 +54,9 @@ svg.i{display:inline-block;vertical-align:-.14em;fill:none;stroke:currentColor;
   font-size:12.5px;line-height:1.55;color:#7A5A16}
 .onote b{font-weight:700}
 .onote svg{flex-shrink:0;margin-top:1px}
+.blogo{width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  background:#fff;border-radius:inherit;padding:14%;box-sizing:border-box}
+.blogo img{width:100%;height:100%;object-fit:contain;border-radius:0}
 .bmark{width:100%;height:100%;display:flex;align-items:center;justify-content:center;
   color:#fff;font-weight:800;letter-spacing:-.02em;border-radius:inherit;
   font-family:'Pretendard',-apple-system,sans-serif;user-select:none}
@@ -933,13 +936,17 @@ function specOriginNote(f){
    제품 사진이 없을 때 브랜드를 알아볼 수 있게 이니셜 마크를 보여준다.
    실제 브랜드 로고 이미지는 상표권 문제가 있어 임의로 싣지 않는다.
    사용 허락을 받은 로고가 있으면 BRAND_LOGO 에 경로를 넣으면 그쪽이 우선한다. */
+/* 브랜드 로고 파일. balsatang/assets/brands/ 에 파일을 넣고 여기에 등록하면
+   이니셜 마크 대신 로고가 나온다. 파일이 없거나 로드에 실패하면 자동으로 마크로 되돌아간다.
+   정적 사이트라 디렉터리를 훑을 수 없어 명시적으로 적는다.
+   로고는 상표이므로 공식 미디어킷이나 라이선스가 확인된 것만 넣는다. */
 const BRAND_LOGO = {
-  /* 예: orijen: '/assets/brands/orijen.svg' */
+  'royal-canin': 'assets/brands/royal-canin.svg'   // Wikimedia Commons, Public domain
 };
 
 /* 브랜드별 고정 색. 없는 브랜드는 슬러그 해시로 색을 만든다. */
 const BRAND_COLOR = {
-  orijen:'#8B1E2D', acana:'#1F5B4E', royalcanin:'#B8232F',
+  orijen:'#8B1E2D', acana:'#1F5B4E', 'royal-canin':'#B8232F', harim:'#C8102E',
   ziwipeak:'#2E4057', instinct:'#C1571F'
 };
 
@@ -960,12 +967,20 @@ function brandInitial(f){
   return /[가-힣]/.test(name[0]) ? name[0] : name.slice(0,2).toUpperCase();
 }
 
-function brandMark(f, size){
-  const logo = BRAND_LOGO[f.brandSlug];
-  if(logo) return `<img src="${logo}" alt="${esc(f.brand)}" loading="lazy">`;
+/* 이니셜 마크. 로고가 없을 때, 그리고 로고 로드가 실패했을 때의 대체물이다. */
+function initialMark(f, size){
   const fs = Math.round(size * 0.42);
   return `<div class="bmark" style="background:${brandColor(f)};font-size:${fs}px"
             title="${esc(f.brand)}">${esc(brandInitial(f))}</div>`;
+}
+
+function brandMark(f, size){
+  const logo = BRAND_LOGO[f.brandSlug];
+  if(!logo) return initialMark(f, size);
+  /* 로고 파일이 없거나 깨졌으면 이니셜 마크로 교체한다 */
+  const fallback = initialMark(f, size).replace(/"/g, '&quot;');
+  return `<div class="blogo"><img src="${logo}" alt="${esc(f.brand)}" loading="lazy"
+            onerror="this.closest('.blogo').outerHTML='${fallback}'"></div>`;
 }
 function thumb(f, cls, sz){
   return hasThumb(f)
