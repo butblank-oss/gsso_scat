@@ -482,6 +482,119 @@ svg.i{display:inline-block;vertical-align:-.14em;fill:none;stroke:currentColor;
 .arel{margin:26px 20px 0;padding-top:22px;border-top:1px solid var(--line)}
 .arel-t{font-size:15px;font-weight:800;letter-spacing:-.5px;margin-bottom:12px}
 
+/* ══ MYDOG FORM ══ */
+.mform{padding:6px 20px 24px}
+.mform-t{font-size:22px;font-weight:900;letter-spacing:-.8px;line-height:1.3}
+.mform-s{margin-top:8px;margin-bottom:26px;font-size:13.5px;color:var(--sub);
+  line-height:1.6;letter-spacing:-.2px}
+.frow{margin-bottom:24px}
+.flabel{display:block;font-size:13px;font-weight:800;letter-spacing:-.3px;margin-bottom:10px}
+.flabel span{font-weight:500;color:var(--muted);font-size:12px}
+.finput{width:100%;border:1px solid var(--line);border-radius:13px;padding:13px 15px;
+  font:inherit;font-size:14.5px;background:var(--card);outline:none;letter-spacing:-.2px;
+  transition:border-color var(--t)}
+.finput:focus{border-color:var(--brand)}
+.finput::placeholder{color:var(--muted)}
+.optgrid{display:grid;gap:8px}
+.optgrid.c2{grid-template-columns:1fr 1fr}
+.optgrid.c3{grid-template-columns:repeat(3,1fr)}
+.opt{display:flex;align-items:center;justify-content:center;gap:5px;padding:13px 8px;
+  border:1px solid var(--line);border-radius:13px;background:var(--card);font:inherit;
+  font-size:13px;font-weight:700;color:var(--ink2);cursor:pointer;letter-spacing:-.3px;
+  line-height:1.35;text-align:center;transition:all .2s var(--ease)}
+.opt:active{transform:scale(.96)}
+.opt .i{color:var(--sub);flex-shrink:0;transition:color .2s var(--ease)}
+.opt.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.opt.on .i{color:#fff}
+.opt.al.on{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.opt small{display:block;font-size:10.5px;font-weight:500;opacity:.75;margin-top:2px}
+.pickres{border:1px solid var(--line);border-radius:13px;margin-top:8px;overflow:hidden;background:var(--card)}
+.pickres-i{padding:12px 15px;font-size:13.5px;font-weight:600;cursor:pointer;
+  border-bottom:1px solid var(--line);letter-spacing:-.3px;transition:background var(--t)}
+.pickres-i:last-child{border-bottom:none}
+.pickres-i:active{background:var(--card2)}
+.picksel{display:flex;align-items:center;gap:10px;margin-top:8px;padding:12px 14px;
+  background:var(--brand-soft);border:1px solid var(--brand-mid);border-radius:13px}
+.picksel-n{flex:1;font-size:13.5px;font-weight:700;letter-spacing:-.3px;color:var(--brand)}
+.picksel-x{width:24px;height:24px;border:none;background:none;color:var(--brand);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;padding:0}
+.msubmit{width:100%;margin-top:6px;padding:17px 0;border:none;border-radius:15px;
+  background:var(--brand);color:#fff;font:inherit;font-size:16px;font-weight:900;
+  letter-spacing:-.5px;cursor:pointer;box-shadow:0 6px 18px rgba(62,78,102,.3);
+  transition:transform .16s var(--ease)}
+.msubmit:active{transform:scale(.98)}
+
+/* ══ MYDOG RESULT ══ */
+.mres-h{display:flex;align-items:flex-start;gap:12px;padding:6px 20px 6px}
+.mres-t{font-size:22px;font-weight:900;letter-spacing:-.8px;line-height:1.3}
+.mres-s{margin-top:7px;font-size:12.5px;color:var(--sub);line-height:1.6;letter-spacing:-.2px}
+.mres-s .i{vertical-align:-.15em;color:var(--muted)}
+.cana{margin:16px 20px 0;border:1px solid var(--warn-mid);border-radius:var(--r-lg);
+  overflow:hidden;background:var(--card)}
+.cana-h{display:flex;align-items:center;gap:8px;padding:14px 16px;background:var(--warn-soft);cursor:pointer}
+.cana-h .i{color:var(--warn);flex-shrink:0}
+.cana-t{flex:1;font-size:13.5px;font-weight:800;color:var(--warn);letter-spacing:-.4px}
+.cana-a{color:var(--warn);display:flex;transform:rotate(90deg);transition:transform .3s var(--ease)}
+.cana.open .cana-a{transform:rotate(-90deg)}
+.cana-b{display:grid;grid-template-rows:0fr;transition:grid-template-rows .34s var(--ease)}
+.cana.open .cana-b{grid-template-rows:1fr}
+.cana-b>div{overflow:hidden}
+.cana-in{padding:14px 16px;display:flex;flex-direction:column;gap:13px}
+.cissue{display:flex;gap:10px}
+.cdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:6px}
+.cdot.red{background:var(--bad)}
+.cdot.yellow{background:var(--warn)}
+.cissue-t{font-size:13px;font-weight:800;letter-spacing:-.3px;margin-bottom:3px}
+.cissue-d{font-size:12px;color:var(--sub);line-height:1.55;letter-spacing:-.2px}
+.cana-cta{margin-top:2px;padding:11px 13px;background:var(--brand-soft);border-radius:11px;
+  font-size:12.5px;font-weight:700;color:var(--brand);letter-spacing:-.3px;text-align:center}
+
+.reccard{margin:0 20px 12px;background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r-lg);overflow:hidden;animation:cardIn .36s var(--ease) both}
+.reccard.best{border-color:var(--brand-mid);box-shadow:0 4px 16px rgba(62,78,102,.1)}
+.recmain{padding:16px;cursor:pointer}
+.recbadge{display:inline-flex;align-items:center;gap:4px;background:var(--ink);color:#fff;
+  font-size:10.5px;font-weight:800;padding:4px 9px;border-radius:7px;margin-bottom:11px;
+  letter-spacing:-.2px}
+.rechead{display:flex;gap:12px;align-items:flex-start}
+.recthumb{width:48px;height:48px;flex-shrink:0;border-radius:12px;background:var(--bg);
+  border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink2)}
+.recbrand{font-size:11px;color:var(--muted);font-weight:700;margin-bottom:3px}
+.recname-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.recname{font-size:14.5px;font-weight:800;letter-spacing:-.4px}
+.recprice{margin-top:6px;font-size:12px;color:var(--sub);font-weight:600;letter-spacing:-.2px}
+.recmatch{display:flex;align-items:center;gap:9px;margin:13px 0 11px}
+.recbar{flex:1;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.recbar i{display:block;height:100%;border-radius:3px;
+  background:linear-gradient(90deg,var(--brand),var(--brand-deep));transition:width .7s var(--ease)}
+.recpct{font-size:12px;font-weight:800;color:var(--brand);letter-spacing:-.3px;flex-shrink:0}
+.recreasons{display:flex;flex-direction:column;gap:5px}
+.recreason{display:flex;align-items:flex-start;gap:6px;font-size:12.5px;color:var(--sub);
+  line-height:1.55;letter-spacing:-.2px}
+.recreason .i{color:var(--good);flex-shrink:0;margin-top:2px}
+.recdiffs{display:flex;gap:8px;margin-top:12px}
+.recdiff{flex:1;text-align:center;background:var(--bg);border-radius:11px;padding:9px 0}
+.recdiff-l{font-size:10.5px;color:var(--muted);font-weight:700;margin-bottom:3px}
+.recdiff-v{font-size:14px;font-weight:900;letter-spacing:-.4px}
+.recdiff-v.up{color:var(--good)}
+.recdiff-v.dn{color:var(--bad)}
+.trtoggle{display:flex;align-items:center;gap:6px;padding:13px 16px;border-top:1px solid var(--line);
+  cursor:pointer;font-size:12.5px;font-weight:700;color:var(--sub);letter-spacing:-.3px}
+.trtoggle .i{color:var(--muted)}
+.trtoggle .t-arr{margin-left:auto;display:flex;transform:rotate(90deg);
+  transition:transform .3s var(--ease)}
+.trwrap.open .t-arr{transform:rotate(-90deg)}
+.trbody{display:grid;grid-template-rows:0fr;transition:grid-template-rows .34s var(--ease)}
+.trwrap.open .trbody{grid-template-rows:1fr}
+.trbody>div{overflow:hidden}
+.trin{padding:4px 16px 16px;display:flex;flex-direction:column;gap:11px}
+.trrow{display:flex;align-items:center;gap:10px}
+.trday{width:56px;flex-shrink:0;font-size:11px;font-weight:800;color:var(--sub)}
+.trbar{flex:1;height:9px;border-radius:5px;overflow:hidden;display:flex;background:var(--line)}
+.trbar .old{background:var(--brand-mid)}
+.trbar .new{background:var(--brand)}
+.trlabel{width:104px;flex-shrink:0;text-align:right;font-size:10.5px;color:var(--muted);font-weight:600}
+
 /* ── BOTTOM NAV ── */
 #nav{position:absolute;left:0;right:0;bottom:0;z-index:50;display:flex;
   height:calc(var(--nav-h) + env(safe-area-inset-bottom));
@@ -592,10 +705,10 @@ svg.i{display:inline-block;vertical-align:-.14em;fill:none;stroke:currentColor;
   <div id="articleBody" style="flex:1"></div>
 </section>
 
-<!-- ══ MYDOG (STEP 6) ══ -->
+<!-- ══ MYDOG ══ -->
 <section class="screen" id="s-mydog">
   <header class="topbar"><div class="logo">발<em>사탕</em></div><span class="pill">맞춤 추천</span></header>
-  <div class="empty"><span data-ico="paw" data-sz="44"></span>맞춤 화면은 다음 단계에서 만들어요</div>
+  <div id="mydogBody" style="flex:1"></div>
 </section>
 
 <!-- ══ SEARCH (overlay) ══ -->
@@ -702,6 +815,7 @@ function goTab(id){
   activeTab = id;
   if(id === 'compare') renderCompare();
   if(id === 'content') renderContent();
+  if(id === 'mydog') renderMydog();
 }
 function openOv(id){
   const el = document.getElementById('s-'+id);
@@ -1464,6 +1578,321 @@ function renderArticleBody(raw){
   }
   flushAll();
   return out.join('');
+}
+
+/* ═══ MYDOG ═══ */
+const ALLERGEN_MAP = {
+  chicken:{label:'닭고기',   ingr:['닭고기','닭심장','닭간','닭부산물분','가금류분','생닭간','닭가슴','계육']},
+  beef:   {label:'소고기',   ingr:['소고기','소간','소심장','우육','우심','한우','비프']},
+  egg:    {label:'달걀',     ingr:['달걀','계란','전란','난황','난분','난백','계란분']},
+  dairy:  {label:'유제품',   ingr:['우유','치즈','요거트','유청','유단백','분유','락토','유당','버터']},
+  lamb:   {label:'양고기',   ingr:['양고기','양육','램','양심장','양간']},
+  pork:   {label:'돼지고기', ingr:['돼지고기','돈육','포크','돼지간','돼지심장']},
+  fish:   {label:'생선류',   ingr:['청어','청어유','연어','연어유','어유','고등어','참치','명태','대구','어육','북어','어분','정어리']},
+  grain:  {label:'곡물(밀)', ingr:['밀','소맥분','글루텐','통밀','밀가루']},
+  corn:   {label:'옥수수',   ingr:['옥수수','옥분','콘글루텐']},
+  soy:    {label:'콩(대두)', ingr:['대두','대두분','대두박','콩','두부','콩단백']}
+};
+const CONCERN_OPTIONS = [
+  {key:'healthy',     label:'건강한 아이예요',      ico:'smile'},
+  {key:'picky_eater', label:'입맛이 까다로워요',    ico:'utensils'},
+  {key:'weight',      label:'체중 관리가 필요해요', ico:'scale'},
+  {key:'eye_tear',    label:'눈물이 많아요',        ico:'droplet'},
+  {key:'allergy',     label:'알러지가 의심돼요',    ico:'wind'},
+  {key:'digestive',   label:'소화가 약해요',        ico:'soup'},
+  {key:'joint',       label:'관절이 걱정돼요',      ico:'bone'},
+  {key:'post_surgery',label:'수술·질환 후예요',     ico:'cross'}
+];
+const SIZE_OPTIONS = [
+  {key:'small', label:'소형', sub:'10kg 미만'},
+  {key:'medium',label:'중형', sub:'10~25kg'},
+  {key:'large', label:'대형', sub:'25kg 초과'}
+];
+const AGE_OPTIONS = [
+  {key:'puppy', label:'퍼피', sub:'~1세'},
+  {key:'adult', label:'성견', sub:'1~7세'},
+  {key:'senior',label:'시니어', sub:'7세+'}
+];
+const GRAIN_FIRST = ['쌀','옥수수','밀','현미','소맥분','타피오카','감자'];
+
+let dog = {name:'', size:'small', stage:'adult', concerns:[], allergens:[], curFood:null};
+let mydogResult = null;
+
+function foodIngrNames(f){ return ((DETAIL[f.id]||{}).ingr||[]).map(i=>i.name||''); }
+function foodLegumes(f){
+  return [...new Set(foodIngrNames(f).filter(n=>LEGUME_NAMES.some(l=>n.includes(l))))];
+}
+function hasAllergen(f, allergens){
+  if(!allergens.length) return false;
+  const names = foodIngrNames(f);
+  return allergens.some(ak=>(ALLERGEN_MAP[ak]?.ingr||[]).some(ai=>names.some(n=>n.includes(ai))));
+}
+function calcMatchScore(f){
+  if(hasAllergen(f, dog.allergens)) return -1;
+  let s = 0;
+  s += dog.concerns.length
+    ? (dog.concerns.filter(c=>f.concerns.includes(c)).length / dog.concerns.length) * 50
+    : 25;
+  s += (f.score / 10) * 30;
+  s += (f.ages.includes(dog.stage) || f.ages.includes('all')) ? 10 : 4;
+  s += Math.min(dog.concerns.filter(c=>f.func.includes(c)).length * 5, 10);
+  return Math.min(100, Math.round(s));
+}
+function matchReasons(f){
+  const n = (DETAIL[f.id]||{}).nutrient || {};
+  const M = {
+    healthy:'건강한 아이에게 잘 맞아요',
+    picky_eater: n.meat != null ? `생육 ${n.meat}%로 기호성이 좋아요` : '기호성이 좋은 구성이에요',
+    weight:'저지방·저탄수로 체중 관리에 도움돼요',
+    eye_tear:'오메가3 원료로 눈물 개선에 도움될 수 있어요',
+    allergy:'알러지 유발 원료가 적어요',
+    digestive:'소화하기 좋은 원료 구성이에요',
+    joint:'관절 건강에 도움되는 성분이 있어요',
+    post_surgery:'회복기 아이에게 맞는 구성이에요',
+    senior:'시니어에게 적합한 원료 구성이에요',
+    puppy:'성장기 아이에게 단백질이 충분해요'
+  };
+  const r = dog.concerns.filter(c=>f.concerns.includes(c)).map(c=>M[c]).filter(Boolean);
+  if(f.score >= 8.5) r.push('성분 기준 상위 사료예요');
+  if(f.warnN === 0) r.push('주의 성분이 없어요');
+  if(dog.concerns.includes('allergy') && !foodLegumes(f).length) r.push('콩류가 없어요');
+  return r.slice(0,3);
+}
+function analyzeCurFood(f){
+  const d = DETAIL[f.id] || {}, n = d.nutrient || {};
+  const ingr = (d.ingr||[]).slice().sort((a,b)=>(a.rank||99)-(b.rank||99));
+  const out = [];
+  const first = ingr[0]?.name || '';
+  if(GRAIN_FIRST.some(g=>first.includes(g)))
+    out.push({sev:'red', title:'첫 번째 재료가 고기가 아니에요',
+      desc:`'${first}'이 가장 많이 들어있어요. 강아지는 원래 육식동물이에요.`});
+  const susp = ingr.filter(i=>i.safe==='danger').map(i=>i.name);
+  if(susp.length)
+    out.push({sev:'red', title:'출처가 불투명한 원료가 있어요',
+      desc:`${susp.join(', ')} — 어떤 부위인지 알 수 없어요.`});
+  if(dog.concerns.includes('weight') && n.carb >= 35)
+    out.push({sev:'red', title:`탄수화물이 ${n.carb}%로 높아요`, desc:'체중 관리 중인 아이에게 불리해요.'});
+  if(dog.concerns.includes('eye_tear') && !f.func.includes('eye_tear'))
+    out.push({sev:'yellow', title:'눈물 개선에 도움되는 원료가 없어요',
+      desc:'오메가3(청어, 연어유 등) 원료가 없어요.'});
+  if(dog.concerns.includes('joint') && !f.func.includes('joint'))
+    out.push({sev:'yellow', title:'관절 케어 원료가 없어요',
+      desc:'초록입홍합, 글루코사민 같은 관절 원료가 포함되지 않았어요.'});
+  const leg = foodLegumes(f);
+  if(dog.concerns.includes('allergy') && leg.length)
+    out.push({sev:'yellow', title:'알러지 유발 가능 성분이 있어요', desc:`${leg.join(', ')}이 포함되어 있어요.`});
+  return out;
+}
+
+function renderMydog(){ mydogResult ? renderMydogResult() : renderMydogForm(); }
+
+function renderMydogForm(){
+  document.getElementById('mydogBody').innerHTML = `
+  <div class="mform">
+    <div class="mform-t">우리 아이를 알려주세요 ${icon('dog',22)}</div>
+    <div class="mform-s">딱 몇 가지만 알려주시면 맞춤 사료를 찾아드려요. 회원가입 없이도 돼요.</div>
+
+    <div class="frow">
+      <label class="flabel">아이 이름</label>
+      <input class="finput" id="dogName" placeholder="이름 (선택)" value="${esc(dog.name)}" autocomplete="off">
+    </div>
+
+    <div class="frow">
+      <label class="flabel">체형</label>
+      <div class="optgrid c3">${SIZE_OPTIONS.map(o=>
+        `<button class="opt${dog.size===o.key?' on':''}" data-size="${o.key}" onclick="setDog('size','${o.key}',this)">
+          <div>${o.label}<small>${o.sub}</small></div></button>`).join('')}</div>
+    </div>
+
+    <div class="frow">
+      <label class="flabel">나이</label>
+      <div class="optgrid c3">${AGE_OPTIONS.map(o=>
+        `<button class="opt${dog.stage===o.key?' on':''}" data-stage="${o.key}" onclick="setDog('stage','${o.key}',this)">
+          <div>${o.label}<small>${o.sub}</small></div></button>`).join('')}</div>
+    </div>
+
+    <div class="frow">
+      <label class="flabel">지금 고민이 있다면 골라주세요 <span>(복수 선택)</span></label>
+      <div class="optgrid c2">${CONCERN_OPTIONS.map(o=>
+        `<button class="opt${dog.concerns.includes(o.key)?' on':''}" onclick="toggleConcern('${o.key}',this)">
+          ${icon(o.ico,14)}${o.label}</button>`).join('')}</div>
+    </div>
+
+    <div class="frow">
+      <label class="flabel">알러지 있는 원료 <span>(선택하면 해당 원료 포함 사료 제외)</span></label>
+      <div class="optgrid c3">${Object.entries(ALLERGEN_MAP).map(([k,v])=>
+        `<button class="opt al${dog.allergens.includes(k)?' on':''}" onclick="toggleAllergen('${k}',this)">${v.label}</button>`).join('')}</div>
+    </div>
+
+    <div class="frow">
+      <label class="flabel">지금 먹는 사료 <span>(선택하면 문제점 분석 + 비교)</span></label>
+      <input class="finput" id="curSearch" placeholder="사료 이름을 검색하세요"
+             oninput="filterCurFood()" onfocus="filterCurFood()" autocomplete="off">
+      <div id="curResults"></div>
+      <div id="curSelected"></div>
+    </div>
+
+    <button class="msubmit" onclick="submitMydog()">맞춤 사료 추천받기 →</button>
+  </div>`;
+  if(dog.curFood) showCurFood();
+}
+function setDog(field, val, btn){
+  dog[field] = val;
+  btn.parentElement.querySelectorAll('.opt').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
+function toggleConcern(k, btn){
+  const i = dog.concerns.indexOf(k);
+  i >= 0 ? dog.concerns.splice(i,1) : dog.concerns.push(k);
+  btn.classList.toggle('on');
+}
+function toggleAllergen(k, btn){
+  const i = dog.allergens.indexOf(k);
+  i >= 0 ? dog.allergens.splice(i,1) : dog.allergens.push(k);
+  btn.classList.toggle('on');
+}
+function filterCurFood(){
+  const q = (document.getElementById('curSearch').value||'').trim();
+  const box = document.getElementById('curResults');
+  if(!q){ box.innerHTML = ''; return; }
+  const list = FOODS.filter(f=>(f.brand+f.name).includes(q)).slice(0,5);
+  box.innerHTML = list.length
+    ? `<div class="pickres">${list.map(f=>
+        `<div class="pickres-i" onclick="selectCurFood('${f.id}')">${f.brand} ${f.name}</div>`).join('')}</div>`
+    : '';
+}
+function selectCurFood(id){
+  dog.curFood = id;
+  document.getElementById('curSearch').value = '';
+  document.getElementById('curResults').innerHTML = '';
+  showCurFood();
+}
+function showCurFood(){
+  const f = FOODS.find(x=>x.id===dog.curFood);
+  const el = document.getElementById('curSelected'); if(!el) return;
+  el.innerHTML = f ? `<div class="picksel">
+    <span class="picksel-n">${f.brand} ${f.name}</span>
+    <button class="picksel-x" onclick="clearCurFood()" aria-label="선택 해제">${icon('ban',16)}</button>
+  </div>` : '';
+}
+function clearCurFood(){ dog.curFood = null; showCurFood(); }
+
+function submitMydog(){
+  dog.name = (document.getElementById('dogName')?.value || '').trim();
+  const recs = FOODS
+    .map(f=>({f, score: calcMatchScore(f)}))
+    .filter(x=>x.score >= 0)
+    .sort((a,b)=>b.score - a.score)
+    .slice(0,4)
+    .map(x=>({...x.f, match:x.score, reasons: matchReasons(x.f)}));
+  mydogResult = {recs};
+  renderMydogResult();
+  document.getElementById('s-mydog').scrollTop = 0;
+}
+function resetMydog(){ mydogResult = null; renderMydogForm(); document.getElementById('s-mydog').scrollTop = 0; }
+
+function renderMydogResult(){
+  const name = dog.name || '우리 아이';
+  const curF = dog.curFood ? FOODS.find(x=>x.id===dog.curFood) : null;
+  const alLabels = dog.allergens.map(k=>ALLERGEN_MAP[k].label);
+  const conIcos = dog.concerns.map(k=>{
+    const o = CONCERN_OPTIONS.find(x=>x.key===k); return o ? icon(o.ico,13) : '';
+  }).join(' ');
+  const recs = mydogResult.recs;
+
+  document.getElementById('mydogBody').innerHTML = `
+  <div class="mres-h">
+    <div style="flex:1;min-width:0">
+      <div class="mres-t">${esc(name)}에게 맞는 사료</div>
+      <div class="mres-s">
+        ${dog.concerns.length ? `${conIcos} 고민 기반 추천` : '성분 기준 추천'}
+        ${alLabels.length ? `<br>${icon('ban',13)} ${alLabels.join(', ')} 제외` : ''}
+      </div>
+    </div>
+    <button class="reset-btn" onclick="resetMydog()">다시 설정</button>
+  </div>
+
+  ${curF ? renderCurAnalysis(curF) : ''}
+
+  <div style="padding:18px 20px 10px">
+    <div style="font-size:12px;color:var(--muted);font-weight:700">추천 사료 ${recs.length}개</div>
+  </div>
+
+  ${recs.length ? recs.map((f,i)=>renderRecCard(f,i,curF)).join('')
+    : `<div class="empty">${icon('search',44)}조건에 맞는 사료가 없어요<br>알러지 원료 선택을 줄여보세요</div>`}
+
+  <p class="note">추천 결과는 성분 데이터 기반 참고용이에요. 건강 문제는 수의사와 상담하세요.</p>`;
+}
+function renderCurAnalysis(f){
+  const issues = analyzeCurFood(f);
+  if(!issues.length) return `<div class="cana" style="border-color:var(--good-mid)">
+    <div class="cana-h" style="background:var(--good-soft);cursor:default">
+      ${icon('shieldCheck',17)}
+      <div class="cana-t" style="color:var(--good)">지금 먹는 사료에서 특별한 문제는 안 보여요</div>
+    </div></div>`;
+  return `<div class="cana" id="cana">
+    <div class="cana-h" onclick="document.getElementById('cana').classList.toggle('open')">
+      ${icon('alert',17)}
+      <div class="cana-t">현재 사료에서 ${issues.length}가지 아쉬운 점이 있어요</div>
+      <span class="cana-a">${icon('chevronRight',16)}</span>
+    </div>
+    <div class="cana-b"><div><div class="cana-in">
+      ${issues.map(i=>`<div class="cissue">
+        <div class="cdot ${i.sev}"></div>
+        <div><div class="cissue-t">${i.title}</div><div class="cissue-d">${i.desc}</div></div>
+      </div>`).join('')}
+      <div class="cana-cta">아래 사료로 바꾸면 더 나아질 수 있어요 ↓</div>
+    </div></div></div>
+  </div>`;
+}
+function renderRecCard(f, idx, curF){
+  const rn = (DETAIL[f.id]||{}).nutrient || {};
+  const cn = curF ? ((DETAIL[curF.id]||{}).nutrient || {}) : {};
+  let diffs = '';
+  if(curF && rn.protein != null && cn.protein != null){
+    const pd = rn.protein - cn.protein;
+    const cd = (rn.carb != null && cn.carb != null) ? rn.carb - cn.carb : null;
+    const cell = (label, v, goodIsUp) => `<div class="recdiff">
+      <div class="recdiff-l">${label}</div>
+      <div class="recdiff-v ${(goodIsUp ? v>=0 : v<=0) ? 'up':'dn'}">${v>0?'+':''}${v.toFixed(1).replace(/\.0$/,'')}%p</div></div>`;
+    diffs = `<div class="recdiffs">${cell('단백질', pd, true)}${cd!=null?cell('탄수화물', cd, false):''}</div>`;
+  }
+  return `<div class="reccard${idx===0?' best':''}" style="animation-delay:${idx*70}ms">
+    <div class="recmain" onclick="openDetail('${f.id}')">
+      ${idx===0?`<div class="recbadge">${icon('trophy',12)}Best Pick</div>`:''}
+      <div class="rechead">
+        <div class="recthumb">${icon(f.ico,24)}</div>
+        <div style="flex:1;min-width:0">
+          <div class="recbrand">${f.brand} · ${TYPE_KO[f.type]||f.type}</div>
+          <div class="recname-row"><span class="recname">${f.name}</span>${warnBadge(f)}${rxBadge(f)}</div>
+          ${funcTags(f,3) ? `<div class="fmeta">${funcTags(f,3)}</div>` : ''}
+          ${f.price ? `<div class="recprice">최저 ${won(f.price.p)}원 · ${gLabel(f.price.wg)}</div>` : ''}
+        </div>
+      </div>
+      <div class="recmatch">
+        <div class="recbar"><i style="width:${f.match}%"></i></div>
+        <div class="recpct">매칭 ${f.match}%</div>
+      </div>
+      <div class="recreasons">${f.reasons.map(r=>
+        `<div class="recreason">${icon('check',13)}${r}</div>`).join('')}</div>
+      ${diffs}
+    </div>
+    ${curF ? `<div class="trwrap" id="tr-${f.id}">
+      <div class="trtoggle" onclick="document.getElementById('tr-${f.id}').classList.toggle('open')">
+        ${icon('refresh',15)}이 사료로 바꾸려면 어떻게 하나요?
+        <span class="t-arr">${icon('chevronRight',15)}</span>
+      </div>
+      <div class="trbody"><div><div class="trin">
+        ${[[ '1~3일차',75,25],['4~6일차',50,50],['7~9일차',25,75],['10일차~',0,100]].map(([d,o,n])=>
+          `<div class="trrow">
+            <div class="trday">${d}</div>
+            <div class="trbar"><div class="old" style="width:${o}%"></div><div class="new" style="width:${n}%"></div></div>
+            <div class="trlabel">${o?`기존 ${o}% · `:''}신규 ${n}%</div>
+          </div>`).join('')}
+        <div class="calc-hint" style="margin-top:2px">변이 무르면 그 단계에서 2~3일 더 유지하세요.</div>
+      </div></div></div>
+    </div>` : ''}
+  </div>`;
 }
 
 /* ═══ TOAST ═══ */
