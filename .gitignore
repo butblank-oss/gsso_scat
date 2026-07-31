@@ -29,3 +29,6 @@ game28.dta
 
 # Log files
 warnings.log
+
+# 검증용 스크린샷 — 리포지터리에 남기지 않는다
+/.*.png
