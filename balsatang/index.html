@@ -44,6 +44,8 @@ svg.i{display:inline-block;vertical-align:-.14em;fill:none;stroke:currentColor;
   position:sticky;top:0;z-index:20;background:rgba(250,250,248,.88);backdrop-filter:blur(12px);
   border-bottom:1px solid transparent;transition:border-color var(--t)}
 .topbar.stuck{border-bottom-color:var(--line)}
+/* 네이티브 앱에서만 상태바 높이를 더한다 (native.js 가 html.native 를 붙임) */
+.native .topbar{padding-top:calc(14px + env(safe-area-inset-top))}
 .logo{font-size:19px;font-weight:900;letter-spacing:-.6px}
 .logo em{font-style:normal;color:var(--brand)}
 .pill{margin-left:auto;font-size:10.5px;font-weight:700;color:var(--brand);
@@ -1984,5 +1986,6 @@ renderChips();
 renderHome();
 hydrateIcons();
 </script>
+<script src="native.js"></script>
 </body>
 </html>
