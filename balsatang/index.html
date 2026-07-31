@@ -371,6 +371,9 @@ svg.i{display:inline-block;vertical-align:-.14em;fill:none;stroke:currentColor;
   transition:opacity var(--t)}
 .pbtn:disabled{background:var(--card2);border-color:var(--line);color:var(--muted);cursor:default}
 .pbtn:active:not(:disabled){opacity:.8}
+/* 쿠팡 파트너스 고지 — 구매 링크 바로 아래에만 노출 */
+.affil{margin-top:10px;padding:9px 11px;background:var(--card2);border-radius:10px;
+  font-size:10.5px;line-height:1.6;color:var(--muted);letter-spacing:-.2px}
 
 /* detail bottom bar */
 .dbar{position:absolute;left:0;right:0;bottom:0;z-index:40;display:flex;gap:9px;
@@ -1213,7 +1216,7 @@ function openDetail(id){
             ? `<button class="pbtn" onclick="window.open('${String(p.url).replace(/'/g,"\\'")}','_blank','noopener')">구매</button>`
             : `<button class="pbtn" disabled>링크 없음</button>`}
         </div>`).join('') : `<div class="prow"><div class="pinfo"><div class="pshop">등록된 판매처 가격이 없어요</div></div></div>`}
-      <p class="note" style="padding:8px 0 0">제휴 수수료를 받지만 점수에는 영향 없어요.</p>
+      <p class="affil">이 페이지의 구매 링크는 쿠팡 파트너스 활동의 일환으로, 이에 따라 일정액의 수수료를 제공받습니다.<br>수수료는 발사탕의 성분 분석·점수에 영향을 주지 않아요.</p>
     </div>
   </div>`;
 
