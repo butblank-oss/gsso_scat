@@ -11,6 +11,7 @@ import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { computeScore, loadFoods } from './lib/schema.mjs';
+import { strengthOf } from './compute-func-strength.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const STAGING = join(ROOT, 'data/staging');
@@ -83,6 +84,12 @@ for (const file of files) {
       score: computeScore(p.ratings),   // 제출값이 아니라 항상 공식으로 다시 계산한다
       ratings: p.ratings, func: p.func, warnN: p.warnN ?? 0,
       concerns: p.concerns, price: p.price,
+      /* 기능성 근거 강도. 수집분에 funcIngr 가 있으면 여기서 계산해 둔다.
+         없으면 나중에 scripts/compute-func-strength.mjs 로 일괄 계산한다. */
+      funcStrength: p.funcIngr
+        ? Object.fromEntries(Object.entries(p.funcIngr)
+            .map(([k, v]) => [k, strengthOf(v)]).filter(([, v]) => v > 0))
+        : undefined,
       specOrigin: p.specOrigin,     // 성분표가 국내 기준인지 해외 기준인지 — 사용자에게 표시된다
       status: 'published',
       srcState: 'sourced',
