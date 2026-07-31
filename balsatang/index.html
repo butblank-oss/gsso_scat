@@ -444,6 +444,44 @@ svg.i{display:inline-block;vertical-align:-.14em;fill:none;stroke:currentColor;
 .cmpopen-b span:last-child{font-size:13px;font-weight:800;letter-spacing:-.4px;max-width:100%;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
+/* ══ CONTENT ══ */
+.clist{padding:0 20px;display:flex;flex-direction:column;gap:10px}
+.ccard-l{display:flex;gap:14px;background:var(--card);border:1px solid var(--line);
+  border-radius:16px;padding:15px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.04);
+  animation:cardIn .34s var(--ease) both;transition:transform .16s var(--ease),box-shadow .16s var(--ease)}
+.ccard-l:active{transform:scale(.985);box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.cico{width:52px;height:52px;flex-shrink:0;border-radius:14px;background:var(--brand-soft);
+  display:flex;align-items:center;justify-content:center;color:var(--brand)}
+.ccat{font-size:10.5px;font-weight:800;color:var(--brand);letter-spacing:.2px;margin-bottom:4px}
+.ctitle{font-size:15px;font-weight:800;letter-spacing:-.5px;line-height:1.35;margin-bottom:5px}
+.cdesc{font-size:12.5px;color:var(--sub);line-height:1.55;letter-spacing:-.2px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:7px}
+.cmeta{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);font-weight:600}
+
+/* ══ ARTICLE ══ */
+.acover{width:100%;aspect-ratio:16/9;background:linear-gradient(135deg,var(--brand-soft),#DFE5EE);
+  display:flex;align-items:center;justify-content:center;color:var(--brand);flex-shrink:0}
+.ahead{padding:24px 22px 0;flex-shrink:0}
+.acat{font-size:11.5px;font-weight:800;color:var(--brand);margin-bottom:8px;letter-spacing:-.2px}
+.atitle{font-size:24px;font-weight:900;letter-spacing:-1px;line-height:1.3}
+.article-body{padding:18px 22px 4px;font-size:15px;line-height:1.85;color:var(--ink2);
+  letter-spacing:-.2px;flex-shrink:0}
+.article-body h3{font-size:17px;font-weight:800;color:var(--ink);letter-spacing:-.5px;
+  line-height:1.4;margin:28px 0 10px}
+.article-body p{margin-bottom:16px}
+.article-body p.lead{font-size:16.5px;font-weight:700;color:var(--ink);line-height:1.7;
+  letter-spacing:-.4px;margin-bottom:20px}
+.article-body strong{font-weight:800;color:var(--ink)}
+.article-body ul,.article-body ol{margin:0 0 16px;padding-left:20px}
+.article-body li{margin-bottom:7px;padding-left:2px}
+.article-body li::marker{color:var(--brand);font-weight:700}
+.article-body .highlight{background:var(--brand-soft);border-left:3px solid var(--brand);
+  border-radius:0 12px 12px 0;padding:14px 16px;margin:18px 0;font-size:14px;line-height:1.75}
+.article-body .highlight p:last-child{margin-bottom:0}
+.article-body a{color:var(--brand);font-weight:700;text-decoration:underline;text-underline-offset:2px}
+.arel{margin:26px 20px 0;padding-top:22px;border-top:1px solid var(--line)}
+.arel-t{font-size:15px;font-weight:800;letter-spacing:-.5px;margin-bottom:12px}
+
 /* ── BOTTOM NAV ── */
 #nav{position:absolute;left:0;right:0;bottom:0;z-index:50;display:flex;
   height:calc(var(--nav-h) + env(safe-area-inset-bottom));
@@ -533,10 +571,25 @@ svg.i{display:inline-block;vertical-align:-.14em;fill:none;stroke:currentColor;
   <div style="height:24px;flex-shrink:0"></div>
 </section>
 
-<!-- ══ CONTENT (STEP 5) ══ -->
+<!-- ══ CONTENT ══ -->
 <section class="screen" id="s-content">
   <header class="topbar"><div class="logo">발<em>사탕</em></div><span class="pill">사료 지식</span></header>
-  <div class="empty"><span data-ico="book" data-sz="44"></span>콘텐츠 화면은 다음 단계에서 만들어요</div>
+  <div style="padding:6px 20px 4px;flex-shrink:0">
+    <h1 style="font-size:22px;font-weight:900;letter-spacing:-.8px">사료, 제대로 알기</h1>
+    <p style="font-size:13.5px;color:var(--sub);margin-top:7px;letter-spacing:-.2px">헷갈렸던 것들을 쉽게 풀어드려요</p>
+  </div>
+  <div class="chips" id="contentChips" style="padding-top:16px"></div>
+  <div class="clist" id="contentList"></div>
+  <div style="height:12px;flex-shrink:0"></div>
+</section>
+
+<!-- ══ ARTICLE (overlay) ══ -->
+<section class="screen ov" id="s-article">
+  <header class="topbar">
+    <button class="back" onclick="closeOv()" aria-label="뒤로"><span data-ico="chevronRight" data-sz="20" style="transform:rotate(180deg)"></span></button>
+    <div class="tb-title">콘텐츠</div>
+  </header>
+  <div id="articleBody" style="flex:1"></div>
 </section>
 
 <!-- ══ MYDOG (STEP 6) ══ -->
@@ -586,6 +639,7 @@ svg.i{display:inline-block;vertical-align:-.14em;fill:none;stroke:currentColor;
 </div>
 
 <script src="data.js"></script>
+<script src="articles.js"></script>
 <script>
 'use strict';
 
@@ -647,6 +701,7 @@ function goTab(id){
   document.getElementById('t-'+id).classList.add('on');
   activeTab = id;
   if(id === 'compare') renderCompare();
+  if(id === 'content') renderContent();
 }
 function openOv(id){
   const el = document.getElementById('s-'+id);
@@ -1317,6 +1372,98 @@ function renderCompare(){
     <button class="cmpopen-b" onclick="openDetail('${b.id}')"><span>${b.brand}</span><span>${b.name} ›</span></button>
   </div>
   <p class="note">비교 결과는 라벨 성분 기준 참고용이에요.</p>`;
+}
+
+/* ═══ CONTENT ═══ */
+let contentFilter = 'all';
+function readTime(a){ return Math.max(1, Math.round(((a.body||'').length + (a.excerpt||'').length) / 350)); }
+
+function renderContent(){
+  const cats = ['all', ...new Set(ARTICLES.map(a=>a.cat))];
+  document.getElementById('contentChips').innerHTML = cats.map(c=>
+    `<button class="chip${c===contentFilter?' on':''}" onclick="setContentFilter('${c}')">${c==='all'?'전체':c}</button>`
+  ).join('');
+  const list = contentFilter==='all' ? ARTICLES : ARTICLES.filter(a=>a.cat===contentFilter);
+  document.getElementById('contentList').innerHTML = list.map((a,i)=>`
+    <div class="ccard-l" style="animation-delay:${i*40}ms" onclick="openArticle('${a.id}')">
+      <div class="cico">${icon(a.ico,24)}</div>
+      <div style="flex:1;min-width:0">
+        <div class="ccat">${a.cat}</div>
+        <div class="ctitle">${a.title}</div>
+        <div class="cdesc">${a.excerpt}</div>
+        <div class="cmeta">${icon('clock',12)}약 ${readTime(a)}분</div>
+      </div>
+    </div>`).join('');
+}
+function setContentFilter(c){ contentFilter = c; renderContent(); }
+
+function openArticle(id){
+  const a = ARTICLES.find(x=>x.id===id); if(!a) return;
+  let related = [];
+  try { related = FOODS.filter(a.match).sort((x,y)=>y.score-x.score).slice(0,3); } catch(e){}
+  document.getElementById('articleBody').innerHTML = `
+    <div class="acover">${icon(a.ico,52)}</div>
+    <div class="ahead">
+      <div class="acat">${a.cat} · 약 ${readTime(a)}분</div>
+      <div class="atitle">${a.title}</div>
+    </div>
+    <div class="article-body">${renderArticleBody(a.body)}</div>
+    ${related.length ? `<div class="arel">
+      <div class="arel-t">이 글과 관련된 사료</div>
+      <div class="flist" style="padding:0">${related.map((f,i)=>fCard(f,i)).join('')}</div>
+    </div>` : ''}
+    <p class="note" style="padding:22px 20px 24px">이 콘텐츠는 정보 제공 목적이에요. 건강 문제는 수의사와 상담하세요.</p>`;
+  openOv('article');
+  document.getElementById('s-article').scrollTop = 0;
+}
+
+/* 원본 article-render 문법 이식:
+   빈 줄=문단 / 줄바꿈=<br> / "### "=소제목 / "- ","* "=불릿 / "1. "=번호
+   "> "=하이라이트 박스 / **굵게** / [텍스트](url) */
+function inlineFmt(s){
+  return s.replace(/\[([^\]\n]+?)\]\(([^)\s]+?)\)/g, (full, txt, url)=>
+      /^(https?:\/\/|mailto:|\/)/i.test(url)
+        ? `<a href="${url.replace(/"/g,'&quot;')}" target="_blank" rel="noopener noreferrer nofollow">${txt}</a>`
+        : full)
+    .replace(/\*\*([^*\n]+?)\*\*/g, '<strong>$1</strong>');
+}
+function renderArticleBody(raw){
+  const lines = String(raw||'').replace(/\r\n/g,'\n').split('\n');
+  const out = []; let para = [], leadDone = false, list = null, quote = [];
+  const fmt = l => inlineFmt(esc(l));
+  const flushPara = ()=>{
+    if(!para.length) return;
+    out.push(`<p${leadDone?'':' class="lead"'}>${para.map(fmt).join('<br>')}</p>`);
+    leadDone = true; para = [];
+  };
+  const flushList = ()=>{ if(list){ out.push(`</${list}>`); list = null; } };
+  const flushQuote = ()=>{
+    if(!quote.length) return;
+    out.push(`<div class="highlight">${quote.map(q=>`<p>${fmt(q)}</p>`).join('')}</div>`);
+    leadDone = true; quote = [];
+  };
+  const flushAll = ()=>{ flushPara(); flushList(); flushQuote(); };
+
+  for(const raw2 of lines){
+    const t = raw2.trim();
+    if(!t){ flushAll(); continue; }
+    let m;
+    if(m = t.match(/^#{1,3}\s+(.*)$/)){ flushAll(); out.push(`<h3>${fmt(m[1])}</h3>`); leadDone = true; }
+    else if(t.startsWith('> ')){ flushPara(); flushList(); quote.push(t.slice(2)); }
+    else if(m = t.match(/^[-*]\s+(.*)$/)){
+      flushPara(); flushQuote();
+      if(list !== 'ul'){ flushList(); out.push('<ul>'); list = 'ul'; }
+      out.push(`<li>${fmt(m[1])}</li>`); leadDone = true;
+    }
+    else if(m = t.match(/^\d+\.\s+(.*)$/)){
+      flushPara(); flushQuote();
+      if(list !== 'ol'){ flushList(); out.push('<ol>'); list = 'ol'; }
+      out.push(`<li>${fmt(m[1])}</li>`); leadDone = true;
+    }
+    else { flushList(); flushQuote(); para.push(t); }
+  }
+  flushAll();
+  return out.join('');
 }
 
 /* ═══ TOAST ═══ */
