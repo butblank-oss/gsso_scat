@@ -147,11 +147,19 @@ function checkItem(item, published, seen) {
       }
     }
 
-    /* 성분은 국내 유통 제품 기준 — 해외 공식 사이트만으로는 배합 동일성을 보장할 수 없다 */
+    /* 성분 출처가 국내인지 해외인지 표시해야 한다 — DATA-POLICY 3.5.
+       해외 성분표도 등록은 하되, 국내 유통품과 배합이 다를 수 있음을 사용자에게 알린다.
+       표시가 실제 출처와 어긋나면 탈락시킨다. */
     const specSrcs = srcs.filter(s => SOURCE_GRADE[s.role] === 'A');
-    if (specSrcs.length && !specSrcs.some(s => isDomesticSource(s.url))) {
-      F('E_SRC_NOT_DOMESTIC',
-        '성분 출처가 전부 해외입니다. 국내 수입사 또는 국내 판매처의 표기를 1곳 이상 포함해야 합니다');
+    if (specSrcs.length) {
+      const actual = specSrcs.some(s => isDomesticSource(s.url)) ? 'domestic' : 'overseas';
+      if (!ENUM.specOrigin.includes(p.specOrigin)) {
+        F('E_SPEC_ORIGIN', `specOrigin 은 ${ENUM.specOrigin.join(' 또는 ')} 여야 합니다 (현재: ${p.specOrigin})`);
+      } else if (p.specOrigin !== actual) {
+        F('E_SPEC_ORIGIN_MISMATCH',
+          `specOrigin 이 실제 출처와 다릅니다. 제출 ${p.specOrigin} / 실제 ${actual}` +
+          (actual === 'overseas' ? ' — A등급 출처가 전부 해외입니다' : ' — 국내 출처가 포함되어 있습니다'));
+      }
     }
 
     /* 유효기간 */

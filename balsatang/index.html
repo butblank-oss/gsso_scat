@@ -45,6 +45,15 @@ svg.i{display:inline-block;vertical-align:-.14em;fill:none;stroke:currentColor;
   border-bottom:1px solid transparent;transition:border-color var(--t)}
 .topbar.stuck{border-bottom-color:var(--line)}
 /* 증상 키워드로 찾아준 결과를 알리는 안내 */
+.obadge{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;
+  padding:3px 8px;border-radius:99px;margin-left:6px;vertical-align:middle;white-space:nowrap}
+.obadge.ov{background:#FFF6E8;border:1px solid #F2D9AE;color:#9A6B12}
+.obadge.dm{background:#EDF7EE;border:1px solid #CDE7D0;color:#2A7A35}
+.onote{display:flex;gap:9px;align-items:flex-start;margin:0 20px 14px;padding:11px 13px;
+  background:#FFF9EF;border:1px solid #F0DDBB;border-radius:11px;
+  font-size:12.5px;line-height:1.55;color:#7A5A16}
+.onote b{font-weight:700}
+.onote svg{flex-shrink:0;margin-top:1px}
 .bmark{width:100%;height:100%;display:flex;align-items:center;justify-content:center;
   color:#fff;font-weight:800;letter-spacing:-.02em;border-radius:inherit;
   font-family:'Pretendard',-apple-system,sans-serif;user-select:none}
@@ -902,6 +911,24 @@ function openSearch(){
 /* ═══ CARD PARTS ═══ */
 function hasThumb(f){ return f.thumb && /^(data:|https?:)/.test(f.thumb); }
 
+/* ═══ 성분 출처 표시 ═══
+   해외 공식 성분표는 국내 유통품과 배합이 다를 수 있다. 사용자에게 그대로 알린다. */
+function specOriginBadge(f){
+  if(f.specOrigin === 'overseas')
+    return `<span class="obadge ov">${icon('info',11)}해외 성분표 기준</span>`;
+  if(f.specOrigin === 'domestic')
+    return `<span class="obadge dm">${icon('check',11)}국내 기준</span>`;
+  return '';
+}
+
+function specOriginNote(f){
+  if(f.specOrigin !== 'overseas') return '';
+  return `<div class="onote">${icon('info',14)}<div>
+    이 사료의 성분 정보는 <b>제조사 해외 공식 사이트</b> 기준이에요.
+    국내 유통 제품은 배합이 다를 수 있으니, 정확한 성분은 <b>제품 봉투 표기</b>를 확인해 주세요.
+  </div></div>`;
+}
+
 /* ═══ 브랜드 마크 ═══
    제품 사진이 없을 때 브랜드를 알아볼 수 있게 이니셜 마크를 보여준다.
    실제 브랜드 로고 이미지는 상표권 문제가 있어 임의로 싣지 않는다.
@@ -1191,7 +1218,7 @@ function openDetail(id){
   <div class="dhero">
     <div class="dthumb">${hasThumb(f)?`<img src="${f.thumb}" alt="">`:brandMark(f,64)}</div>
     <div style="flex:1;min-width:0">
-      <div class="dbrand">${f.brand}${f.country?` · ${COUNTRY_KO[f.country]||f.country}`:''}</div>
+      <div class="dbrand">${f.brand}${f.country?` · ${COUNTRY_KO[f.country]||f.country}`:''}${specOriginBadge(f)}</div>
       <div class="dname">${f.name}</div>
       <div class="dtags">
         <span class="dtag ${f.warnN>0?'warn':'good'}">${f.warnN>0
@@ -1201,6 +1228,8 @@ function openDetail(id){
       </div>
     </div>
   </div>
+
+  ${specOriginNote(f)}
 
   <div class="dtabs">
     <div class="dtab on" id="dt-analysis" onclick="switchDtab('analysis')">성분 분석</div>
