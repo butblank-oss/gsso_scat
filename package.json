@@ -11,6 +11,7 @@
     "review": "node scripts/build-review.mjs",
     "review:live": "NODE_USE_ENV_PROXY=1 node scripts/build-review.mjs --live",
     "publish": "node scripts/merge-approved.mjs",
-    "check": "npm run gate1 && npm run gate3"
+    "check": "npm run gate1 && npm run gate3",
+    "strength": "node scripts/compute-func-strength.mjs"
   }
 }

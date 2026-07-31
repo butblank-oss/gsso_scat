@@ -45,6 +45,13 @@ svg.i{display:inline-block;vertical-align:-.14em;fill:none;stroke:currentColor;
   border-bottom:1px solid transparent;transition:border-color var(--t)}
 .topbar.stuck{border-bottom-color:var(--line)}
 /* 증상 키워드로 찾아준 결과를 알리는 안내 */
+.fcol .sbadge{margin:5px 0 0;font-size:9.5px;padding:1.5px 6px}
+.sbadge{display:inline-flex;align-items:center;font-size:10.5px;font-weight:700;
+  padding:2px 7px;border-radius:99px;margin-left:6px;white-space:nowrap}
+.sbadge.strong{background:#E8F5EA;color:#1F7A2E;border:1px solid #C3E4C9}
+.sbadge.medium{background:#EEF3FB;color:#3A63A8;border:1px solid #D3E0F2}
+.sbadge.weak{background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.ffn.hi{background:#E8F5EA;border-color:#C3E4C9;color:#1F7A2E;font-weight:700}
 .obadge{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;
   padding:3px 8px;border-radius:99px;margin-left:6px;vertical-align:middle;white-space:nowrap}
 .obadge.ov{background:#FFF6E8;border:1px solid #F2D9AE;color:#9A6B12}
@@ -914,6 +921,20 @@ function openSearch(){
 /* ═══ CARD PARTS ═══ */
 function hasThumb(f){ return f.thumb && /^(data:|https?:)/.test(f.thumb); }
 
+/* ═══ 기능성 근거 강도 ═══
+   같은 태그라도 근거 원료의 수와 등급이 다르다.
+   강도 = proven 원료 x2 + possible 원료 x1 (scripts/compute-func-strength.mjs) */
+function strengthLevel(n){
+  if(!n) return null;
+  return n >= 4 ? 'strong' : n >= 2 ? 'medium' : 'weak';
+}
+const STRENGTH_LABEL = {strong:'근거 뚜렷', medium:'근거 있음', weak:'근거 약함'};
+
+function strengthBadge(f, key){
+  const lv = strengthLevel(f.funcStrength?.[key]);
+  return lv ? `<span class="sbadge ${lv}">${STRENGTH_LABEL[lv]}</span>` : '';
+}
+
 /* ═══ 성분 출처 표시 ═══
    해외 공식 성분표는 국내 유통품과 배합이 다를 수 있다. 사용자에게 그대로 알린다. */
 function specOriginBadge(f){
@@ -988,8 +1009,14 @@ function thumb(f, cls, sz){
     : `<div class="${cls}">${brandMark(f, sz * 2.2)}</div>`;
 }
 function funcTags(f, max){
-  return (f.func||[]).filter(k=>FUNC_META[k]).slice(0, max||3)
-    .map(k=>`<span class="ffn">${icon(FUNC_META[k].ico,12)}${FUNC_META[k].label}</span>`).join('');
+  /* 근거가 강한 태그를 앞에 세운다 */
+  return (f.func||[]).filter(k=>FUNC_META[k])
+    .sort((a,b)=>(f.funcStrength?.[b]||0)-(f.funcStrength?.[a]||0))
+    .slice(0, max||3)
+    .map(k=>{
+      const lv = strengthLevel(f.funcStrength?.[k]);
+      return `<span class="ffn${lv==='strong'?' hi':''}">${icon(FUNC_META[k].ico,12)}${FUNC_META[k].label}</span>`;
+    }).join('');
 }
 function warnBadge(f){
   return f.warnN > 0
@@ -1111,9 +1138,12 @@ function filterSearch(){
   const byName = FOODS.filter(f=>(f.brand+f.name).includes(q));
   const tags = tagsFromQuery(q);
   /* 이름으로 찾은 것을 앞에, 증상으로 찾은 것을 뒤에 둔다 */
+  /* 근거가 강한 순 → 점수 순. 태그만 보면 눈물 32종처럼 변별력이 없어서
+     실제 기능성 원료가 얼마나 들어있는지로 먼저 줄을 세운다. */
+  const tagStrength = (f)=>tags.reduce((s,t)=>s+(f.funcStrength?.[t]||0),0);
   const byTag = tags.length
     ? FOODS.filter(f=>!byName.includes(f) && tags.some(t=>matchTag(f,t)))
-           .sort((a,b)=>b.score-a.score)
+           .sort((a,b)=> tagStrength(b)-tagStrength(a) || b.score-a.score)
     : [];
   const res = [...byName, ...byTag];
 
@@ -1195,10 +1225,14 @@ function openDetail(id){
     .filter((b,i)=> i < 4 || (fi[b.key] && fi[b.key].length))
     .map(b=>({...b, items:(fi[b.key]||[]).map(x=>x.n).filter(Boolean)}));
   const maxC = Math.max(...buckets.map(b=>b.items.length), 1);
-  const present = buckets.filter(b=>b.items.length).map(b=>b.label);
-  const funcSummary = present.length
-    ? `${present.join(', ')}에 도움되는 원료가 있어요`
-    : '기능성 원료는 확인되지 않았어요';
+  const present = buckets.filter(b=>b.items.length)
+    .sort((a,b)=>(f.funcStrength?.[b.key]||0)-(f.funcStrength?.[a.key]||0));
+  const strong = present.filter(b=>strengthLevel(f.funcStrength?.[b.key])==='strong').map(b=>b.label);
+  const funcSummary = !present.length
+    ? '기능성 원료는 확인되지 않았어요'
+    : strong.length
+      ? `${strong.join(', ')}에 도움되는 원료가 뚜렷해요`
+      : `${present.map(b=>b.label).join(', ')}에 도움되는 원료가 있어요`;
 
   /* 적합 / 주의 프로필 */
   const strengthFor = s => s >= 9 ? 5 : s >= 8 ? 4 : 3;
@@ -1297,6 +1331,7 @@ function openDetail(id){
             <div class="fbar-o"><div class="fbar-i ${c>0?'has':'none'}" style="height:${h}px"></div></div>
             <div class="flab">${icon(b.ico,18)}<br>${b.label}</div>
             <div class="fitems">${b.items.length?b.items.join(', '):'해당 없음'}</div>
+            ${strengthBadge(f, b.key)}
           </div>`;
         }).join('')}
       </div>
