@@ -14,6 +14,7 @@ import {
   ENUM, SOURCE_GRADE, computeScore, PRICE_KG, TTL_DAYS, daysSince,
   REQUIRED_ITEM_FIELDS, REQUIRED_FOOD_FIELDS, REQUIRED_RATING_KEYS, isHttpUrl, norm, loadFoods
 } from './lib/schema.mjs';
+import { rateAll, RUBRIC_TEXT, REQUIRED_FACT_KEYS } from './lib/rubric.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const STAGING = join(ROOT, 'data/staging');
@@ -59,6 +60,25 @@ function checkItem(item, published, seen) {
   for (const k of REQUIRED_RATING_KEYS) {
     const v = p.ratings?.[k];
     if (!Number.isInteger(v) || v < 1 || v > 5) F('E_RATING', `ratings.${k} 는 1~5 정수여야 합니다 (현재: ${v})`);
+  }
+
+  /* --- 3.5 ratings 도 계산값이어야 한다 —
+     AI는 사실(facts)만 뽑고, 점수는 루브릭이 매긴다. 제출값이 다르면 탈락. --- */
+  const facts = p.facts;
+  if (!facts) {
+    F('E_FACTS_NONE', 'facts 가 없습니다 — 채점을 검증할 수 없습니다');
+  } else {
+    for (const k of REQUIRED_FACT_KEYS) {
+      if (facts[k] == null) F('E_FACTS', `facts.${k} 누락 — 채점 검증에 필요합니다`);
+    }
+    const expect = rateAll({ ...facts, pKg: p.price?.pKg });
+    for (const k of REQUIRED_RATING_KEYS) {
+      if (expect[k] == null) continue;
+      if (p.ratings?.[k] !== expect[k]) {
+        F('E_RATING_RUBRIC',
+          `ratings.${k} 가 채점 기준과 다릅니다. 제출 ${p.ratings?.[k]} / 기준 ${expect[k]} — ${RUBRIC_TEXT[k]}`);
+      }
+    }
   }
 
   /* --- 4. score 는 계산값이어야 한다 (AI가 매기면 안 됨) --- */
@@ -111,7 +131,7 @@ function checkItem(item, published, seen) {
   }
 
   /* --- 7. 근거 인용 — 값마다 어느 출처의 어느 문장인지 --- */
-  const needEvidence = [...REQUIRED_RATING_KEYS.map(k => `ratings.${k}`), 'price.p'];
+  const needEvidence = [...REQUIRED_FACT_KEYS.map(k => `facts.${k}`), 'price.p'];
   for (const key of needEvidence) {
     const e = ev?.[key];
     if (!e) { F('E_EV_NONE', `근거 누락: ${key}`); continue; }

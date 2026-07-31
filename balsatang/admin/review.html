@@ -119,7 +119,11 @@ tr.diff td:first-child{color:var(--bad);font-weight:600}
 <script>
 const RATING_LABEL={quality:'원료',carb:'탄수화물',additive:'첨가물',value:'가성비'};
 /* evidence 키('ratings.quality','price.p')를 사람이 읽는 이름으로 */
-const EV_LABEL={'price.p':'가격','price.wg':'중량'};
+const EV_LABEL={'price.p':'가격','price.wg':'중량','facts.protein':'조단백',
+  'facts.dmCarb':'건물기준 탄수','facts.firstIngrCat':'1번 원료','facts.cautionN':'주의 성분',
+  'facts.dangerN':'위험 성분'};
+const FACT_LABEL={protein:'조단백(%)',dmCarb:'건물기준 탄수(%)',firstIngrCat:'1번 원료',
+  cautionN:'주의 성분(개)',dangerN:'위험 성분(개)'};
 const evLabel=k=>EV_LABEL[k]||RATING_LABEL[k.split('.')[1]]||k;
 const ROLE_LABEL={official:'제조사 공식',importer:'수입사 공식',authority:'정부·기관',retail:'판매처'};
 const decision={};  // stagingId -> 'publish' | 'reject'
@@ -135,9 +139,16 @@ function toast(m){const t=document.getElementById('toast');t.textContent=m;t.cla
 function auditTable(it){
   const ind=it.audit?.independent||{};
   const rows=[];
+  /* 사실을 먼저 대조한다. 점수는 사실에서 계산되므로 사실이 맞으면 점수도 맞다. */
+  for(const k of Object.keys(FACT_LABEL)){
+    const a=it.proposed?.facts?.[k], b=ind.facts?.[k];
+    if(a==null&&b==null)continue;
+    rows.push([FACT_LABEL[k],a??'—',b??'—',b!=null&&a!==b]);
+  }
   for(const k of ['quality','carb','additive','value']){
     const a=it.proposed?.ratings?.[k], b=ind.ratings?.[k];
-    rows.push([RATING_LABEL[k],a,b??'—',b!=null&&a!==b]);
+    if(a==null&&b==null)continue;
+    rows.push([RATING_LABEL[k]+' 점수',a??'—',b??'—',b!=null&&a!==b]);
   }
   rows.push(['가격',won(it.proposed?.price?.p),ind.price?.p!=null?won(ind.price.p):'—',
              ind.price?.p!=null&&ind.price.p!==it.proposed?.price?.p]);
