@@ -25,11 +25,18 @@ export function isRetailHost(url) {
   catch { return false; }
 }
 
-/* 국내 출처인지 — 성분은 국내 유통 제품 기준이어야 한다 (DATA-POLICY 3.2). */
+/* 국내 출처인지 — 성분은 국내 유통 제품 기준이어야 한다 (DATA-POLICY 3.2).
+   .kr 도메인 외에 국내 서비스가 쓰는 도메인도 포함한다. 다나와(danawa.com)와 그 이미지
+   CDN(danuri.io)은 국내 유통 상품의 국내 등록 정보를 싣는다. */
+const DOMESTIC_HOSTS = ['danawa.com', 'danuri.io'];
+
 export function isDomesticSource(url) {
-  try { const h = new URL(url).hostname.toLowerCase();
-        return h.endsWith('.kr') || h.endsWith('.co.kr') || isRetailHost(url); }
-  catch { return false; }
+  try {
+    const h = new URL(url).hostname.toLowerCase();
+    if (h.endsWith('.kr')) return true;
+    if (isRetailHost(url)) return true;
+    return DOMESTIC_HOSTS.some(d => h === d || h.endsWith('.' + d));
+  } catch { return false; }
 }
 
 /* 쿠팡 상품 URL 형식 — 쿠팡은 봇 차단이 강해 실접속 검증이 불가능하므로 형식으로 검증한다. */
@@ -53,8 +60,10 @@ export function computeScore(ratings) {
   return Math.round(raw * 10) / 10;
 }
 
-/* 가격 상식 범위 (원/kg). 벗어나면 오타로 본다. */
-export const PRICE_KG = { min: 3000, max: 200000 };
+/* 가격 상식 범위 (원/kg). 벗어나면 오타로 본다.
+   하한 3,000원은 너무 높았다. 대용량 저가 사료는 kg당 1,400원대가 실제로 존재한다
+   (뉴트리나 프라임 밸런스 15kg 21,890원 = 1,459원/kg, 울트라 초이스 15kg = 1,400원/kg). */
+export const PRICE_KG = { min: 1000, max: 200000 };
 
 /* 출처 유효기간 (일) — DATA-POLICY 3.3 */
 export const TTL_DAYS = { price: 30, spec: 365 };
