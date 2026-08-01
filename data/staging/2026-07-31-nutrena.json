@@ -100,7 +100,8 @@
         "g3": null
       },
       "status": "draft",
-      "todo": "쿠팡 상품 URL 과 최소 용량 가격 확보 후 pricePending 해제"
+      "todo": "쿠팡 URL 확보 완료. 가격(원)·용량(g)·썸네일 이미지 URL 이 들어오면 발행",
+      "coupangUrl": "https://www.coupang.com/vp/products/9345788421?itemId=115324503&vendorItemId=88564689102"
     },
     {
       "stagingId": "stg_nutrena_adult_chicken",
@@ -195,7 +196,7 @@
         "g3": null
       },
       "status": "draft",
-      "todo": "쿠팡 URL 확보 완료. 최소 용량 가격만 확인되면 pricePending 해제",
+      "todo": "쿠팡 URL 확보 완료. 가격(원)·용량(g)·썸네일 이미지 URL 이 들어오면 발행",
       "coupangUrl": "https://www.coupang.com/vp/products/26291212?itemId=17884839&vendorItemId=92327928356"
     },
     {
