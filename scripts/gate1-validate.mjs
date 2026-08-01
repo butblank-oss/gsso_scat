@@ -142,6 +142,10 @@ function checkItem(item, published, seen) {
     if (!isHttpUrl(pr.buyUrl) || !isRetailHost(pr.buyUrl)) {
       F('E_PRICE_BUYURL', `price.buyUrl 은 쿠팡 도메인이어야 합니다: ${pr.buyUrl}`);
     }
+  } else {
+    /* 수수료는 파트너스 링크로 들어온 구매에만 붙는다. 링크는 사람이 직접 만들어야 해서
+       탈락시키지 않고 경고만 한다 — 심사 화면에서 붙여넣으면 된다. */
+    W('W_NO_BUYURL', '쿠팡 파트너스 구매 링크(price.buyUrl)가 없습니다 — 수수료가 붙지 않습니다');
   }
   }  /* if (!pricePending) */
 
