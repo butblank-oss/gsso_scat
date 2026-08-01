@@ -64,7 +64,7 @@ function check(p) {
 }
 
 let files = [];
-try { files = (await readdir(STAGING)).filter(f => f.endsWith('.json') && !f.startsWith('_')); } catch {}
+try { files = (await readdir(STAGING)).filter(f => f.endsWith('.json') && !f.startsWith('_') && f !== 'review.json'); } catch {}
 const report = { checkedAt: new Date().toISOString(), items: {} };
 
 console.log('\n게이트 3 · 정합성 검사');
