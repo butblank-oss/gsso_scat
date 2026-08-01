@@ -12,10 +12,12 @@
     "edits": "node scripts/apply-edits.mjs",
     "review:live": "NODE_USE_ENV_PROXY=1 node scripts/build-review.mjs --live",
     "publish": "node scripts/merge-approved.mjs",
-    "check": "npm run gate1 && npm run gate3",
+    "verify": "node scripts/verify-data.mjs",
+    "check": "npm run verify && npm run gate1 && npm run gate3",
     "strength": "node scripts/compute-func-strength.mjs",
     "ranking": "node scripts/collect-ranking.mjs",
     "lookup": "node scripts/danawa-product.mjs",
-    "buylinks": "node scripts/buy-links.mjs"
+    "buylinks": "node scripts/buy-links.mjs",
+    "backfill": "node scripts/backfill-detail.mjs"
   }
 }

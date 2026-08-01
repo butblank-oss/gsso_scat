@@ -23,6 +23,9 @@ jobs:
         with:
           node-version: '22'
 
+      - name: data.js 검사 — 병합 충돌·문법 오류가 배포되지 않도록
+        run: node scripts/verify-data.mjs
+
       - name: 게이트 1 · 기계 검사 (URL 실접속 포함)
         id: g1
         run: node scripts/gate1-validate.mjs --live | tee /tmp/g1.txt
