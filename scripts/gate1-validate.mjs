@@ -16,10 +16,12 @@ import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   ENUM, SOURCE_GRADE, computeScore, PRICE_KG, TTL_DAYS, daysSince,
-  REQUIRED_ITEM_FIELDS, REQUIRED_FOOD_FIELDS, REQUIRED_RATING_KEYS, isHttpUrl, norm, loadFoods,
+  REQUIRED_ITEM_FIELDS, REQUIRED_FOOD_FIELDS, REQUIRED_RATING_KEYS, REQUIRED_GA_KEYS,
+  isHttpUrl, norm, loadFoods,
   isRetailHost, RETAIL_HOST, isDomesticSource, isCoupangProductUrl
 } from './lib/schema.mjs';
-import { rateAll, RUBRIC_TEXT, REQUIRED_FACT_KEYS } from './lib/rubric.mjs';
+import { rateAll, RUBRIC_TEXT, REQUIRED_FACT_KEYS, computeDmCarb } from './lib/rubric.mjs';
+import { lookupIngredient } from './lib/ingredients.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const STAGING = join(ROOT, 'data/staging');
@@ -88,6 +90,51 @@ function checkItem(item, published, seen) {
       if (p.ratings?.[k] !== expect[k]) {
         F('E_RATING_RUBRIC',
           `ratings.${k} 가 채점 기준과 다릅니다. 제출 ${p.ratings?.[k]} / 기준 ${expect[k]} — ${RUBRIC_TEXT[k]}`);
+      }
+    }
+  }
+
+  /* --- 3.7 보장성분표와 원재료 목록 —
+     상세 화면(판정 카드·영양 프로파일·주원료)이 전부 여기서 만들어진다.
+     없으면 사용자에게 빈 화면이 나가므로 등록을 막는다. --- */
+  const ga = p.ga;
+  if (ga == null) {
+    F('E_GA_NONE', 'ga 가 없습니다 — 보장성분표(조단백·조지방·조섬유·수분)를 적어야 합니다');
+  } else {
+    for (const k of REQUIRED_GA_KEYS) {
+      if (!(Number(ga[k]) >= 0)) F('E_GA', `ga.${k} 가 숫자가 아닙니다: ${ga[k]}`);
+    }
+    /* facts 는 ga 에서 나온 값이다. 서로 어긋나면 어느 쪽이 맞는지 알 수 없다. */
+    if (facts && Number(ga.protein) !== Number(facts.protein)) {
+      F('E_GA_PROTEIN', `ga.protein(${ga.protein}) 과 facts.protein(${facts.protein}) 이 다릅니다`);
+    }
+    if (facts && REQUIRED_GA_KEYS.every(k => Number(ga[k]) >= 0)) {
+      const dm = computeDmCarb({ protein: +ga.protein, fat: +ga.fat, fiber: +ga.fiber, moisture: +ga.moisture });
+      if (facts.dmCarb != null && Math.abs(dm - facts.dmCarb) > 0.15) {
+        F('E_GA_DMCARB', `ga 로 계산한 건물기준 탄수(${dm})와 facts.dmCarb(${facts.dmCarb})가 다릅니다`);
+      }
+    }
+  }
+
+  if (!Array.isArray(p.ingredients) || p.ingredients.length === 0) {
+    F('E_INGR_NONE', 'ingredients 가 없습니다 — 원재료명을 표기 순서대로 적어야 합니다');
+  } else {
+    if (p.ingredients.some(x => typeof x !== 'string' || !x.trim())) {
+      F('E_INGR', 'ingredients 에 빈 값이 있습니다');
+    }
+    if (p.ingredients.length < 3) {
+      W('W_INGR_SHORT', `원재료가 ${p.ingredients.length}개뿐입니다 — 표기 전체를 옮겼는지 확인하세요`);
+    }
+    /* 1번 원료 분류가 실제 첫 원료와 맞는지 — 원료 품질 점수가 여기서 갈린다 */
+    if (facts?.firstIngrCat) {
+      const first = lookupIngredient(p.ingredients[0]);
+      const CAT = { meat: 'meat', organ: 'meat', fish: 'fish', grain: 'grain',
+                    legume: 'grain', vegetable: 'veg', other: 'other', fat: 'other',
+                    oil: 'other', probiotic: 'other', herb: 'other', vitamin: 'other' };
+      const got = CAT[first.cat];
+      if (first.known && got && got !== facts.firstIngrCat) {
+        F('E_INGR_FIRST',
+          `facts.firstIngrCat(${facts.firstIngrCat})가 1번 원료 '${p.ingredients[0]}'(${got})와 다릅니다`);
       }
     }
   }
