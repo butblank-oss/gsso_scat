@@ -1,5 +1,5 @@
 {
-  "builtAt": "2026-08-01T01:26:23.556Z",
+  "builtAt": "2026-08-01T01:36:48.830Z",
   "live": false,
   "batches": [
     {
@@ -7,126 +7,6 @@
       "batchId": "2026-07-31-nutrena",
       "collectedAt": "2026-07-31T16:00:00Z",
       "items": [
-        {
-          "stagingId": "stg_nutrena_puppy",
-          "label": "뉴트리나 퍼피",
-          "proposed": {
-            "brand": "뉴트리나",
-            "brandSlug": "nutrena",
-            "country": "KR",
-            "name": "퍼피",
-            "type": "dry",
-            "rx": false,
-            "ages": [
-              "puppy"
-            ],
-            "sizes": [
-              "all"
-            ],
-            "ico": "drumstick",
-            "thumb": "https://img.danuri.io/catalog-image/063/806/099/5ee04456954e4eeab17b91c11162561a.jpg?shrink=360:360",
-            "score": 5.3,
-            "ratings": {
-              "quality": 3,
-              "carb": 2,
-              "additive": 2,
-              "value": 5
-            },
-            "facts": {
-              "dmCarb": 52.3,
-              "protein": 26,
-              "firstIngrCat": "grain",
-              "cautionN": 5,
-              "dangerN": 0
-            },
-            "func": [],
-            "warnN": 5,
-            "concerns": [],
-            "specOrigin": "domestic",
-            "price": {
-              "p": 9500,
-              "wg": 2100,
-              "wgOptions": [
-                2100
-              ],
-              "shop": "coupang",
-              "pKg": 4524
-            }
-          },
-          "sources": [
-            {
-              "role": "official",
-              "url": "https://www.nutrenaworld.co.kr/",
-              "fetchedAt": "2026-07-31T16:00:00Z",
-              "title": "뉴트리나 공식몰 상품 상세 — 등록성분·원재료명 표기 (사용자 제공 캡처로 확인)"
-            },
-            {
-              "role": "retail",
-              "url": "https://www.coupang.com/vp/products/9345788421?itemId=115324503&vendorItemId=88564689102",
-              "fetchedAt": "2026-08-01T01:40:00Z",
-              "title": "쿠팡 상품 페이지"
-            }
-          ],
-          "evidence": {
-            "facts.protein": {
-              "src": 0,
-              "quote": "등록성분 조단백질 26% 이상"
-            },
-            "facts.dmCarb": {
-              "src": 0,
-              "quote": "조단백 26 / 조지방 11 / 조섬유 5 / 조회분 10 / 수분 12 → 건물기준 탄수 52.3%"
-            },
-            "facts.firstIngrCat": {
-              "src": 0,
-              "quote": "원재료명 첫 항목: 옥수수 (곡물)"
-            },
-            "facts.cautionN": {
-              "src": 0,
-              "quote": "주의 성분 5종: 옥수수, 밀, 비트 펄프, 천연액상기호성증진제, 염"
-            },
-            "facts.dangerN": {
-              "src": 0,
-              "quote": "BHA·BHT·에톡시퀸 등 위험 성분 표기 없음"
-            },
-            "price.p": {
-              "src": 1,
-              "quote": "다나와 가격비교 오픈마켓 최저가 — 쿠팡 9,500원 (배송비 3,000원 별도), 2.1kg 단품. 2026-08-01 확인"
-            }
-          },
-          "audit": {
-            "auditor": {
-              "agent": "수동 판독",
-              "model": "claude-opus-5"
-            },
-            "method": "label-photo + danawa-spec",
-            "limitation": "제품 라벨 캡처에서 읽은 값이 다나와 상품 상세의 국내 등록 영양정보(조단백 26 / 조지방 11 / 조섬유 5 / 조회분 10 / 수분 12)와 정확히 일치했다. 원재료 목록은 다나와에 없어 라벨 캡처가 유일한 근거다.",
-            "independent": {
-              "facts": {
-                "dmCarb": 52.3,
-                "protein": 26,
-                "firstIngrCat": "grain",
-                "cautionN": 5,
-                "dangerN": 0
-              }
-            },
-            "verdict": "match",
-            "diff": [],
-            "crossChecked": true
-          },
-          "pricePending": false,
-          "gates": {
-            "g1": "pass",
-            "g1fail": [],
-            "g1warn": [],
-            "g2": "match",
-            "g2diff": [],
-            "g3warn": [
-              "신규 브랜드입니다 (뉴트리나) — 기준선 없음, 출처를 특히 꼼꼼히 확인하세요",
-              "kg당 4,524원 — 같은 타입(dry) 중앙값 14,917원의 1/3.3"
-            ]
-          },
-          "ready": true
-        },
         {
           "stagingId": "stg_nutrena_adult_chicken",
           "label": "뉴트리나 어덜트 치킨",
@@ -144,13 +24,13 @@
               "all"
             ],
             "ico": "drumstick",
-            "thumb": null,
-            "score": null,
+            "thumb": "https://img.danuri.io/catalog-image/546/809/099/2bf3cd31417c4db6b21ed45e72086428.jpg?shrink=360:360",
+            "score": 5.3,
             "ratings": {
               "quality": 3,
               "carb": 2,
               "additive": 2,
-              "value": null
+              "value": 5
             },
             "facts": {
               "dmCarb": 55.7,
@@ -162,8 +42,16 @@
             "func": [],
             "warnN": 5,
             "concerns": [],
-            "pricePending": true,
-            "specOrigin": "domestic"
+            "specOrigin": "domestic",
+            "price": {
+              "p": 26000,
+              "wg": 6300,
+              "wgOptions": [
+                6300
+              ],
+              "shop": "coupang",
+              "pKg": 4127
+            }
           },
           "sources": [
             {
@@ -171,6 +59,12 @@
               "url": "https://www.nutrenaworld.co.kr/",
               "fetchedAt": "2026-07-31T16:00:00Z",
               "title": "뉴트리나 공식몰 상품 상세 — 등록성분·원재료명 표기 (사용자 제공 캡처로 확인)"
+            },
+            {
+              "role": "retail",
+              "url": "https://www.coupang.com/vp/products/26291212?itemId=888330279&vendorItemId=83461012640",
+              "fetchedAt": "2026-08-01T02:10:00Z",
+              "title": "쿠팡 상품 페이지 (다나와 가격비교 AJAX 로 확인)"
             }
           ],
           "evidence": {
@@ -193,6 +87,10 @@
             "facts.dangerN": {
               "src": 0,
               "quote": "BHA·BHT·에톡시퀸 등 위험 성분 표기 없음"
+            },
+            "price.p": {
+              "src": 1,
+              "quote": "다나와 가격비교(pcode 99809546, 2.1kg 3개 묶음) 쿠팡 최저 26,000원 무료배송 — 2026-08-01 확인. 쿠팡에서 확인된 판매 단위는 3개 묶음(6.3kg)뿐이며, 단품 옵션은 가격을 검증할 수 없었다"
             }
           },
           "audit": {
@@ -200,8 +98,8 @@
               "agent": "수동 판독",
               "model": "claude-opus-5"
             },
-            "method": "label-photo + detail-page-photo",
-            "limitation": "제품 라벨 캡처와 상품 상세페이지 캡처 두 장에서 같은 값을 확인했다. 다만 두 출처 모두 사용자가 제공한 이미지이며, 사이트가 JS 봇 차단이라 크롤링으로는 재확인할 수 없다.",
+            "method": "label-photo + detail-page-photo + danawa-spec",
+            "limitation": "라벨 캡처 판독값이 다나와 국내 등록 영양정보(https://prod.danawa.com/info/?pcode=99809546, 조단백 24/조지방 10/조섬유 5/조회분 10/수분 12)와 일치했다. 원재료 목록은 라벨 캡처가 유일한 근거다.",
             "independent": {
               "facts": {
                 "dmCarb": 55.7,
@@ -215,18 +113,18 @@
             "diff": [],
             "crossChecked": true
           },
-          "pricePending": true,
+          "pricePending": false,
           "gates": {
-            "g1": "pending",
+            "g1": "pass",
             "g1fail": [],
             "g1warn": [],
             "g2": "match",
             "g2diff": [],
             "g3warn": [
-              "신규 브랜드입니다 (뉴트리나) — 기준선 없음, 출처를 특히 꼼꼼히 확인하세요"
+              "kg당 4,127원 — 같은 타입(dry) 중앙값 14,695.34원의 1/3.6"
             ]
           },
-          "ready": false
+          "ready": true
         },
         {
           "stagingId": "stg_nutrena_adult_salmon",
@@ -245,13 +143,13 @@
               "all"
             ],
             "ico": "fish",
-            "thumb": null,
-            "score": null,
+            "thumb": "https://img.danuri.io/catalog-image/548/233/004/2b6f6d9864d446bfb1ad708c7dec2e9a.jpg?shrink=360:360",
+            "score": 5.3,
             "ratings": {
               "quality": 3,
               "carb": 2,
               "additive": 2,
-              "value": null
+              "value": 5
             },
             "facts": {
               "dmCarb": 55.7,
@@ -263,8 +161,16 @@
             "func": [],
             "warnN": 5,
             "concerns": [],
-            "pricePending": true,
-            "specOrigin": "domestic"
+            "specOrigin": "domestic",
+            "price": {
+              "p": 17300,
+              "wg": 4200,
+              "wgOptions": [
+                4200
+              ],
+              "shop": "coupang",
+              "pKg": 4119
+            }
           },
           "sources": [
             {
@@ -272,6 +178,12 @@
               "url": "https://www.nutrenaworld.co.kr/",
               "fetchedAt": "2026-07-31T16:30:00Z",
               "title": "뉴트리나 공식몰 상품 상세 — 등록성분·원재료명 표기 (사용자 제공 캡처)"
+            },
+            {
+              "role": "retail",
+              "url": "https://www.coupang.com/vp/products/26291212?itemId=101924815&vendorItemId=72731278917",
+              "fetchedAt": "2026-08-01T02:10:00Z",
+              "title": "쿠팡 상품 페이지 (다나와 가격비교 AJAX 로 확인)"
             }
           ],
           "evidence": {
@@ -294,6 +206,10 @@
             "facts.dangerN": {
               "src": 0,
               "quote": "BHA·BHT·에톡시퀸 등 위험 성분 표기 없음"
+            },
+            "price.p": {
+              "src": 1,
+              "quote": "다나와 가격비교(pcode 4233548, 2.1kg 2개 묶음) 쿠팡 최저 17,300원 — 2026-08-01 확인. 쿠팡에서 확인된 판매 단위는 2개 묶음(4.2kg)이다"
             }
           },
           "audit": {
@@ -301,8 +217,8 @@
               "agent": "수동 판독",
               "model": "claude-opus-5"
             },
-            "method": "label-photo",
-            "limitation": "사이트가 JS 봇 차단이라 크롤링으로 재확인할 수 없다.",
+            "method": "label-photo + danawa-spec",
+            "limitation": "라벨 캡처 판독값이 다나와 국내 등록 영양정보(https://prod.danawa.com/info/?pcode=4233548, 조단백 24/조지방 10/조섬유 5/조회분 10/수분 12)와 일치했다. 원재료 목록은 라벨 캡처가 유일한 근거다.",
             "independent": {
               "facts": {
                 "dmCarb": 55.7,
@@ -313,20 +229,21 @@
               }
             },
             "verdict": "match",
-            "diff": []
+            "diff": [],
+            "crossChecked": true
           },
-          "pricePending": true,
+          "pricePending": false,
           "gates": {
-            "g1": "pending",
+            "g1": "pass",
             "g1fail": [],
             "g1warn": [],
             "g2": "match",
             "g2diff": [],
             "g3warn": [
-              "신규 브랜드입니다 (뉴트리나) — 기준선 없음, 출처를 특히 꼼꼼히 확인하세요"
+              "kg당 4,119원 — 같은 타입(dry) 중앙값 14,695.34원의 1/3.6"
             ]
           },
-          "ready": false
+          "ready": true
         },
         {
           "stagingId": "stg_nutrena_phytolab_light",
@@ -436,9 +353,9 @@
     }
   ],
   "summary": {
-    "total": 4,
-    "ready": 1,
-    "blocked": 3,
-    "pricePending": 3
+    "total": 3,
+    "ready": 2,
+    "blocked": 1,
+    "pricePending": 1
   }
 }
