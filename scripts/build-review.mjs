@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* 심사 화면이 읽을 단일 파일을 만든다.
-   스테이징 원본 + 게이트 1 결과 + 게이트 3 결과를 하나로 합쳐 data/staging/_review.json 에 쓴다.
+   스테이징 원본 + 게이트 1 결과 + 게이트 3 결과를 하나로 합쳐 data/staging/_review.json 과 웹 배포용 사본 review.json 에 쓴다.
    어드민은 서버가 없으므로, 이 파일 하나만 fetch 하면 심사에 필요한 모든 정보가 들어있게 한다. */
 import { readFile, readdir, writeFile, rm } from 'node:fs/promises';
 import { resolve, dirname, join } from 'node:path';
@@ -12,6 +12,9 @@ const run = promisify(execFile);
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const STAGING = join(ROOT, 'data/staging');
 const OUT = join(STAGING, '_review.json');
+/* GitHub Pages(Jekyll)는 밑줄로 시작하는 파일을 배포에서 제외한다.
+   심사 화면이 웹에서도 열리도록 밑줄 없는 사본을 함께 쓴다. */
+const OUT_WEB = join(STAGING, 'review.json');
 const LIVE = process.argv.includes('--live');
 
 const tmp1 = join(ROOT, '.g1.tmp.json');
@@ -73,7 +76,9 @@ for (const file of files) {
   review.batches.push({ file, batchId: batch.batchId ?? null, collectedAt: batch.collectedAt ?? null, items });
 }
 
-await writeFile(OUT, JSON.stringify(review, null, 2));
-console.log(`\n심사 데이터 생성 → data/staging/_review.json`);
+const json = JSON.stringify(review, null, 2);
+await writeFile(OUT, json);
+await writeFile(OUT_WEB, json);
+console.log(`\n심사 데이터 생성 → data/staging/_review.json (웹용 사본 review.json)`);
 console.log(`  전체 ${review.summary.total} · 발행후보 ${review.summary.ready} · 보류 ${review.summary.blocked}` +
             (review.summary.pricePending ? ` (그중 가격대기 ${review.summary.pricePending})` : '') + '\n');
