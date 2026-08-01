@@ -1266,9 +1266,19 @@ function openDetail(id){
   /* 주원료 (rank 순) */
   const ingr = (d.ingr||[]).slice().sort((a,b)=>(a.rank||99)-(b.rank||99)).slice(0,8);
 
+  /* 가격 줄. DETAIL 에 시세 배열이 있으면 그걸 쓰고, 없으면 목록용 f.price 로 한 줄 만든다.
+     구매 링크는 쿠팡 파트너스 링크(buyUrl)가 있으면 그것, 없으면 출처의 상품 URL 을 연다. */
+  const priceRows = (d.prices && d.prices.length) ? d.prices : (() => {
+    const fp = f.price;
+    if (!fp || !(fp.p > 0)) return [];
+    const retail = (f.src && f.src.sources || []).find(s => s.role === 'retail');
+    return [{ wg: fp.wg, shop: fp.shop, price: fp.p, pKg: fp.pKg,
+              url: fp.buyUrl || (retail && retail.url) || null, avail: true }];
+  })();
+
   calc.w = 5; calc.meals = 2; calc.calKg = cal.v;
   calc.bagG = (d.weightOpts && d.weightOpts[0] && d.weightOpts[0].g)
-    || (d.prices && d.prices[0] && d.prices[0].wg) || 2000;
+    || (priceRows[0] && priceRows[0].wg) || 2000;
 
   document.getElementById('detailBody').innerHTML = `
   <div class="dhero">
@@ -1448,7 +1458,7 @@ function openDetail(id){
 
     <div class="isec" style="margin-bottom:20px">
       <div class="isec-t">${icon('coins',15)}최저가 비교</div>
-      ${(d.prices&&d.prices.length) ? d.prices.map(p=>`
+      ${priceRows.length ? priceRows.map(p=>`
         <div class="prow">
           <div class="pinfo">
             <div class="pshop">${SHOP_KO[p.shop]||p.shop||'판매처'}${p.wg?` · ${gLabel(p.wg)}`:''}</div>
