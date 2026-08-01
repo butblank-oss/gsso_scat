@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { computeScore, loadFoods } from './lib/schema.mjs';
 import { strengthOf } from './compute-func-strength.mjs';
+import { deriveDetail } from './lib/derive.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const STAGING = join(ROOT, 'data/staging');
@@ -48,6 +49,7 @@ const { all: foods } = await loadFoods(ROOT);
 const existingIds = new Set(foods.map(f => f.id));
 
 const published = [], rejected = [], refused = [], missing = new Set([...approve, ...reject]);
+const details = {};   /* uuid → 상세 화면 데이터 */
 
 for (const file of files) {
   const path = join(STAGING, file);
@@ -76,6 +78,15 @@ for (const file of files) {
     while (existingIds.has(uuid)) uuid = randomUUID();
     existingIds.add(uuid);
 
+    /* 상세 화면 데이터. 라벨에서 뽑은 보장성분표와 원재료 목록으로 규칙이 만든다.
+       ga·ingredients 가 없으면 만들지 않는다 — 없는 걸 지어내지 않는다. */
+    const detail = (p.ga || p.ingredients)
+      ? deriveDetail({ ga: p.ga, ingredients: p.ingredients, facts: p.facts,
+                       price: p.price, weightOptions: p.price?.wgOptions,
+                       rxInfo: p.rxInfo ?? null })
+      : null;
+    if (detail) details[uuid] = detail;
+
     published.push({
       id: uuid,
       brand: p.brand, brandSlug: p.brandSlug, country: p.country, name: p.name,
@@ -86,10 +97,11 @@ for (const file of files) {
       concerns: p.concerns, price: p.price,
       /* 기능성 근거 강도. 수집분에 funcIngr 가 있으면 여기서 계산해 둔다.
          없으면 나중에 scripts/compute-func-strength.mjs 로 일괄 계산한다. */
-      funcStrength: p.funcIngr
-        ? Object.fromEntries(Object.entries(p.funcIngr)
-            .map(([k, v]) => [k, strengthOf(v)]).filter(([, v]) => v > 0))
-        : undefined,
+      funcStrength: (() => {
+        const fi = p.funcIngr ?? detail?.funcIngr;
+        return fi ? Object.fromEntries(Object.entries(fi)
+          .map(([k, v]) => [k, strengthOf(v)]).filter(([, v]) => v > 0)) : undefined;
+      })(),
       specOrigin: p.specOrigin,     // 성분표가 국내 기준인지 해외 기준인지 — 사용자에게 표시된다
       status: 'published',
       srcState: 'sourced',
@@ -110,10 +122,16 @@ for (const file of files) {
 }
 
 if (published.length && !DRY) {
-  const src = await readFile(DATA_JS, 'utf-8');
+  let src = await readFile(DATA_JS, 'utf-8');
   const m = src.match(/const FOODS_ALL\s*=\s*(\[[\s\S]*?\]);/);
   const merged = [...JSON.parse(m[1]), ...published];
-  await writeFile(DATA_JS, src.replace(m[1], JSON.stringify(merged)));
+  src = src.replace(m[1], JSON.stringify(merged));
+  if (Object.keys(details).length) {
+    const dm = src.match(/const DETAIL\s*=\s*(\{[\s\S]*?\});\s*\n/);
+    const mergedD = { ...JSON.parse(dm[1]), ...details };
+    src = src.replace(dm[1], JSON.stringify(mergedD));
+  }
+  await writeFile(DATA_JS, src);
 }
 
 if (rejected.length && !DRY) {
