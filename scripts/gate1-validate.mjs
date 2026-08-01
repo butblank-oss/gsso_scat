@@ -136,6 +136,13 @@ function checkItem(item, published, seen) {
       F('E_PRICE_RANGE', `kg당 ${expect.toLocaleString()}원 — 상식 범위(${PRICE_KG.min.toLocaleString()}~${PRICE_KG.max.toLocaleString()}) 밖입니다`);
     }
   }
+  /* 구매 버튼이 여는 링크. 쿠팡 파트너스 단축링크(link.coupang.com/a/…)를 쓸 수 있다.
+     가격 근거는 sources 의 정식 상품 URL 이고, 이건 사람이 여는 링크일 뿐이다. */
+  if (pr.buyUrl != null) {
+    if (!isHttpUrl(pr.buyUrl) || !isRetailHost(pr.buyUrl)) {
+      F('E_PRICE_BUYURL', `price.buyUrl 은 쿠팡 도메인이어야 합니다: ${pr.buyUrl}`);
+    }
+  }
   }  /* if (!pricePending) */
 
   /* --- 6. 출처 구조 --- */
