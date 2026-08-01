@@ -97,8 +97,11 @@ for (const file of files) {
       ...(item.audit.humanEdits ?? []),
       { at: new Date().toISOString(), changes, reason: e.reason ?? null, before }
     ];
-    /* 값이 바뀌었으니 심사 AI 대조 결과는 더 이상 유효하지 않다 */
-    if (item.audit.verdict) {
+    /* 값이 바뀌었으니 심사 AI 대조 결과는 더 이상 유효하지 않다.
+       단, 구매 링크만 바뀐 경우는 예외다 — 분석한 사실이 아니라 사람이 여는 링크일 뿐이고,
+       이것 때문에 대조를 다시 하게 만들면 링크를 채워 넣을 때마다 발행이 막힌다. */
+    const onlyBuyUrl = changes.every(c => c.startsWith('price.buyUrl:'));
+    if (item.audit.verdict && !onlyBuyUrl) {
       item.audit.staleVerdict = item.audit.verdict;
       delete item.audit.verdict;
     }

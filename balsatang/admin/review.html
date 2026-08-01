@@ -118,6 +118,17 @@ tr.diff td:first-child{color:var(--bad);font-weight:600}
   background:var(--panel2);border:1px solid var(--line);color:var(--sub);font-variant-numeric:tabular-nums}
 .derived .p.ch{border-color:var(--warn);color:var(--warn);background:var(--warn-soft)}
 .derived .p.score{background:var(--pri-soft);border-color:var(--pri);color:#9DBBF5}
+.buy{margin-top:10px;padding:10px;border:1px solid var(--warn);background:var(--warn-soft);border-radius:var(--r)}
+.buy.ok{border-color:var(--good);background:var(--good-soft)}
+.buy.bad{border-color:var(--bad);background:var(--bad-soft)}
+.buy label{display:block;font-size:11px;font-weight:700;color:var(--sub);margin-bottom:5px}
+.buy input{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:var(--r);
+  color:var(--ink);padding:9px;font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.buy input:focus{outline:none;border-color:var(--pri)}
+.buymsg{font-size:11px;margin-top:5px;color:var(--warn);line-height:1.5}
+.buy.ok .buymsg{color:var(--good)}
+.buy.bad .buymsg{color:var(--bad)}
+.buysrc{display:inline-block;margin-top:6px;font-size:11.5px}
 .reason{margin-top:9px}
 .reason input{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:var(--r);
   color:var(--ink);padding:8px 9px;font-size:13px;font-family:inherit}
@@ -198,6 +209,10 @@ const FIELD=[
   {k:'price.p',          label:'가격 (원)',          type:'num',step:'10'},
   {k:'price.wg',         label:'중량 (g)',           type:'num',step:'1'}
 ];
+
+/* 구매 링크는 숫자가 아니라 따로 다룬다. 쿠팡 파트너스 링크로만 수수료가 붙으므로
+   발행 전에 반드시 채워야 한다. 링크를 만드는 건 사람만 할 수 있다. */
+const BUY_FIELD = 'price.buyUrl';
 
 const dig=(o,path)=>path.split('.').reduce((v,k)=>v?.[k],o);
 
@@ -295,8 +310,24 @@ function editBlock(it){
     `<span class="p ${cls} ${now!==before?'ch':''}">${esc(label)} ${esc(now??'—')}${
       now!==before?` <s style="opacity:.6">${esc(before??'—')}</s>`:''}</span>`;
 
+  const buyOrig=dig(it.proposed,BUY_FIELD)??'';
+  const buyCur=e.price?.buyUrl;
+  const buyVal=buyCur!==undefined?buyCur:buyOrig;
+  const buyOk=/^https?:\/\/([\w-]+\.)*coupang\.com\//i.test(String(buyVal||''));
+  const buyBlock=it.pricePending?'':`<div class="buy${buyVal?(buyOk?' ok':' bad'):''}">
+    <label>구매 링크 (쿠팡 파트너스)</label>
+    <input data-buy placeholder="https://link.coupang.com/a/…"
+      value="${esc(buyVal)}" autocapitalize="off" autocomplete="off" spellcheck="false">
+    <div class="buymsg">${
+      !buyVal ? '⚠ 아직 없음 — 이 링크로 들어온 구매만 수수료가 붙습니다. 아래 상품 페이지에서 만들어 붙여넣으세요.'
+      : buyOk ? '✓ 쿠팡 링크' : '✗ 쿠팡 도메인이 아닙니다'}</div>
+    ${(it.sources||[]).filter(s=>s.role==='retail').map(s=>
+      `<a class="buysrc" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">링크 만들 상품 페이지 열기 ↗</a>`).join('')}
+  </div>`;
+
   return `<div class="sec"><h3>고치기</h3>
     <div class="edit">${fields}</div>
+    ${buyBlock}
     <div class="calc">
       <div class="h">보장성분표에서 건물기준 탄수를 계산합니다. 조회분은 빼지 않습니다.</div>
       <div class="r">
@@ -418,6 +449,18 @@ function patchCard(id){
   if(ed&&!mark)badges.insertAdjacentHTML('beforeend','<span class="b ed">수정됨</span>');
   if(!ed&&mark)mark.remove();
 
+  const buyBox=el.querySelector('.buy');
+  if(buyBox){
+    const cur=edits[id]?.price?.buyUrl;
+    const v=cur!==undefined?cur:(dig(it.proposed,BUY_FIELD)??'');
+    const ok=/^https?:\/\/([\w-]+\.)*coupang\.com\//i.test(String(v||''));
+    buyBox.classList.toggle('ok',!!v&&ok);
+    buyBox.classList.toggle('bad',!!v&&!ok);
+    buyBox.querySelector('.buymsg').textContent =
+      !v ? '⚠ 아직 없음 — 이 링크로 들어온 구매만 수수료가 붙습니다. 아래 상품 페이지에서 만들어 붙여넣으세요.'
+      : ok ? '✓ 쿠팡 링크' : '✗ 쿠팡 도메인이 아닙니다';
+  }
+
   for(const input of el.querySelectorAll('[data-edit]')){
     const f=input.closest('.f');
     const [grp,key]=input.dataset.edit.split('.');
@@ -453,13 +496,15 @@ function setEdit(id,path,raw){
   const [grp,key]=path.split('.');
   const orig=dig(it.proposed,path);
   let val=raw;
-  if(path!=='facts.firstIngrCat'){
+  const isText = path==='facts.firstIngrCat' || path===BUY_FIELD;
+  if(!isText){
     val=String(raw).trim()===''?null:Number(raw);
     if(val!=null&&Number.isNaN(val))return;
   }
+  if(val==='')val=null;
   const e=edits[id]||(edits[id]={});
   const g=e[grp]||(e[grp]={});
-  if(val===orig||(val==null&&orig==null))delete g[key]; else g[key]=val;
+  if(val===orig||(val==null&&orig==null)||(val==null&&orig===undefined))delete g[key]; else g[key]=val;
   if(!Object.keys(g).length)delete e[grp];
   if(!Object.keys(e).length&&!e.reason)delete edits[id];
   saveEdits();
@@ -470,6 +515,8 @@ function setEdit(id,path,raw){
 document.addEventListener('change',e=>{
   const f=e.target.closest('[data-edit]');
   if(f){setEdit(f.closest('.card').dataset.id,f.dataset.edit,f.value);return;}
+  const bu=e.target.closest('[data-buy]');
+  if(bu){setEdit(bu.closest('.card').dataset.id,BUY_FIELD,bu.value.trim());return;}
   const r=e.target.closest('[data-reason]');
   if(r){
     const id=r.closest('.card').dataset.id;
