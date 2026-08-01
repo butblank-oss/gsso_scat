@@ -88,6 +88,28 @@ node scripts/buy-links.mjs --set l.json  # 받은 링크 검증 후 data.js 반�
 - `audit.method` 는 `label-photo`, `limitation` 에 크롤링 재확인이 불가함을 명시한다
 - 라벨에 없는 값은 채우지 않는다
 
+## 반드시 옮겨야 할 두 가지
+
+상세 화면(판정 카드·영양 프로파일·주원료 목록·적합도)이 **전부 이 둘에서 자동으로 만들어진다.**
+없으면 사용자에게 빈 화면이 나가므로 게이트 1이 탈락시킨다.
+
+```json
+"ga": { "protein": 27, "fat": 15, "fiber": 5, "ash": 9.5, "moisture": 12, "kcalPerKg": 3954 },
+"ingredients": ["흰살생선어분", "쌀", "옥수수글루텐", "옥수수", "계유", "..."]
+```
+
+- `ga` — 보장성분표 숫자 그대로. `protein·fat·fiber·moisture` 는 필수, 조회분·열량은 있으면 넣는다
+- `ingredients` — **표기 순서 그대로** 전부. 앞쪽이 함량이 많다는 뜻이라 순서가 곧 정보다
+  괄호 설명도 표기된 그대로 둔다: `"연어 어분(가수분해연어어분)"`
+
+게이트가 대조하는 것:
+- `ga.protein` 과 `facts.protein` 이 같은가
+- `ga` 로 계산한 건물기준 탄수가 `facts.dmCarb` 와 같은가
+- 1번 원료의 분류가 `facts.firstIngrCat` 과 같은가
+
+**판정 문장은 네가 쓰지 않는다.** `scripts/lib/derive.mjs` 가 규칙으로 만든다.
+사전에 없는 원료는 '모름'으로 남는다 — 그게 맞다. 억지로 분류하지 말 것.
+
 ## 뽑아야 할 사실 (facts)
 
 | 키 | 내용 | 구하는 법 |

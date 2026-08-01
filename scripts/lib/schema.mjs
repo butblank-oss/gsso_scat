@@ -77,7 +77,11 @@ export function daysSince(iso) {
 export const REQUIRED_ITEM_FIELDS = ['stagingId', 'proposed', 'sources', 'evidence'];
 export const REQUIRED_FOOD_FIELDS = ['brand', 'brandSlug', 'country', 'name', 'type',
                                      'rx', 'ages', 'sizes', 'ratings', 'func', 'concerns', 'facts',
-                                     'specOrigin'];
+                                     'specOrigin', 'ga', 'ingredients'];
+
+/* 보장성분표. 상세 화면의 영양 프로파일이 여기서 나온다.
+   조회분·열량은 라벨에 없을 수 있어 필수가 아니다. */
+export const REQUIRED_GA_KEYS = ['protein', 'fat', 'fiber', 'moisture'];
 /* 가격은 나중에 채울 수 있다. pricePending: true 인 항목은 price 없이 임시저장된다. */
 export const REQUIRED_PRICE_FIELDS = ['price'];
 export const REQUIRED_RATING_KEYS = ['quality', 'carb', 'additive', 'value'];
