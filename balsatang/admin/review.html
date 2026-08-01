@@ -269,8 +269,21 @@ document.getElementById('copy').addEventListener('click',async()=>{
   catch{prompt('아래를 복사해 PR 코멘트에 붙여넣으세요',text);}
 });
 
-fetch('../../data/staging/_review.json',{cache:'no-store'})
-  .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+/* 배포본은 review.json 을 쓴다. GitHub Pages 가 밑줄로 시작하는 파일을 빼기 때문이다.
+   로컬에서 build-review 만 돌린 경우를 위해 _review.json 도 뒤이어 시도한다. */
+async function loadReview(){
+  let last;
+  for(const p of ['../../data/staging/review.json','../../data/staging/_review.json']){
+    try{
+      const r=await fetch(p,{cache:'no-store'});
+      if(r.ok) return r.json();
+      last=new Error('HTTP '+r.status);
+    }catch(e){ last=e; }
+  }
+  throw last ?? new Error('불러오기 실패');
+}
+
+loadReview()
   .then(d=>{DATA=d;render();})
   .catch(err=>{
     document.getElementById('meta').textContent='불러오기 실패';
