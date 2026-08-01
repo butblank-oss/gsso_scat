@@ -121,6 +121,21 @@ BHA, BHT, 에톡시퀸, 프로필갈레이트, 인공 착색료(적색 40호 등
 `data/staging/YYYY-MM-DD-collect.json` 에 쓴다. 형식은 `data/staging/_example.json` 참고.
 `status` 는 항상 `draft` 로 둔다. 발행은 사람이 한다.
 
+## 사람이 값을 고쳐 보냈을 때
+
+심사 화면에서 사람이 값을 고치면 `/publish` 명령에 `edits` 블록이 붙어 온다.
+그 JSON 을 그대로 넘기면 된다. 손으로 스테이징을 고치지 말 것.
+
+```bash
+node scripts/apply-edits.mjs edits.json    # 또는  pbpaste | node scripts/apply-edits.mjs -
+node scripts/gate1-validate.mjs
+node scripts/build-review.mjs
+```
+
+`apply-edits` 가 별점·총점·kg당 단가를 다시 계산하고,
+바꾼 내용을 `audit.humanEdits` 에 남기고, `audit.verdict` 를 무효화한다.
+그래서 고친 건은 다시 심사를 거쳐야 발행 후보가 된다. 정책 §8.1 참고.
+
 ## 마치기 전에
 
 ```bash

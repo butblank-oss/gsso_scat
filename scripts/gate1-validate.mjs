@@ -250,7 +250,7 @@ async function checkLive(item) {
 const { all: published } = await loadFoods(ROOT);
 let files = [];
 try {
-  files = (await readdir(STAGING)).filter(f => f.endsWith('.json') && !f.startsWith('_'));
+  files = (await readdir(STAGING)).filter(f => f.endsWith('.json') && !f.startsWith('_') && f !== 'review.json');
 } catch { /* 폴더 없음 = 검사할 것 없음 */ }
 
 const report = { checkedAt: new Date().toISOString(), live: LIVE, batches: [], pass: 0, failCount: 0 };

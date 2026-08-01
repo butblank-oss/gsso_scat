@@ -43,7 +43,7 @@ try {
 const readyBy = {};
 for (const b of review.batches) for (const it of b.items) readyBy[it.stagingId] = it.ready;
 
-const files = (await readdir(STAGING)).filter(f => f.endsWith('.json') && !f.startsWith('_'));
+const files = (await readdir(STAGING)).filter(f => f.endsWith('.json') && !f.startsWith('_') && f !== 'review.json');
 const { all: foods } = await loadFoods(ROOT);
 const existingIds = new Set(foods.map(f => f.id));
 

@@ -36,7 +36,7 @@ const g1By = {};
 for (const b of g1.batches) for (const it of b.items) g1By[it.stagingId] = it;
 
 let files = [];
-try { files = (await readdir(STAGING)).filter(f => f.endsWith('.json') && !f.startsWith('_')); } catch {}
+try { files = (await readdir(STAGING)).filter(f => f.endsWith('.json') && !f.startsWith('_') && f !== 'review.json'); } catch {}
 
 const review = {
   builtAt: new Date().toISOString(),

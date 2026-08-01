@@ -96,6 +96,36 @@ tr.diff td:first-child{color:var(--bad);font-weight:600}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:96px;z-index:40;background:var(--ink);color:var(--bg);
   padding:10px 18px;border-radius:99px;font-size:13px;font-weight:600;opacity:0;transition:opacity var(--t);pointer-events:none}
 .toast.on{opacity:1}
+
+/* 고치기 */
+.edit{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.f{display:flex;flex-direction:column;gap:3px}
+.f label{font-size:11px;color:var(--sub);font-weight:600}
+.f input,.f select{background:var(--panel2);border:1px solid var(--line);border-radius:var(--r);color:var(--ink);
+  padding:8px 9px;font-size:13px;font-family:inherit;font-variant-numeric:tabular-nums;width:100%}
+.f input:focus,.f select:focus{outline:none;border-color:var(--pri)}
+.f.ch input,.f.ch select{border-color:var(--warn);background:var(--warn-soft)}
+.f .was{font-size:10px;color:var(--warn);min-height:12px}
+.calc{margin-top:9px;padding:9px;border:1px dashed var(--line);border-radius:var(--r)}
+.calc .r{display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end}
+.calc .r .f{flex:1;min-width:66px}
+.calc button{padding:8px 12px;border-radius:var(--r);border:1px solid var(--line);background:transparent;
+  color:var(--sub);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.calc button:hover{border-color:var(--muted);color:var(--ink)}
+.calc .h{font-size:11px;color:var(--muted);margin-bottom:6px}
+.derived{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.derived .p{font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px;
+  background:var(--panel2);border:1px solid var(--line);color:var(--sub);font-variant-numeric:tabular-nums}
+.derived .p.ch{border-color:var(--warn);color:var(--warn);background:var(--warn-soft)}
+.derived .p.score{background:var(--pri-soft);border-color:var(--pri);color:#9DBBF5}
+.reason{margin-top:9px}
+.reason input{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:var(--r);
+  color:var(--ink);padding:8px 9px;font-size:13px;font-family:inherit}
+.reason input:focus{outline:none;border-color:var(--pri)}
+.card.edited{border-color:var(--warn)}
+.b.ed{background:var(--warn-soft);border-color:var(--warn);color:var(--warn)}
+.bar .in .alt{background:transparent;border:1px solid var(--line);color:var(--sub)}
+.bar .in .alt:hover:not(:disabled){background:var(--panel2);color:var(--ink)}
 </style>
 </head>
 <body>
@@ -110,6 +140,7 @@ tr.diff td:first-child{color:var(--bad);font-weight:600}
 <div class="bar" hidden id="bar">
   <div class="in">
     <div class="c" id="count"></div>
+    <button id="clear" class="alt" hidden>수정 되돌리기</button>
     <button id="copy" disabled>발행 명령 복사</button>
   </div>
 </div>
@@ -128,6 +159,73 @@ const evLabel=k=>EV_LABEL[k]||RATING_LABEL[k.split('.')[1]]||k;
 const ROLE_LABEL={official:'제조사 공식',importer:'수입사 공식',authority:'정부·기관',retail:'판매처'};
 const decision={};  // stagingId -> 'publish' | 'reject'
 let DATA=null;
+
+/* ── 루브릭 ──────────────────────────────────────────────
+   scripts/lib/rubric.mjs 와 같은 규칙이다. 화면에서 값을 고치면
+   점수를 여기서 다시 계산해 보여준다. 실제 채점은 발행할 때
+   서버 쪽 루브릭이 다시 하므로, 여기 값은 미리보기다. */
+const rateCarb=d=>d==null?null:d<=25?5:d<=35?4:d<=44?3:d<=56?2:1;
+const rateQuality=(p,c)=>{if(p==null)return null;const s=p>=32?5:p>=25?4:p>=16?3:2;
+  return c==='grain'?Math.min(s,3):s;};
+const rateAdditive=(ca,da)=>{if(ca==null)return null;const s=ca===0?5:ca<=2?4:ca<=4?3:2;
+  return (da||0)>0?Math.min(s,3):s;};
+const rateValue=k=>k==null?null:k<=10000?5:k<=16000?4:k<=32000?3:k<=45000?2:1;
+const W={quality:.45,additive:.28,carb:.20,value:.07};
+function computeScore(r){
+  if(!r||['quality','additive','carb','value'].some(k=>r[k]==null))return null;
+  return Math.round(2*(W.quality*r.quality+W.additive*r.additive+W.carb*r.carb+W.value*r.value)*10)/10;
+}
+/* 조회분은 빼지 않는다 — 기존 데이터가 이 방식으로 계산돼 있다 */
+function computeDmCarb({protein,fat,fiber,moisture}){
+  if([protein,fat,fiber,moisture].some(v=>v==null||v===''))return null;
+  const carb=100-(Number(protein)+Number(fat)+Number(fiber)+Number(moisture));
+  return Math.round(carb/(100-Number(moisture))*1000)/10;
+}
+
+/* stagingId -> {facts:{}, price:{}, reason:''} — 사람이 고친 값만 담는다 */
+const edits={};
+const LS_KEY='balsatang.review.edits.v1';
+try{Object.assign(edits,JSON.parse(localStorage.getItem(LS_KEY)||'{}'));}catch{}
+const saveEdits=()=>{try{localStorage.setItem(LS_KEY,JSON.stringify(edits));}catch{}};
+
+const FIELD=[
+  {k:'facts.protein',    label:'조단백 (%)',        type:'num',step:'0.1'},
+  {k:'facts.dmCarb',     label:'건물기준 탄수 (%)',  type:'num',step:'0.1'},
+  {k:'facts.firstIngrCat',label:'1번 원료',          type:'sel',
+   opts:[['meat','육류'],['fish','어류'],['grain','곡물'],['veg','채소'],['other','기타']]},
+  {k:'facts.cautionN',   label:'주의 성분 (개)',     type:'num',step:'1'},
+  {k:'facts.dangerN',    label:'위험 성분 (개)',     type:'num',step:'1'},
+  {k:'price.p',          label:'가격 (원)',          type:'num',step:'10'},
+  {k:'price.wg',         label:'중량 (g)',           type:'num',step:'1'}
+];
+
+const dig=(o,path)=>path.split('.').reduce((v,k)=>v?.[k],o);
+
+/* 원본값 + 수정값을 합친, 지금 화면이 주장하는 값 */
+function effective(it){
+  const e=edits[it.stagingId]||{};
+  const p=it.proposed||{};
+  return {
+    facts:{...(p.facts||{}),...(e.facts||{})},
+    price:{...(p.price||{}),...(e.price||{})}
+  };
+}
+function isEdited(it){
+  const e=edits[it.stagingId];
+  if(!e)return false;
+  return Object.keys(e.facts||{}).length>0||Object.keys(e.price||{}).length>0;
+}
+function derived(it){
+  const v=effective(it);
+  const pKg=(v.price.p>0&&v.price.wg>0)?Math.round(v.price.p/(v.price.wg/1000)):null;
+  const ratings={
+    quality:rateQuality(v.facts.protein,v.facts.firstIngrCat),
+    carb:rateCarb(v.facts.dmCarb),
+    additive:rateAdditive(v.facts.cautionN,v.facts.dangerN),
+    value:it.pricePending?null:rateValue(pKg)
+  };
+  return {pKg,ratings,score:it.pricePending?null:computeScore(ratings)};
+}
 
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const won=n=>n==null?'—':Number(n).toLocaleString('ko-KR')+'원';
@@ -171,6 +269,62 @@ function sourceBlock(it){
   }).join('') || '<div class="msg f">출처가 없습니다</div>';
 }
 
+/* 값을 고치는 칸. 원본과 달라지면 노란 테두리와 '원래 N' 표시가 붙는다. */
+function editBlock(it){
+  const id=it.stagingId, e=edits[id]||{};
+  const fields=FIELD.map(f=>{
+    const [grp,key]=f.k.split('.');
+    const orig=dig(it.proposed,f.k);
+    const cur=e[grp]?.[key];
+    const val=cur!==undefined?cur:orig;
+    const changed=cur!==undefined&&cur!==orig;
+    const dis=(grp==='price'&&it.pricePending)?' disabled':'';
+    const input=f.type==='sel'
+      ? `<select data-edit="${esc(f.k)}"${dis}>${f.opts.map(([v,l])=>
+          `<option value="${v}"${v===val?' selected':''}>${l}</option>`).join('')}</select>`
+      : `<input type="number" step="${f.step}" inputmode="decimal" data-edit="${esc(f.k)}"
+           value="${val==null?'':esc(val)}"${dis}>`;
+    return `<div class="f${changed?' ch':''}">
+      <label>${esc(f.label)}</label>${input}
+      <div class="was">${changed?'원래 '+esc(orig??'—'):''}</div>
+    </div>`;
+  }).join('');
+
+  const d=derived(it), o=it.proposed||{};
+  const pill=(label,now,before,cls='')=>
+    `<span class="p ${cls} ${now!==before?'ch':''}">${esc(label)} ${esc(now??'—')}${
+      now!==before?` <s style="opacity:.6">${esc(before??'—')}</s>`:''}</span>`;
+
+  return `<div class="sec"><h3>고치기</h3>
+    <div class="edit">${fields}</div>
+    <div class="calc">
+      <div class="h">보장성분표에서 건물기준 탄수를 계산합니다. 조회분은 빼지 않습니다.</div>
+      <div class="r">
+        <div class="f"><label>조단백</label><input type="number" step="0.1" data-calc="protein"></div>
+        <div class="f"><label>조지방</label><input type="number" step="0.1" data-calc="fat"></div>
+        <div class="f"><label>조섬유</label><input type="number" step="0.1" data-calc="fiber"></div>
+        <div class="f"><label>수분</label><input type="number" step="0.1" data-calc="moisture"></div>
+        <button data-act="calc">탄수 채우기</button>
+      </div>
+    </div>
+    <div class="derived">
+      ${pill('원료',d.ratings.quality,o.ratings?.quality)}
+      ${pill('탄수',d.ratings.carb,o.ratings?.carb)}
+      ${pill('첨가물',d.ratings.additive,o.ratings?.additive)}
+      ${pill('가성비',d.ratings.value,o.ratings?.value)}
+      ${pill('kg당',d.pKg!=null?d.pKg.toLocaleString('ko-KR')+'원':'—',
+             o.price?.pKg!=null?o.price.pKg.toLocaleString('ko-KR')+'원':'—')}
+      ${pill('총점',d.score,o.score,'score')}
+    </div>
+    <div class="reason">
+      <input data-reason placeholder="왜 고쳤는지 — 근거가 된 문장이나 링크 (발행 명령에 함께 실립니다)"
+        value="${esc(e.reason||'')}">
+    </div>
+    ${isEdited(it)?`<div class="msg w" style="margin-top:9px">⚠ 고친 값은 발행 명령에 함께 실립니다.
+      게이트는 원본이 아니라 고친 값으로 다시 돌아갑니다.</div>`:''}
+  </div>`;
+}
+
 function card(it){
   const g=it.gates;
   const badges=[
@@ -178,10 +332,11 @@ function card(it){
       ? `<span class="b wa">가격 대기</span>`
       : `<span class="b ${g.g1==='pass'?'ok':'no'}">게이트1 ${g.g1==='pass'?'통과':'탈락'}</span>`,
     `<span class="b ${g.g2==='match'?'ok':'no'}">게이트2 ${g.g2==='match'?'일치':'불일치'}</span>`,
-    g.g3warn.length?`<span class="b wa">게이트3 경고 ${g.g3warn.length}</span>`:`<span class="b ok">게이트3 정상</span>`
+    g.g3warn.length?`<span class="b wa">게이트3 경고 ${g.g3warn.length}</span>`:`<span class="b ok">게이트3 정상</span>`,
+    isEdited(it)?`<span class="b ed">수정됨</span>`:''
   ].join('');
   const p=it.proposed||{};
-  return `<div class="card ${it.ready?'':'blocked'}" data-id="${esc(it.stagingId)}">
+  return `<div class="card ${it.ready?'':'blocked'} ${isEdited(it)?'edited':''}" data-id="${esc(it.stagingId)}">
     <div class="hd">
       <span class="chev">▸</span>
       <div class="t">
@@ -197,10 +352,12 @@ function card(it){
       ${g.g3warn.map(w=>`<div class="msg w">⚠ ${esc(w)}</div>`).join('')}
       <div class="sec"><h3>대조</h3>${auditTable(it)}</div>
       <div class="sec"><h3>출처와 근거</h3>${sourceBlock(it)}</div>
+      ${editBlock(it)}
     </div>
     <div class="act">
       <button data-act="reject">반려</button>
-      <button data-act="publish" ${it.ready?'':'disabled'}>${it.ready?'발행':'게이트 미통과'}</button>
+      <button data-act="publish"${it.ready||isEdited(it)?'':' disabled'}>${
+        isEdited(it)?'고쳐서 발행':it.ready?'발행':'게이트 미통과'}</button>
     </div>
   </div>`;
 }
@@ -217,9 +374,10 @@ function render(){
   }
   wrap.innerHTML=`
     <div class="note">
-      게이트 1·2·3을 통과한 건만 <b>발행</b>할 수 있습니다.
       출처 링크를 직접 열어 값이 맞는지 확인한 뒤 판단하세요.
+      값이 틀렸으면 카드 안 <b>고치기</b>에서 바로 바꿀 수 있습니다 — 별점과 총점은 루브릭으로 다시 계산됩니다.
       결정을 마치면 아래 <b>발행 명령 복사</b>를 눌러 PR 코멘트에 붙여넣습니다.
+      고친 값은 명령에 함께 실리고, 게이트는 고친 값으로 다시 돌아갑니다.
     </div>
     <div class="stat">
       <div><b>${s.total}</b><span>전체</span></div>
@@ -237,11 +395,104 @@ function render(){
 function updateBar(){
   const pub=Object.values(decision).filter(v=>v==='publish').length;
   const rej=Object.values(decision).filter(v=>v==='reject').length;
-  document.getElementById('count').innerHTML=`발행 <b>${pub}</b> · 반려 <b>${rej}</b>`;
-  document.getElementById('copy').disabled=!(pub+rej);
+  const ed=Object.keys(edits).filter(id=>isEdited(itemById(id))).length;
+  document.getElementById('count').innerHTML=
+    `발행 <b>${pub}</b> · 반려 <b>${rej}</b>${ed?` · 수정 <b>${ed}</b>`:''}`;
+  document.getElementById('copy').disabled=!(pub+rej+ed);
+  document.getElementById('clear').hidden=!ed;
 }
 
+const itemById=id=>DATA?.batches.flatMap(b=>b.items).find(i=>i.stagingId===id);
+
+/* 카드를 통째로 다시 그리면 지금 입력 중인 칸이 사라진다.
+   그래서 값을 고쳤을 때는 바뀌는 부분만 손댄다. */
+function patchCard(id){
+  const el=document.querySelector(`.card[data-id="${CSS.escape(id)}"]`);
+  const it=itemById(id);
+  if(!el||!it)return;
+  const ed=isEdited(it);
+
+  el.classList.toggle('edited',ed);
+  const badges=el.querySelector('.badges');
+  const mark=badges.querySelector('.b.ed');
+  if(ed&&!mark)badges.insertAdjacentHTML('beforeend','<span class="b ed">수정됨</span>');
+  if(!ed&&mark)mark.remove();
+
+  for(const input of el.querySelectorAll('[data-edit]')){
+    const f=input.closest('.f');
+    const [grp,key]=input.dataset.edit.split('.');
+    const cur=edits[id]?.[grp]?.[key];
+    const orig=dig(it.proposed,input.dataset.edit);
+    const changed=cur!==undefined&&cur!==orig;
+    f.classList.toggle('ch',changed);
+    f.querySelector('.was').textContent=changed?'원래 '+(orig??'—'):'';
+  }
+
+  const d=derived(it), o=it.proposed||{};
+  const pill=(label,now,before,cls='')=>
+    `<span class="p ${cls} ${now!==before?'ch':''}">${esc(label)} ${esc(now??'—')}${
+      now!==before?` <s style="opacity:.6">${esc(before??'—')}</s>`:''}</span>`;
+  el.querySelector('.derived').innerHTML=[
+    pill('원료',d.ratings.quality,o.ratings?.quality),
+    pill('탄수',d.ratings.carb,o.ratings?.carb),
+    pill('첨가물',d.ratings.additive,o.ratings?.additive),
+    pill('가성비',d.ratings.value,o.ratings?.value),
+    pill('kg당',d.pKg!=null?d.pKg.toLocaleString('ko-KR')+'원':'—',
+         o.price?.pKg!=null?o.price.pKg.toLocaleString('ko-KR')+'원':'—'),
+    pill('총점',d.score,o.score,'score')
+  ].join('');
+
+  const pub=el.querySelector('.act button[data-act="publish"]');
+  pub.disabled=!(it.ready||ed);
+  pub.textContent=ed?'고쳐서 발행':it.ready?'발행':'게이트 미통과';
+}
+
+/* 값이 원본과 같아지면 수정 기록에서 지운다 — 안 고친 것으로 되돌아간다 */
+function setEdit(id,path,raw){
+  const it=itemById(id); if(!it)return;
+  const [grp,key]=path.split('.');
+  const orig=dig(it.proposed,path);
+  let val=raw;
+  if(path!=='facts.firstIngrCat'){
+    val=String(raw).trim()===''?null:Number(raw);
+    if(val!=null&&Number.isNaN(val))return;
+  }
+  const e=edits[id]||(edits[id]={});
+  const g=e[grp]||(e[grp]={});
+  if(val===orig||(val==null&&orig==null))delete g[key]; else g[key]=val;
+  if(!Object.keys(g).length)delete e[grp];
+  if(!Object.keys(e).length&&!e.reason)delete edits[id];
+  saveEdits();
+  patchCard(id);
+  updateBar();
+}
+
+document.addEventListener('change',e=>{
+  const f=e.target.closest('[data-edit]');
+  if(f){setEdit(f.closest('.card').dataset.id,f.dataset.edit,f.value);return;}
+  const r=e.target.closest('[data-reason]');
+  if(r){
+    const id=r.closest('.card').dataset.id;
+    const v=r.value.trim();
+    if(v)(edits[id]||(edits[id]={})).reason=v;
+    else if(edits[id]){delete edits[id].reason; if(!Object.keys(edits[id]).length)delete edits[id];}
+    saveEdits();updateBar();
+  }
+});
+
 document.addEventListener('click',e=>{
+  const calc=e.target.closest('[data-act="calc"]');
+  if(calc){
+    const card=calc.closest('.card');
+    const g=k=>card.querySelector(`[data-calc="${k}"]`).value;
+    const dm=computeDmCarb({protein:g('protein'),fat:g('fat'),fiber:g('fiber'),moisture:g('moisture')});
+    if(dm==null){toast('네 칸을 모두 채워주세요');return;}
+    card.querySelector('[data-edit="facts.dmCarb"]').value=dm;
+    setEdit(card.dataset.id,'facts.dmCarb',dm);
+    toast(`건물기준 탄수 ${dm}% 로 채웠습니다`);
+    return;
+  }
+
   const hd=e.target.closest('.hd');
   if(hd){hd.closest('.card').classList.toggle('open');return;}
 
@@ -258,15 +509,36 @@ document.addEventListener('click',e=>{
   }
 });
 
-document.getElementById('copy').addEventListener('click',async()=>{
+/* 발행 명령. 고친 값이 있으면 edits 블록을 함께 싣는다.
+   scripts/apply-edits.mjs 가 이 JSON 을 그대로 받아 스테이징에 반영하고 게이트를 다시 돌린다. */
+function buildCommand(){
   const pub=Object.entries(decision).filter(([,v])=>v==='publish').map(([k])=>k);
   const rej=Object.entries(decision).filter(([,v])=>v==='reject').map(([k])=>k);
   const lines=['/publish'];
   if(pub.length)lines.push('approve: '+pub.join(' '));
   if(rej.length)lines.push('reject: '+rej.join(' '));
-  const text=lines.join('\n');
-  try{await navigator.clipboard.writeText(text);toast('복사됨 — PR 코멘트에 붙여넣으세요');}
-  catch{prompt('아래를 복사해 PR 코멘트에 붙여넣으세요',text);}
+  const touched=Object.keys(edits).filter(id=>isEdited(itemById(id))||edits[id].reason);
+  if(touched.length){
+    const out={};
+    for(const id of touched)out[id]=edits[id];
+    lines.push('edits:','```json',JSON.stringify(out,null,2),'```');
+  }
+  return lines.join('\n');
+}
+
+async function copyText(text,msg){
+  try{await navigator.clipboard.writeText(text);toast(msg);}
+  catch{prompt('아래를 복사해 붙여넣으세요',text);}
+}
+
+document.getElementById('copy').addEventListener('click',
+  ()=>copyText(buildCommand(),'복사됨 — PR 코멘트에 붙여넣으세요'));
+
+document.getElementById('clear').addEventListener('click',()=>{
+  if(!Object.keys(edits).length)return;
+  if(!confirm('고친 값을 모두 되돌릴까요?'))return;
+  for(const k of Object.keys(edits))delete edits[k];
+  saveEdits();render();toast('수정 내용을 되돌렸습니다');
 });
 
 /* 배포본은 review.json 을 쓴다. GitHub Pages 가 밑줄로 시작하는 파일을 빼기 때문이다.
