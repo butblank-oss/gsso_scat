@@ -67,8 +67,10 @@ export function daysSince(iso) {
 /* 스테이징 항목 한 건의 필수 구조. 게이트 1이 이걸로 검사한다. */
 export const REQUIRED_ITEM_FIELDS = ['stagingId', 'proposed', 'sources', 'evidence'];
 export const REQUIRED_FOOD_FIELDS = ['brand', 'brandSlug', 'country', 'name', 'type',
-                                     'rx', 'ages', 'sizes', 'ratings', 'func', 'concerns', 'price', 'facts',
+                                     'rx', 'ages', 'sizes', 'ratings', 'func', 'concerns', 'facts',
                                      'specOrigin'];
+/* 가격은 나중에 채울 수 있다. pricePending: true 인 항목은 price 없이 임시저장된다. */
+export const REQUIRED_PRICE_FIELDS = ['price'];
 export const REQUIRED_RATING_KEYS = ['quality', 'carb', 'additive', 'value'];
 
 export function isHttpUrl(u) {

@@ -42,6 +42,7 @@ export function rateValue(pKg) {
 /* 사실(facts)에서 ratings 전체를 계산한다.
    facts = { dmCarb, protein, firstIngrCat, cautionN, dangerN, pKg } */
 export function rateAll(facts) {
+  /* pKg 가 없으면 value 는 null 이 된다. 가격 확보 전에도 나머지 3개는 채점된다. */
   return {
     quality: rateQuality(facts.protein, facts.firstIngrCat),
     carb: rateCarb(facts.dmCarb),
