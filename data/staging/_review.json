@@ -1,10 +1,249 @@
 {
-  "builtAt": "2026-07-31T15:05:49.362Z",
+  "builtAt": "2026-08-01T02:04:11.625Z",
   "live": false,
-  "batches": [],
+  "batches": [
+    {
+      "file": "2026-07-31-nutrena.json",
+      "batchId": "2026-07-31-nutrena",
+      "collectedAt": "2026-07-31T16:00:00Z",
+      "items": [
+        {
+          "stagingId": "stg_nutrena_phytolab_light",
+          "label": "뉴트리나 원데이케어 파이토 랩 라이트 웨이트",
+          "proposed": {
+            "brand": "뉴트리나",
+            "brandSlug": "nutrena",
+            "country": "KR",
+            "name": "원데이케어 파이토 랩 라이트 웨이트",
+            "type": "dry",
+            "rx": false,
+            "ages": [
+              "all"
+            ],
+            "sizes": [
+              "all"
+            ],
+            "ico": "leaf",
+            "thumb": null,
+            "score": null,
+            "ratings": {
+              "quality": 4,
+              "carb": 2,
+              "additive": 2,
+              "value": null
+            },
+            "facts": {
+              "dmCarb": 53.9,
+              "protein": 25,
+              "firstIngrCat": "meat",
+              "cautionN": 5,
+              "dangerN": 0
+            },
+            "func": [
+              "weight"
+            ],
+            "warnN": 5,
+            "concerns": [
+              "weight"
+            ],
+            "pricePending": true,
+            "specOrigin": "domestic"
+          },
+          "sources": [
+            {
+              "role": "official",
+              "url": "https://www.nutrenaworld.co.kr/images/product/ondaycare_phytolab_lightweight.jpg",
+              "fetchedAt": "2026-08-01T01:20:00Z",
+              "title": "뉴트리나 공식몰 제품 상세 이미지 — 사용한 원료의 명칭 · 등록성분량"
+            }
+          ],
+          "evidence": {
+            "facts.protein": {
+              "src": 0,
+              "quote": "등록성분량 조단백질 25.0% 이상"
+            },
+            "facts.dmCarb": {
+              "src": 0,
+              "quote": "조단백 25 / 조지방 8 / 조섬유 8 / 조회분 10 / 수분 11 → 건물기준 탄수 53.9% (칼로리 3,350kcal 표기)"
+            },
+            "facts.firstIngrCat": {
+              "src": 0,
+              "quote": "사용한 원료의 명칭 첫 항목: 가수분해 오리고기분 (육류). 이어서 유기농 현미, 귀리, 보리"
+            },
+            "facts.cautionN": {
+              "src": 0,
+              "quote": "주의 성분 5종: 유기농 비트 펄프, 유기농 옥수수글루텐, 천연향미제, 맥주효모, 소금"
+            },
+            "facts.dangerN": {
+              "src": 0,
+              "quote": "BHA·BHT·에톡시퀸 등 위험 성분 표기 없음. 총유기원료함량 70.9%"
+            }
+          },
+          "audit": {
+            "auditor": {
+              "agent": "수동 판독",
+              "model": "claude-opus-5"
+            },
+            "method": "official-image",
+            "limitation": "제조사 공식 이미지 URL 을 직접 받아 판독했다. 이미지 자체는 공식 출처이나 텍스트가 아니라 재현 검증이 어렵다.",
+            "independent": {
+              "facts": {
+                "dmCarb": 53.9,
+                "protein": 25,
+                "firstIngrCat": "meat",
+                "cautionN": 5,
+                "dangerN": 0
+              }
+            },
+            "verdict": "match",
+            "diff": []
+          },
+          "pricePending": true,
+          "gates": {
+            "g1": "pending",
+            "g1fail": [],
+            "g1warn": [],
+            "g2": "match",
+            "g2diff": [],
+            "g3warn": [
+              "신규 브랜드입니다 (뉴트리나) — 기준선 없음, 출처를 특히 꼼꼼히 확인하세요"
+            ]
+          },
+          "ready": false
+        }
+      ]
+    },
+    {
+      "file": "2026-08-01-ranking.json",
+      "batchId": "2026-08-01-ranking",
+      "collectedAt": "2026-08-01T03:00:00Z",
+      "items": [
+        {
+          "stagingId": "stg_nutrena_prime_balance",
+          "label": "뉴트리나 프라임 밸런스",
+          "proposed": {
+            "brand": "뉴트리나",
+            "brandSlug": "nutrena",
+            "country": "KR",
+            "name": "프라임 밸런스",
+            "type": "dry",
+            "rx": false,
+            "ages": [
+              "all"
+            ],
+            "sizes": [
+              "all"
+            ],
+            "ico": "drumstick",
+            "thumb": "https://img.danuri.io/catalog-image/973/222/003/e2a7fb8bf1a242d7a7a752adf6e2fe82.jpg?shrink=360:360",
+            "score": 4.6,
+            "ratings": {
+              "quality": 2,
+              "carb": 1,
+              "additive": 3,
+              "value": 5
+            },
+            "facts": {
+              "dmCarb": 73.9,
+              "protein": 14,
+              "firstIngrCat": "grain",
+              "cautionN": 3,
+              "dangerN": 0
+            },
+            "func": [],
+            "warnN": 3,
+            "concerns": [],
+            "specOrigin": "domestic",
+            "price": {
+              "p": 21890,
+              "wg": 15000,
+              "wgOptions": [
+                15000
+              ],
+              "shop": "coupang",
+              "pKg": 1459
+            }
+          },
+          "sources": [
+            {
+              "role": "official",
+              "url": "https://img.danuri.io/catalog-content/images/c66/3769242_49e045f04d364ffca63f3e1721cd0b8f.jpg",
+              "fetchedAt": "2026-08-01T03:00:00Z",
+              "title": "판매자 상품 상세 이미지 — 등록 성분 · 주원료 표기"
+            },
+            {
+              "role": "retail",
+              "url": "https://www.coupang.com/vp/products/8291916628?itemId=25682972099&vendorItemId=93926827728",
+              "fetchedAt": "2026-08-01T03:00:00Z",
+              "title": "쿠팡 상품 페이지 (다나와 가격비교 최저가)"
+            }
+          ],
+          "evidence": {
+            "facts.protein": {
+              "src": 0,
+              "quote": "등록 성분: 조단백 14.0% 이상"
+            },
+            "facts.dmCarb": {
+              "src": 0,
+              "quote": "조단백 14 / 조지방 3 / 조섬유 6 / 조회분 10 / 수분 12 → 건물기준 탄수 73.9%"
+            },
+            "facts.firstIngrCat": {
+              "src": 0,
+              "quote": "주원료: 옥수수, 대두박, 소맥, 정제 계유, 계육분 — 1번 원료가 옥수수(곡물)"
+            },
+            "facts.cautionN": {
+              "src": 0,
+              "quote": "주의 성분 3종: 옥수수, 대두박, 소맥 (모두 곡물·콩 충전재). 유전자변형 옥수수 포함 표기"
+            },
+            "facts.dangerN": {
+              "src": 0,
+              "quote": "BHA·BHT·에톡시퀸 등 위험 성분 표기 없음"
+            },
+            "price.p": {
+              "src": 1,
+              "quote": "다나와 가격비교 쿠팡 최저 21,890원 / 15kg — 2026-08-01 확인"
+            }
+          },
+          "audit": {
+            "auditor": {
+              "agent": "수동 판독",
+              "model": "claude-opus-5"
+            },
+            "method": "seller-image + danawa-spec",
+            "limitation": "판매자 상세 이미지의 등록성분이 다나와 국내 등록 영양정보(조단백 14/조지방 3/조섬유 6/조회분 10/수분 12)와 일치했다.",
+            "independent": {
+              "facts": {
+                "dmCarb": 73.9,
+                "protein": 14,
+                "firstIngrCat": "grain",
+                "cautionN": 3,
+                "dangerN": 0
+              }
+            },
+            "verdict": "match",
+            "diff": [],
+            "crossChecked": true
+          },
+          "pricePending": false,
+          "gates": {
+            "g1": "pass",
+            "g1fail": [],
+            "g1warn": [],
+            "g2": "match",
+            "g2diff": [],
+            "g3warn": [
+              "kg당 1,459원 — 같은 타입(dry) 중앙값 14,473.68원의 1/9.9"
+            ]
+          },
+          "ready": true
+        }
+      ]
+    }
+  ],
   "summary": {
-    "total": 0,
-    "ready": 0,
-    "blocked": 0
+    "total": 2,
+    "ready": 1,
+    "blocked": 1,
+    "pricePending": 1
   }
 }

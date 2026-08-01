@@ -13,6 +13,7 @@
     "publish": "node scripts/merge-approved.mjs",
     "check": "npm run gate1 && npm run gate3",
     "strength": "node scripts/compute-func-strength.mjs",
-    "ranking": "node scripts/collect-ranking.mjs"
+    "ranking": "node scripts/collect-ranking.mjs",
+    "lookup": "node scripts/danawa-product.mjs"
   }
 }

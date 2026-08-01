@@ -39,7 +39,7 @@ const review = {
   builtAt: new Date().toISOString(),
   live: LIVE,
   batches: [],
-  summary: { total: 0, ready: 0, blocked: 0 }
+  summary: { total: 0, ready: 0, blocked: 0, pricePending: 0 }
 };
 
 for (const file of files) {
@@ -48,10 +48,12 @@ for (const file of files) {
     const g1r = g1By[item.stagingId] ?? { gate1: 'unknown', fail: [], warn: [] };
     const g2 = item.audit?.verdict ?? 'none';
     const g3w = g3.items?.[item.stagingId] ?? [];
-    /* 발행 후보 = 게이트 1 통과 + 심사 AI 대조 일치. 게이트 3 경고는 막지 않는다. */
+    /* 발행 후보 = 게이트 1 통과 + 심사 AI 대조 일치. 게이트 3 경고는 막지 않는다.
+       가격을 못 구한 항목(pending)은 총점을 낼 수 없어 발행 후보가 아니다. */
     const ready = g1r.gate1 === 'pass' && g2 === 'match';
     review.summary.total++;
     ready ? review.summary.ready++ : review.summary.blocked++;
+    if (g1r.pricePending) review.summary.pricePending++;
     return {
       stagingId: item.stagingId,
       label: `${item.proposed?.brand ?? '?'} ${item.proposed?.name ?? '?'}`,
@@ -59,6 +61,7 @@ for (const file of files) {
       sources: item.sources ?? [],
       evidence: item.evidence ?? {},
       audit: item.audit ?? null,
+      pricePending: g1r.pricePending === true,
       gates: {
         g1: g1r.gate1, g1fail: g1r.fail ?? [], g1warn: g1r.warn ?? [],
         g2, g2diff: item.audit?.diff ?? [],
@@ -72,4 +75,5 @@ for (const file of files) {
 
 await writeFile(OUT, JSON.stringify(review, null, 2));
 console.log(`\n심사 데이터 생성 → data/staging/_review.json`);
-console.log(`  전체 ${review.summary.total} · 발행후보 ${review.summary.ready} · 보류 ${review.summary.blocked}\n`);
+console.log(`  전체 ${review.summary.total} · 발행후보 ${review.summary.ready} · 보류 ${review.summary.blocked}` +
+            (review.summary.pricePending ? ` (그중 가격대기 ${review.summary.pricePending})` : '') + '\n');

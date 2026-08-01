@@ -61,9 +61,14 @@ function checkItem(item, published, seen) {
   }
   if (typeof p.rx !== 'boolean') F('E_TYPE', 'rx 는 true/false 여야 합니다');
 
-  /* --- 3. ratings --- */
+  /* --- 3. ratings — 가격 보류 중이면 value 는 아직 매길 수 없다 --- */
+  const pending = p.pricePending === true;
   for (const k of REQUIRED_RATING_KEYS) {
     const v = p.ratings?.[k];
+    if (pending && k === 'value') {
+      if (v != null) F('E_RATING', 'ratings.value 는 가격 확보 전까지 null 이어야 합니다');
+      continue;
+    }
     if (!Number.isInteger(v) || v < 1 || v > 5) F('E_RATING', `ratings.${k} 는 1~5 정수여야 합니다 (현재: ${v})`);
   }
 
@@ -78,6 +83,7 @@ function checkItem(item, published, seen) {
     }
     const expect = rateAll({ ...facts, pKg: p.price?.pKg });
     for (const k of REQUIRED_RATING_KEYS) {
+      if (pending && k === 'value') continue;
       if (expect[k] == null) continue;
       if (p.ratings?.[k] !== expect[k]) {
         F('E_RATING_RUBRIC',
@@ -87,15 +93,27 @@ function checkItem(item, published, seen) {
   }
 
   /* --- 4. score 는 계산값이어야 한다 (AI가 매기면 안 됨) --- */
-  if (p.ratings && REQUIRED_RATING_KEYS.every(k => Number.isInteger(p.ratings[k]))) {
+  if (pending && p.score != null) {
+    F('E_SCORE', 'score 는 가격 확보 전까지 null 이어야 합니다 (가성비 점수가 빠져 총점을 낼 수 없음)');
+  }
+  if (!pending && p.ratings && REQUIRED_RATING_KEYS.every(k => Number.isInteger(p.ratings[k]))) {
     const expect = computeScore(p.ratings);
     if (p.score != null && Math.abs(p.score - expect) > 0.05) {
       F('E_SCORE', `score 가 공식과 다릅니다. 제출 ${p.score} / 계산 ${expect}`);
     }
   }
 
-  /* --- 5. 가격 수식과 범위 --- */
-  const pr = p.price || {};
+  /* --- 5. 가격 --- */
+  /* 가격을 아직 못 구한 항목은 임시저장만 한다. 가격 검사를 건너뛰고 보류로 표시한다. */
+  const pricePending = p.pricePending === true;
+  if (pricePending && p.price != null) {
+    F('E_PRICE_PENDING', 'pricePending 이 true 인데 price 가 들어있습니다. 하나만 지정하세요');
+  }
+  if (!pricePending && p.price == null) {
+    F('E_FIELD', '사료 필드 누락: price (가격을 못 구했다면 pricePending: true 로 표시하세요)');
+  }
+  const pr = pricePending ? {} : (p.price || {});
+  if (!pricePending) {
   if (!(pr.p > 0)) F('E_PRICE', `가격이 유효하지 않습니다: ${pr.p}`);
   if (!(pr.wg > 0)) F('E_PRICE', `중량(g)이 유효하지 않습니다: ${pr.wg}`);
   /* 가격 기준 용량은 판매 중인 용량 중 최소 — DATA-POLICY 3.4 */
@@ -118,6 +136,7 @@ function checkItem(item, published, seen) {
       F('E_PRICE_RANGE', `kg당 ${expect.toLocaleString()}원 — 상식 범위(${PRICE_KG.min.toLocaleString()}~${PRICE_KG.max.toLocaleString()}) 밖입니다`);
     }
   }
+  }  /* if (!pricePending) */
 
   /* --- 6. 출처 구조 --- */
   if (!Array.isArray(srcs) || srcs.length === 0) {
@@ -134,9 +153,9 @@ function checkItem(item, published, seen) {
     if (gA < 1 && gB < 2) {
       F('E_SRC_GRADE', `성분 근거 부족 — A등급 ${gA}곳, B등급 ${gB}곳 (A 1곳 또는 B 2곳 필요)`);
     }
-    /* 가격 근거: 쿠팡 상품 페이지 1곳 — DATA-POLICY 3.2 */
+    /* 가격 근거: 쿠팡 상품 페이지 1곳 — DATA-POLICY 3.2. 가격 보류 중이면 면제. */
     const retails = srcs.filter(s => s.role === 'retail');
-    if (!retails.length) F('E_SRC_PRICE', '가격 근거(쿠팡 상품 출처)가 없습니다');
+    if (!retails.length && !pricePending) F('E_SRC_PRICE', '가격 근거(쿠팡 상품 출처)가 없습니다');
     for (const r of retails) {
       if (!isRetailHost(r.url)) {
         F('E_SRC_RETAIL_HOST',
@@ -172,7 +191,7 @@ function checkItem(item, published, seen) {
   }
 
   /* --- 7. 근거 인용 — 값마다 어느 출처의 어느 문장인지 --- */
-  const needEvidence = [...REQUIRED_FACT_KEYS.map(k => `facts.${k}`), 'price.p'];
+  const needEvidence = [...REQUIRED_FACT_KEYS.map(k => `facts.${k}`), ...(pending ? [] : ['price.p'])];
   for (const key of needEvidence) {
     const e = ev?.[key];
     if (!e) { F('E_EV_NONE', `근거 누락: ${key}`); continue; }
@@ -244,10 +263,12 @@ for (const file of files) {
     const { fail, warn } = checkItem(item, published, seen);
     if (LIVE && fail.length === 0) fail.push(...await checkLive(item));
     const ok = fail.length === 0;
+    const pending = item.proposed?.pricePending === true;
     out.items.push({
       stagingId: item.stagingId,
       label: `${item.proposed?.brand ?? '?'} ${item.proposed?.name ?? '?'}`,
-      gate1: ok ? 'pass' : 'fail',
+      gate1: ok ? (pending ? 'pending' : 'pass') : 'fail',
+      pricePending: pending,
       fail, warn
     });
     ok ? report.pass++ : report.failCount++;
@@ -263,7 +284,8 @@ if (!report.batches.length) console.log('검사할 스테이징 파일이 없습
 for (const b of report.batches) {
   console.log(`\n[${b.file}]`);
   for (const it of b.items) {
-    console.log(`  ${it.gate1 === 'pass' ? '✅' : '❌'} ${it.label}`);
+    const mark = it.gate1 === 'pass' ? '✅' : it.gate1 === 'pending' ? '⏸' : '❌';
+    console.log(`  ${mark} ${it.label}${it.gate1 === 'pending' ? '  (가격 대기)' : ''}`);
     for (const f of it.fail) console.log(`       ✗ ${f.msg}`);
     for (const w of it.warn) console.log(`       ⚠ ${w.msg}`);
   }

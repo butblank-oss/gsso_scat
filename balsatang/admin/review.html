@@ -174,7 +174,9 @@ function sourceBlock(it){
 function card(it){
   const g=it.gates;
   const badges=[
-    `<span class="b ${g.g1==='pass'?'ok':'no'}">게이트1 ${g.g1==='pass'?'통과':'탈락'}</span>`,
+    it.pricePending
+      ? `<span class="b wa">가격 대기</span>`
+      : `<span class="b ${g.g1==='pass'?'ok':'no'}">게이트1 ${g.g1==='pass'?'통과':'탈락'}</span>`,
     `<span class="b ${g.g2==='match'?'ok':'no'}">게이트2 ${g.g2==='match'?'일치':'불일치'}</span>`,
     g.g3warn.length?`<span class="b wa">게이트3 경고 ${g.g3warn.length}</span>`:`<span class="b ok">게이트3 정상</span>`
   ].join('');
@@ -184,11 +186,12 @@ function card(it){
       <span class="chev">▸</span>
       <div class="t">
         <b>${esc(it.label)}</b>
-        <div class="sub">${esc(p.type||'')} · ${won(p.price?.p)} / ${p.price?.wg??'—'}g · ${p.score??'—'}점</div>
+        <div class="sub">${esc(p.type||'')} · ${it.pricePending?'가격 미확보':`${won(p.price?.p)} / ${p.price?.wg??'—'}g`} · ${p.score??'—'}점</div>
         <div class="badges">${badges}</div>
       </div>
     </div>
     <div class="body">
+      ${it.pricePending?`<div class="msg w">⏸ 가격을 아직 못 구했습니다. 쿠팡 상품 URL 과 최소 용량 가격이 들어와야 발행할 수 있습니다</div>`:''}
       ${g.g1fail.map(f=>`<div class="msg f">✗ ${esc(f.msg)}</div>`).join('')}
       ${g.g1warn.map(w=>`<div class="msg w">⚠ ${esc(w.msg)}</div>`).join('')}
       ${g.g3warn.map(w=>`<div class="msg w">⚠ ${esc(w)}</div>`).join('')}
@@ -221,7 +224,7 @@ function render(){
     <div class="stat">
       <div><b>${s.total}</b><span>전체</span></div>
       <div><b style="color:var(--good)">${s.ready}</b><span>발행 후보</span></div>
-      <div><b style="color:var(--bad)">${s.blocked}</b><span>보류</span></div>
+      <div><b style="color:var(--bad)">${s.blocked}</b><span>보류${s.pricePending?` (가격 ${s.pricePending})`:''}</span></div>
     </div>
     ${DATA.batches.map(b=>`<div class="batch">
       <h2>${esc(b.file)}${b.collectedAt?' · 수집 '+esc(b.collectedAt.slice(0,10)):''}</h2>
