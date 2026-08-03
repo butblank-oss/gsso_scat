@@ -1208,8 +1208,24 @@ function wire() {
 
   const q = $('#q', v);
   if (q) {
-    let t;
-    q.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { state.query = q.value; render(); $('#q')?.focus(); }, 250); });
+    /* 한글은 한 글자를 만드는 동안에도 input 이벤트가 계속 뜬다(조합 중).
+       그때 화면을 다시 그리면 입력칸이 통째로 새로 만들어지면서 조합이 끊겨
+       'ㅇㅏㄴ' 처럼 글자가 깨진다. 조합이 끝난 뒤에만 다시 그린다. */
+    let t, composing = false;
+    const apply = () => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        if (composing) return;          /* 타이머가 조합 도중에 터진 경우 */
+        const at = q.selectionStart;
+        state.query = q.value;
+        render();
+        const n = $('#q');
+        if (n) { n.focus(); try { n.setSelectionRange(at, at); } catch { } }
+      }, 250);
+    };
+    q.addEventListener('compositionstart', () => { composing = true; });
+    q.addEventListener('compositionend', () => { composing = false; apply(); });
+    q.addEventListener('input', () => { if (!composing) apply(); });
     if (state.screen === 'search' && !state.query) setTimeout(() => q.focus(), 60);
   }
 

@@ -21,6 +21,30 @@ function save(){
 }
 function markDirty(){ el('dirtyDot').innerHTML = store.dirty ? '<span class="dirty-dot"></span>' : ''; }
 
+/* ═══ 한글 입력 ═══
+   한글은 한 글자를 만드는 동안에도 input 이벤트가 계속 뜬다(조합 중).
+   그때 목록을 다시 그리면 입력칸이 통째로 새로 만들어지면서 조합이 끊겨
+   글자가 깨진다. 그래서 조합 중에는 그리지 않고, 조합이 끝나면 input 을
+   한 번 더 흘려보내 그때 그린다. */
+const IME = { on:false };
+addEventListener('compositionstart', ()=>{ IME.on = true; }, true);
+addEventListener('compositionend', e=>{
+  IME.on = false;
+  e.target.dispatchEvent(new Event('input', { bubbles:true }));
+}, true);
+
+/* 다시 그리면 포커스와 캐럿이 날아간다. 같은 자리(placeholder)의 입력칸을 찾아 되돌린다. */
+function ime(fn){
+  if(IME.on) return;
+  const a = document.activeElement;
+  const ph = a && a.tagName === 'INPUT' ? a.getAttribute('placeholder') : null;
+  const at = a && a.selectionStart;
+  fn();
+  if(!ph) return;
+  const n = [...document.querySelectorAll('input')].find(i=>i.getAttribute('placeholder')===ph);
+  if(n){ n.focus(); try{ n.setSelectionRange(at, at); }catch{} }
+}
+
 /* ═══ NAV ═══ */
 const NAV = [
   {h:'메인'},
@@ -137,7 +161,7 @@ function pgFoods(){
   </div>
   <div class="filters">
     <input class="inp fw" style="width:220px" placeholder="브랜드·사료명 검색" value="${at(fQ)}"
-           oninput="fQ=this.value;fPage=1;pgFoods()">
+           oninput="fQ=this.value;fPage=1;ime(pgFoods)">
     <select class="inp fw" onchange="fType=this.value;fPage=1;pgFoods()">
       <option value="">전체 형태</option>${opts(TYPE_KO,fType)}</select>
     <select class="inp fw" onchange="fStatus=this.value;fPage=1;pgFoods()">
@@ -540,7 +564,7 @@ function pgIngr(){
       ${unknown.length>14?` 외 ${unknown.length-14}종`:''}</div></div>`:''}
   <div class="filters">
     <input class="inp fw" style="width:220px" placeholder="성분명 검색" value="${at(iQ)}"
-           oninput="iQ=this.value;iPage=1;pgIngr()">
+           oninput="iQ=this.value;iPage=1;ime(pgIngr)">
     <select class="inp fw" onchange="iSafe=this.value;iPage=1;pgIngr()">
       <option value="">전체 등급</option>${opts(SAFE_KO,iSafe)}</select>
     <select class="inp fw" onchange="iCat=this.value;iPage=1;pgIngr()">
@@ -673,7 +697,7 @@ function pgPrice(){
   </div>
   <div class="filters">
     <input class="inp fw" style="width:220px" placeholder="브랜드·사료명 검색" value="${at(pQ)}"
-           oninput="pQ=this.value;pgPrice()">
+           oninput="pQ=this.value;ime(pgPrice)">
     <button class="btn${pOnly?' pri':''}" onclick="pOnly=!pOnly;pgPrice()">미등록만 보기</button>
   </div>
   <div class="card" style="padding:0">

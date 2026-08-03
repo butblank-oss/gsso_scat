@@ -175,12 +175,20 @@ function render() {
     </table>` : `<div class="empty"><b>해당하는 사료가 없어요</b>다른 조건으로 찾아보세요</div>`}
   `;
 
-  $('#q').oninput = e => {
-    const at = e.target.selectionStart;
-    S.q = e.target.value;
+  /* 한글은 조합 중에도 input 이 계속 뜬다. 그때 목록을 다시 그리면 입력칸이
+     새로 만들어지면서 조합이 끊겨 글자가 깨진다. 조합이 끝난 뒤에 그린다. */
+  const qi = $('#q');
+  let composing = false;
+  const apply = () => {
+    if (composing) return;
+    const at = qi.selectionStart;
+    S.q = qi.value;
     render();
-    const q = $('#q'); q.focus(); q.setSelectionRange(at, at);
+    const n = $('#q'); n.focus(); n.setSelectionRange(at, at);
   };
+  qi.addEventListener('compositionstart', () => { composing = true; });
+  qi.addEventListener('compositionend', () => { composing = false; apply(); });
+  qi.addEventListener('input', apply);
   for (const b of document.querySelectorAll('[data-filter]'))
     b.onclick = () => { S.filter = b.dataset.filter; render(); };
   for (const tr of document.querySelectorAll('[data-id]'))
