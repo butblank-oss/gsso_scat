@@ -20,6 +20,7 @@
     "buylinks": "node scripts/buy-links.mjs",
     "backfill": "node scripts/backfill-detail.mjs",
     "partners": "node scripts/coupang-partners.mjs",
-    "thumbs": "node scripts/find-thumbs.mjs"
+    "thumbs": "node scripts/find-thumbs.mjs",
+    "registry": "node scripts/feed-registry.mjs"
   }
 }
