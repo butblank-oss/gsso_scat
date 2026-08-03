@@ -8,8 +8,10 @@
 <style>
 :root{
   --bg:#0D0F14; --panel:#151922; --panel2:#1B202B; --line:#252B38; --line2:#333B4D;
-  --ink:#E8EBF0; --ink2:#B4BCCB; --sub:#7C8698; --muted:#5A6376;
-  --pri:#2F6FED; --pri-d:#245BC9; --pri-soft:#16233D;
+  /* 어두운 배경에서 읽히는 최소선. muted #5A6376 은 2.7~3.2:1,
+     sub #7C8698 은 4.5:1 언저리라 작은 글자가 안 읽혔다. 한 단계씩 밝혔다. */
+  --ink:#E8EBF0; --ink2:#B4BCCB; --sub:#949FB3; --muted:#838DA3;
+  --pri:#2F6FED; --pri-ink:#7FA9FF; --pri-d:#245BC9; --pri-soft:#16233D;
   --good:#22C55E; --good-soft:#0F2A1A; --warn:#F59E0B; --warn-soft:#2A2010;
   --bad:#EF4444; --bad-soft:#2A1315;
   --r:8px; --r-lg:12px;
@@ -30,7 +32,7 @@ svg.i{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke
   display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
 .brand{padding:20px 18px 16px}
 .brand b{font-size:18px;font-weight:900;letter-spacing:-.5px}
-.brand b em{font-style:normal;color:var(--pri)}
+.brand b em{font-style:normal;color:var(--pri-ink)}
 .brand span{display:block;margin-top:3px;font-size:9.5px;color:var(--muted);letter-spacing:.4px}
 .nav{flex:1;overflow-y:auto;padding:6px 10px}
 .nav-h{padding:14px 8px 6px;font-size:9.5px;font-weight:700;color:var(--muted);letter-spacing:.6px}
@@ -108,7 +110,7 @@ tbody tr:hover{background:var(--panel2)}
 .todo{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);font-size:12.5px}
 .todo:last-child{border-bottom:none}
 .todo .bul{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.todo a{margin-left:auto;color:var(--pri);font-weight:700;text-decoration:none;font-size:11.5px;cursor:pointer}
+.todo a{margin-left:auto;color:var(--pri-ink);font-weight:700;text-decoration:none;font-size:11.5px;cursor:pointer}
 .rec-i{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
 .rec-i:last-child{border-bottom:none}
 .rec-ic{width:30px;height:30px;border-radius:7px;background:var(--panel2);display:flex;

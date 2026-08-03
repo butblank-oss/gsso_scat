@@ -132,9 +132,14 @@ const dirtyList = () => S.foods.filter(isDirty);
 const analyzed = f => !!(S.detail[f.id]?.ingr || []).length;
 const buyOf = f => f.price?.buyUrl || (S.detail[f.id]?.prices || []).find(p => p.url)?.url || null;
 
+/* 썸네일은 '있다/없다' 가 아니라 '불러와지느냐' 로 봐야 한다.
+   예전 앱이 남긴 /objects/uploads/... 같은 주소는 값은 있지만 죽은 링크라
+   화면에는 브랜드 이니셜만 나온다. 그런 건 없는 것으로 센다. */
+const hasThumb = f => /^https:\/\//.test(f.thumb || '');
+
 const FILTERS = [
   { k: 'all', label: '전체' },
-  { k: 'nothumb', label: '썸네일 없음', test: f => !f.thumb },
+  { k: 'nothumb', label: '썸네일 없음', test: f => !hasThumb(f) },
   { k: 'nobuy', label: '구매링크 없음', test: f => !buyOf(f) },
   { k: 'noprice', label: '가격 없음', test: f => !f.price?.p },
   { k: 'pending', label: '분석 준비 중', test: f => !analyzed(f) },
@@ -152,12 +157,31 @@ function visible() {
   });
 }
 
+/* 다시 그릴 때 검색 입력칸만은 살려서 옮겨 심는다.
+   한글은 한 글자를 만드는 동안 IME 가 그 칸을 붙잡고 있어서, innerHTML 로
+   갈아치우면 조합이 끊기고 'ㅇ오오ㄹ리리' 같은 찌꺼기가 남는다.
+   조합이 끝난 뒤에만 그리는 것으로는 부족하다 — 한 글자를 확정하는 순간
+   다음 조합이 곧바로 시작되므로 그 틈에도 칸이 사라지면 안 된다. */
+function keepInput(paint) {
+  const wrap = $('#wrap');
+  const live = $('#q');
+  const keep = live && (document.activeElement === live || live.dataset.composing === '1');
+  const at = keep ? live.selectionStart : 0;
+  paint(wrap);
+  if (!keep) return;
+  const fresh = $('#q');
+  if (!fresh) return;
+  fresh.replaceWith(live);
+  live.focus();
+  try { live.setSelectionRange(at, at); } catch { }
+}
+
 function render() {
   const rows = visible();
   const counts = {};
   for (const x of FILTERS) counts[x.k] = x.test ? S.foods.filter(x.test).length : S.foods.length;
 
-  $('#wrap').innerHTML = `
+  keepInput(wrap => { wrap.innerHTML = `
     <div class="note">발행된 데이터를 직접 고쳐 GitHub 에 커밋합니다. 커밋하면 CI 가 검증을 돌리고,
       통과하면 몇 분 뒤 사이트에 반영돼요. 별점·총점·원료·영양 수치는 여기서 고칠 수 없어요 —
       그건 근거가 같이 바뀌어야 하는 값이라 심사 화면의 몫이에요.</div>
@@ -173,22 +197,17 @@ function render() {
       </tr></thead>
       <tbody>${rows.map(rowHtml).join('')}</tbody>
     </table>` : `<div class="empty"><b>해당하는 사료가 없어요</b>다른 조건으로 찾아보세요</div>`}
-  `;
+  `; });
 
-  /* 한글은 조합 중에도 input 이 계속 뜬다. 그때 목록을 다시 그리면 입력칸이
-     새로 만들어지면서 조합이 끊겨 글자가 깨진다. 조합이 끝난 뒤에 그린다. */
   const qi = $('#q');
-  let composing = false;
-  const apply = () => {
-    if (composing) return;
-    const at = qi.selectionStart;
-    S.q = qi.value;
-    render();
-    const n = $('#q'); n.focus(); n.setSelectionRange(at, at);
-  };
-  qi.addEventListener('compositionstart', () => { composing = true; });
-  qi.addEventListener('compositionend', () => { composing = false; apply(); });
-  qi.addEventListener('input', apply);
+  if (!qi.dataset.bound) {
+    /* 이 노드는 render 를 거쳐도 살아남는다(keepInput). 그래서 한 번만 건다. */
+    qi.dataset.bound = '1';
+    const apply = () => { S.q = qi.value; render(); };
+    qi.addEventListener('compositionstart', () => { qi.dataset.composing = '1'; });
+    qi.addEventListener('compositionend', () => { qi.dataset.composing = '0'; apply(); });
+    qi.addEventListener('input', apply);
+  }
   for (const b of document.querySelectorAll('[data-filter]'))
     b.onclick = () => { S.filter = b.dataset.filter; render(); };
   for (const tr of document.querySelectorAll('[data-id]'))
@@ -201,13 +220,13 @@ function render() {
 
 function rowHtml(f) {
   const pills = [];
-  if (!f.thumb) pills.push('<span class="pill no">썸네일 없음</span>');
+  if (!hasThumb(f)) pills.push('<span class="pill no">썸네일 없음</span>');
   if (!buyOf(f)) pills.push('<span class="pill wa">구매링크 없음</span>');
   if (!analyzed(f)) pills.push('<span class="pill wa">분석 준비 중</span>');
   if (f.rx) pills.push('<span class="pill ok">처방식</span>');
   if (!pills.length) pills.push('<span class="pill ok">정상</span>');
   return `<tr data-id="${f.id}" class="${isDirty(f) ? 'edited' : ''}">
-    <td>${f.thumb
+    <td>${hasThumb(f)
       ? `<img class="thumb" src="${esc(f.thumb)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'thumb none',textContent:'?'}))">`
       : `<div class="thumb none">?</div>`}</td>
     <td><div class="br">${esc(f.brand)}</div><div class="nm">${esc(f.name)}</div></td>
@@ -281,8 +300,8 @@ function panelHtml(f) {
   <div class="sect">썸네일</div>
   <div style="display:flex;gap:12px;align-items:center">
     <div style="width:84px;height:84px;border-radius:10px;background:#fff;display:grid;place-items:center;overflow:hidden">
-      ${f.thumb ? `<img src="${esc(f.thumb)}" style="max-width:100%;max-height:100%;object-fit:contain">`
-      : `<span style="color:#888;font-size:11px">없음</span>`}</div>
+      ${hasThumb(f) ? `<img src="${esc(f.thumb)}" style="max-width:100%;max-height:100%;object-fit:contain">`
+      : `<span style="color:#5B5B5B;font-size:11px">없음</span>`}</div>
     <div style="flex:1;color:var(--sub);font-size:11.5px;line-height:1.6">
       사료 봉지 사진이어야 해요. 브랜드 로고나 다른 제품 사진이면 사용자가 헷갈려요.
       URL 을 바꾸고 <b style="color:var(--ink2)">적용</b>을 누르면 위 미리보기가 갱신돼요.</div>
@@ -414,7 +433,7 @@ function validate() {
   for (const f of dirtyList()) {
     const at = `${f.brand} ${f.name}`;
     if (!f.brand?.trim() || !f.name?.trim()) out.push(`${at} — 브랜드와 제품명은 비울 수 없어요`);
-    if (f.thumb && !/^(https:\/\/|\/)/.test(f.thumb)) out.push(`${at} — 썸네일은 https 주소여야 해요`);
+    if (f.thumb && !/^https:\/\//.test(f.thumb)) out.push(`${at} — 썸네일은 https 주소여야 해요`);
     if (!(f.ages || []).length) out.push(`${at} — 연령을 최소 하나 골라주세요`);
     if (!(f.sizes || []).length) out.push(`${at} — 체형을 최소 하나 골라주세요`);
     const p = f.price?.p, wg = f.price?.wg;

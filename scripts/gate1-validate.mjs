@@ -183,6 +183,13 @@ function checkItem(item, published, seen) {
       F('E_PRICE_RANGE', `kg당 ${expect.toLocaleString()}원 — 상식 범위(${PRICE_KG.min.toLocaleString()}~${PRICE_KG.max.toLocaleString()}) 밖입니다`);
     }
   }
+  /* 판매처. 정책상 인정하는 곳은 쿠팡뿐이고(DATA-POLICY 3.4), 다나와는 쿠팡 상품을
+     찾는 도구로만 쓴다. 다만 기존 41종에 공식몰 가격이 남아 있어 탈락시키지는 않는다 —
+     새로 들어오는 건에 대해 사람이 한 번 보게 경고만 남긴다. */
+  if (pr.shop && pr.shop !== 'coupang') {
+    W('W_SHOP_NOT_COUPANG', `판매처가 ${pr.shop} 입니다 — 인정 판매처는 쿠팡이고 수수료도 쿠팡에만 붙습니다`);
+  }
+
   /* 구매 버튼이 여는 링크. 쿠팡 파트너스 단축링크(link.coupang.com/a/…)를 쓸 수 있다.
      가격 근거는 sources 의 정식 상품 URL 이고, 이건 사람이 여는 링크일 뿐이다. */
   if (pr.buyUrl != null) {

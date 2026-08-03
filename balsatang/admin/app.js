@@ -22,27 +22,23 @@ function save(){
 function markDirty(){ el('dirtyDot').innerHTML = store.dirty ? '<span class="dirty-dot"></span>' : ''; }
 
 /* ═══ 한글 입력 ═══
-   한글은 한 글자를 만드는 동안에도 input 이벤트가 계속 뜬다(조합 중).
-   그때 목록을 다시 그리면 입력칸이 통째로 새로 만들어지면서 조합이 끊겨
-   글자가 깨진다. 그래서 조합 중에는 그리지 않고, 조합이 끝나면 input 을
-   한 번 더 흘려보내 그때 그린다. */
-const IME = { on:false };
-addEventListener('compositionstart', ()=>{ IME.on = true; }, true);
-addEventListener('compositionend', e=>{
-  IME.on = false;
-  e.target.dispatchEvent(new Event('input', { bubbles:true }));
-}, true);
-
-/* 다시 그리면 포커스와 캐럿이 날아간다. 같은 자리(placeholder)의 입력칸을 찾아 되돌린다. */
+   한글은 한 글자를 만드는 동안 IME 가 그 입력칸을 붙잡고 있다. 목록을 다시
+   그리면서 innerHTML 로 갈아치우면 붙잡고 있던 칸이 사라지면서 조합이 끊기고
+   'ㅇ오오ㄹ리리' 같은 찌꺼기가 남는다. 조합이 끝난 뒤에만 그리는 것으로는
+   부족하다 — 한 글자를 확정하는 순간 다음 조합이 곧바로 시작되므로 그 틈에도
+   칸이 사라지면 안 된다. 그래서 살아있는 입력칸을 그대로 옮겨 심는다. */
 function ime(fn){
-  if(IME.on) return;
-  const a = document.activeElement;
-  const ph = a && a.tagName === 'INPUT' ? a.getAttribute('placeholder') : null;
-  const at = a && a.selectionStart;
+  const live = document.activeElement;
+  const keep = live && live.tagName === 'INPUT' ? live : null;
+  const ph = keep && keep.getAttribute('placeholder');
+  const at = keep && keep.selectionStart;
   fn();
-  if(!ph) return;
-  const n = [...document.querySelectorAll('input')].find(i=>i.getAttribute('placeholder')===ph);
-  if(n){ n.focus(); try{ n.setSelectionRange(at, at); }catch{} }
+  if(!keep) return;
+  const fresh = [...document.querySelectorAll('input')].find(i=>i.getAttribute('placeholder')===ph);
+  if(!fresh || fresh === keep) return;
+  fresh.replaceWith(keep);
+  keep.focus();
+  try{ keep.setSelectionRange(at, at); }catch{}
 }
 
 /* ═══ NAV ═══ */
@@ -222,6 +218,15 @@ function pgWizard(id){
 }
 function renderWizard(){
   el('wrap').innerHTML = `
+  <div style="background:#2A2010;border:1px solid #4a3a16;border-radius:8px;padding:12px 14px;
+              margin-bottom:14px;font-size:12.5px;color:#FCD34D;line-height:1.65;
+              display:flex;align-items:center;gap:12px">
+    <div style="flex:1">여기서 고친 내용은 <b>이 브라우저에만 남고 사이트에는 반영되지 않아요.</b>
+      사료를 실제로 고치려면 사료 관리(GitHub) 화면을 쓰세요 — 거기서 고치면 저장소에 바로 커밋돼요.
+      이 화면은 원료·판정 같은 값을 정리해 두는 용도로만 쓰세요.</div>
+    <a href="foods.html" style="flex-shrink:0;height:32px;padding:0 13px;border-radius:8px;background:#2F6FED;
+       color:#fff;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center">사료 관리 열기</a>
+  </div>
   <div class="steps">${STEPS.map((s,i)=>{
     const n=i+1, cls=n===wStep?'on':n<wStep?'done':'';
     return `<div class="step ${cls}"><span class="step-n">${n<wStep?'✓':n}</span>${s}</div>`

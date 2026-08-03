@@ -140,6 +140,8 @@ const state = {
   recent: [],
   detailId: null,
   detailTab: 'nutrition',
+  articleId: null,
+  articleCat: null,
   wizard: { step: 0, data: {} }
 };
 
@@ -306,6 +308,7 @@ function go(screen, opt = {}) {
     state.recent = [opt.id, ...state.recent.filter(x => x !== opt.id)].slice(0, 12);
     save();
   }
+  if (screen === 'article' && opt.articleId) state.articleId = opt.articleId;
   if (TABS.includes(screen)) state.tab = screen;
   state.screen = screen;
   render();
@@ -315,7 +318,12 @@ function go(screen, opt = {}) {
 window.addEventListener('popstate', e => {
   const s = e.state?.screen;
   if (!s) { state.screen = state.tab = 'home'; }
-  else { state.screen = s; if (s === 'detail') state.detailId = e.state.id ?? state.detailId; if (TABS.includes(s)) state.tab = s; }
+  else {
+    state.screen = s;
+    if (s === 'detail') state.detailId = e.state.id ?? state.detailId;
+    if (s === 'article') state.articleId = e.state.articleId ?? state.articleId;
+    if (TABS.includes(s)) state.tab = s;
+  }
   render();
 });
 
@@ -352,7 +360,7 @@ function homeCard(f) {
   return `<button class="press" data-go-detail="${f.id}" style="width:168px;flex-shrink:0;text-align:left">
     <div style="position:relative">${well(f, 168)}
       <span style="position:absolute;top:9px;right:9px">${cautionBadge(f)}</span></div>
-    <div style="margin-top:11px;font-size:12px;font-weight:600;color:var(--ink40)">${esc(f.brand)}</div>
+    <div style="margin-top:11px;font-size:12px;font-weight:600;color:var(--ink50)">${esc(f.brand)}</div>
     <div class="t-item" style="margin-top:2px">${esc(f.name)}</div>
     <div class="t-caption c-sub" style="margin-top:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(foodTags(f)[0] || '분석 준비 중')}</div>
   </button>`;
@@ -547,7 +555,7 @@ function renderDetail() {
   <div style="margin-top:-18px;border-radius:var(--rSheet) var(--rSheet) 0 0;background:#fff;position:relative;z-index:1;min-height:60dvh">
     <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:var(--divider)">
       ${[['nutrition', '성분 분석'], ['feeding', '급여량 · 가격']].map(([k, l]) => `
-        <button class="press" data-dtab="${k}" style="height:52px;font-size:15px;font-weight:${state.detailTab === k ? 800 : 600};color:${state.detailTab === k ? 'var(--ink)' : 'var(--ink35)'};box-shadow:${state.detailTab === k ? 'inset 0 -2.5px 0 var(--purple700)' : 'none'};transition:box-shadow .22s ease-out">${l}</button>`).join('')}
+        <button class="press" data-dtab="${k}" style="height:52px;font-size:15px;font-weight:${state.detailTab === k ? 800 : 600};color:${state.detailTab === k ? 'var(--ink)' : 'var(--ink50)'};box-shadow:${state.detailTab === k ? 'inset 0 -2.5px 0 var(--purple700)' : 'none'};transition:box-shadow .22s ease-out">${l}</button>`).join('')}
     </div>
     ${pend ? renderPending(f) : state.detailTab === 'nutrition' ? renderNutritionTab(f, d) : renderFeedingTab(f, d)}
   </div>
@@ -1132,20 +1140,108 @@ function renderProfileEmpty() {
 }
 
 /* ═══ 콘텐츠 ═══ */
+const articles = () => (typeof ARTICLES !== 'undefined' ? ARTICLES : []);
+
+/* 읽는 데 걸리는 시간 — 한국어는 분당 500자 정도로 잡는다 */
+function readMin(a) { return Math.max(1, Math.round((a.body || '').length / 500)); }
+
 function renderContent() {
-  const list = (typeof ARTICLES !== 'undefined' ? ARTICLES : []);
+  const list = articles();
+  const cats = [...new Set(list.map(a => a.cat).filter(Boolean))];
+  const cur = state.articleCat;
+  const shown = cur ? list.filter(a => a.cat === cur) : list;
+
+  const chips = [`<button class="chip press${cur ? '' : ' on'}" data-acat="">전체<em>${list.length}</em></button>`,
+  ...cats.map(c => `<button class="chip press${cur === c ? ' on' : ''}" data-acat="${esc(c)}">${esc(c)}</button>`)].join('');
+
   return `<div class="top" style="padding-top:18px"><h1 class="t-page">사료, 제대로 알기</h1></div>
   <p class="t-bodySm c-sub" style="padding:6px var(--screenX) 0">헷갈렸던 것들을 쉽게 풀어드려요</p>
+  <div class="chiprow" style="margin-top:16px">${chips}</div>
   <div class="sec">
-    ${list.length ? list.map(a => `<button class="row press" data-article="${esc(a.id)}" style="align-items:flex-start">
+    ${shown.length ? shown.map(a => `<button class="row press" data-article="${esc(a.id)}" style="align-items:flex-start">
       <span style="width:56px;height:56px;border-radius:var(--rThumbMd);background:var(--purple100);display:grid;place-items:center;color:var(--purple700);flex-shrink:0">${icon('book', 22)}</span>
       <span class="row-b">
         <span class="t-micro" style="color:var(--purple700)">${esc(a.cat || '읽을거리')}</span>
         <span class="row-name" style="display:block;margin-top:3px">${esc(a.title)}</span>
-        <span class="row-meta">${esc((a.summary || '').slice(0, 46))}</span>
+        <span class="row-meta">${esc((a.excerpt || '').slice(0, 52))}</span>
+        <span class="t-micro c-mute" style="display:block;margin-top:5px">약 ${readMin(a)}분</span>
       </span></button>`).join('')
       : `<div class="empty"><div class="orb neutral">${icon('book', 38)}</div>
          <h2>준비 중이에요</h2><p>사료를 고를 때 도움되는 글을 쓰고 있어요.</p></div>`}
+  </div>`;
+}
+
+/* 본문은 마크다운의 아주 좁은 갈래만 쓴다 — ###, -, >, 1., **강조**.
+   라이브러리를 붙이는 대신 쓰는 문법만 직접 옮긴다. 값을 먼저 이스케이프하고
+   그 다음에 태그를 만들기 때문에 본문에 태그를 적어도 그대로 글자로 나온다. */
+function mdToHtml(src) {
+  const inline = t => esc(t)
+    .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+    .replace(/`(.+?)`/g, '<code>$1</code>');
+  const out = [];
+  let list = null;                       /* 'ul' | 'ol' | null */
+  const closeList = () => { if (list) { out.push(`</${list}>`); list = null; } };
+
+  for (const raw of String(src || '').split('\n')) {
+    const line = raw.trimEnd();
+    if (!line.trim()) { closeList(); continue; }
+
+    const h = line.match(/^(#{2,4})\s+(.*)$/);
+    if (h) { closeList(); out.push(`<h3 class="t-section" style="margin:26px 0 10px">${inline(h[2])}</h3>`); continue; }
+
+    const ul = line.match(/^[-*]\s+(.*)$/);
+    if (ul) {
+      if (list !== 'ul') { closeList(); out.push('<ul class="md-list">'); list = 'ul'; }
+      out.push(`<li>${inline(ul[1])}</li>`); continue;
+    }
+    const ol = line.match(/^\d+\.\s+(.*)$/);
+    if (ol) {
+      if (list !== 'ol') { closeList(); out.push('<ol class="md-list">'); list = 'ol'; }
+      out.push(`<li>${inline(ol[1])}</li>`); continue;
+    }
+    const q = line.match(/^>\s?(.*)$/);
+    if (q) { closeList(); out.push(`<blockquote class="md-quote">${inline(q[1])}</blockquote>`); continue; }
+
+    closeList();
+    out.push(`<p class="md-p">${inline(line)}</p>`);
+  }
+  closeList();
+  return out.join('');
+}
+
+/* 03-1 콘텐츠 상세 */
+function renderArticle() {
+  const a = articles().find(x => x.id === state.articleId);
+  if (!a) return renderContent();
+
+  /* 글마다 '어떤 사료가 여기 해당하는지' 판별식을 들고 있다. 그걸로 실제 사료를 잇는다. */
+  let related = [];
+  try { related = FOODS.filter(f => { try { return a.match?.(f); } catch { return false; } }).slice(0, 3); }
+  catch { related = []; }
+
+  return `
+  <div class="top icons">
+    <button class="iconbtn press" data-back>${icon('chevronRight', 24, 'ui')}</button>
+    <h1 class="t-item" style="flex:1">콘텐츠</h1>
+  </div>
+  <div style="padding:14px var(--screenX) 0">
+    <div class="t-micro" style="color:var(--purple700);font-weight:800">${esc(a.cat || '읽을거리')} · 약 ${readMin(a)}분</div>
+    <h2 class="t-product" style="margin-top:8px">${esc(a.title)}</h2>
+    ${a.excerpt ? `<p class="t-bodySm c-sub" style="margin-top:10px">${esc(a.excerpt)}</p>` : ''}
+  </div>
+  <div class="sec md">${mdToHtml(a.body)}</div>
+  ${related.length ? `<div class="sec">
+    <h2 class="t-section">이 글과 관련된 사료</h2>
+    <div style="margin-top:13px">${related.map(f => `
+      <button class="row press" data-go-detail="${f.id}">
+        ${well(f, 44)}
+        <span class="row-b">
+          <span class="row-brand">${esc(f.brand)}</span>
+          <span class="row-name" style="display:block">${esc(f.name)}</span>
+        </span>${icon('chevronRight', 16, 'chev')}</button>`).join('')}</div>
+  </div>` : ''}
+  <div class="sec">
+    <p class="t-caption c-cap">이 글은 일반적인 정보예요. 아이가 아프거나 처방식을 먹고 있다면 수의사와 상의해 주세요.</p>
   </div>`;
 }
 
@@ -1155,14 +1251,35 @@ function renderContent() {
 const VIEW = {
   home: renderHome, search: renderSearch, detail: renderDetail,
   compare: renderCompare, custom: () => state.pet ? renderResult() : renderProfileEmpty(),
-  wizard: renderWizard, content: renderContent
+  wizard: renderWizard, content: renderContent, article: renderArticle
 };
 const TAB_META = [['home', '홈', 'house'], ['compare', '비교', 'compare'], ['content', '콘텐츠', 'book'], ['custom', '맞춤', 'paw']];
+
+/* 다시 그릴 때 검색 입력칸만은 살려서 옮겨 심는다.
+
+   한글은 한 글자를 만드는 동안 IME 가 그 입력칸을 붙잡고 있다. innerHTML 로
+   갈아치우면 붙잡고 있던 칸이 사라지면서 조합이 끊기고, 'ㅇ오오ㄹ리리' 같은
+   찌꺼기가 남는다. 조합이 끝난 뒤에만 그리는 것으로는 부족했다 — 한 글자를
+   확정하는 순간 다음 글자 조합이 곧바로 시작되기 때문에 그 틈에도 칸이
+   사라지면 안 된다. 그래서 아예 같은 DOM 노드를 계속 쓴다.
+   (같은 노드라 이벤트도 그대로 붙어 있다. wire 가 두 번 걸지 않게 표시해 둔다.) */
+function keepInput(view, paint) {
+  const live = $('#q', view);
+  const keep = live && (document.activeElement === live || live.dataset.composing === '1');
+  const at = keep ? live.selectionStart : 0;
+  paint();
+  if (!keep) return;
+  const fresh = $('#q', view);
+  if (!fresh) return;
+  fresh.replaceWith(live);
+  live.focus();
+  try { live.setSelectionRange(at, at); } catch { }
+}
 
 function render() {
   const s = state.screen || 'home';
   const view = $('#view');
-  view.innerHTML = (VIEW[s] || renderHome)();
+  keepInput(view, () => { view.innerHTML = (VIEW[s] || renderHome)(); });
   const bar = $('#tabbar');
   const showTabs = ['home', 'compare', 'content', 'custom'].includes(s);
   bar.hidden = !showTabs;
@@ -1187,6 +1304,8 @@ function wire() {
   on('[data-go-detail]', 'click', e => go('detail', { id: e.currentTarget.dataset.goDetail }));
   on('[data-edit-pet]', 'click', () => { state.wizard = { step: 0, data: { ...(state.pet || {}) } }; go('wizard'); });
   on('[data-back]', 'click', () => history.back());
+  on('[data-article]', 'click', e => go('article', { articleId: e.currentTarget.dataset.article }));
+  on('[data-acat]', 'click', e => { state.articleCat = e.currentTarget.dataset.acat || null; render(); });
   on('[data-search]', 'click', e => { state.query = e.currentTarget.dataset.search; go('search'); });
   on('[data-concern]', 'click', e => {
     const c = CONCERNS.find(x => x.key === e.currentTarget.dataset.concern);
@@ -1217,27 +1336,20 @@ function wire() {
   });
 
   const q = $('#q', v);
-  if (q) {
-    /* 한글은 한 글자를 만드는 동안에도 input 이벤트가 계속 뜬다(조합 중).
-       그때 화면을 다시 그리면 입력칸이 통째로 새로 만들어지면서 조합이 끊겨
-       'ㅇㅏㄴ' 처럼 글자가 깨진다. 조합이 끝난 뒤에만 다시 그린다. */
-    let t, composing = false;
+  if (q && !q.dataset.bound) {
+    /* 이 노드는 render 를 거쳐도 살아남는다(keepInput). 그래서 한 번만 건다. */
+    q.dataset.bound = '1';
+    let t;
     const apply = () => {
       clearTimeout(t);
-      t = setTimeout(() => {
-        if (composing) return;          /* 타이머가 조합 도중에 터진 경우 */
-        const at = q.selectionStart;
-        state.query = q.value;
-        render();
-        const n = $('#q');
-        if (n) { n.focus(); try { n.setSelectionRange(at, at); } catch { } }
-      }, 250);
+      t = setTimeout(() => { state.query = q.value; render(); }, 250);
     };
-    q.addEventListener('compositionstart', () => { composing = true; });
-    q.addEventListener('compositionend', () => { composing = false; apply(); });
-    q.addEventListener('input', () => { if (!composing) apply(); });
-    if (state.screen === 'search' && !state.query) setTimeout(() => q.focus(), 60);
+    q.addEventListener('compositionstart', () => { q.dataset.composing = '1'; });
+    q.addEventListener('compositionend', () => { q.dataset.composing = '0'; apply(); });
+    q.addEventListener('input', apply);
   }
+  if (q && state.screen === 'search' && !state.query && document.activeElement !== q)
+    setTimeout(() => q.focus(), 60);
 
   /* 급여량 계산기 */
   const fw = $('#fw', v), fwr = $('#fwr', v);

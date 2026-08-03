@@ -72,7 +72,10 @@ img{display:block;max-width:100%}
 .t-caption{font-size:13px;font-weight:600;letter-spacing:-.02em}
 .t-micro{font-size:12px;font-weight:700;letter-spacing:-.02em}
 .t-tag{font-size:11px;font-weight:700;letter-spacing:-.02em}
-.c-sub{color:var(--ink50)} .c-mute{color:var(--ink40)} .c-cap{color:var(--ink35)}
+/* 작은 글자에 쓰는 회색. ink40 은 흰 배경에서 3.6:1, ink35 는 3:1 이라
+   본문 기준(4.5:1)에 못 미친다. 글자에는 ink50(5.7:1)까지만 쓴다.
+   ink40 이하는 선·마크·비활성처럼 읽지 않아도 되는 곳에 남긴다. */
+.c-sub{color:var(--ink50)} .c-mute{color:var(--ink50)} .c-cap{color:var(--ink50)}
 
 /* ── 화면 전환 ──────────────────────────────────────── */
 .screen{display:none;padding-bottom:calc(84px + env(safe-area-inset-bottom))}
@@ -100,11 +103,11 @@ img{display:block;max-width:100%}
 
 /* ── 검색 인풋 ──────────────────────────────────────── */
 .searchbox{display:flex;align-items:center;gap:9px;height:56px;padding:0 16px;
-  border-radius:var(--rInput);background:var(--surfaceInput);color:var(--ink35);width:100%;text-align:left}
+  border-radius:var(--rInput);background:var(--surfaceInput);color:var(--ink50);width:100%;text-align:left}
 .searchbox.sm{height:46px;border-radius:15px}
-.searchbox .i{color:var(--ink35);width:20px;height:20px}
+.searchbox .i{color:var(--ink50);width:20px;height:20px}
 .searchbox input{flex:1;min-width:0;color:var(--ink);font-size:15px;letter-spacing:-.02em;font-weight:500}
-.searchbox input::placeholder{color:var(--ink35);font-weight:500}
+.searchbox input::placeholder{color:var(--ink50);font-weight:500}
 
 /* ── 칩 ─────────────────────────────────────────────── */
 .chiprow{display:flex;gap:7px;overflow-x:auto;padding:0 var(--screenX);scrollbar-width:none}
@@ -120,8 +123,8 @@ img{display:block;max-width:100%}
 .tag{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 8px;border-radius:8px;
   background:var(--chipNeutral);color:var(--ink50);font-size:11px;font-weight:700;letter-spacing:-.02em}
 .tag.safe{background:var(--safeBg);color:var(--safeText)}
-.tag.caution{background:var(--cautionBg);color:var(--cautionChip)}
-.tag.pending{background:var(--surface);color:var(--ink40)}
+.tag.caution{background:var(--cautionBg);color:var(--cautionText)}
+.tag.pending{background:var(--surface);color:var(--ink50)}
 
 /* ── 주의성분 배지 (3상태) ──────────────────────────────
    '없음' 상태에서도 반드시 표시한다. 배지를 숨기면 '확인 안 함'과 구분되지 않는다. */
@@ -133,7 +136,7 @@ img{display:block;max-width:100%}
 .cbadge.none{color:var(--safe)}
 .cbadge.none .dot{background:var(--safe)}
 .cbadge.has{color:var(--cautionChip)}
-.cbadge.has .dot{background:var(--caution);color:#fff;font-size:8px;font-weight:900;line-height:1}
+.cbadge.has .dot{background:var(--cautionText);color:#fff;font-size:8px;font-weight:900;line-height:1}
 .cbadge.pending{color:var(--ink40)}
 .cbadge.pending .dot{background:var(--ink20)}
 
@@ -151,7 +154,7 @@ img{display:block;max-width:100%}
   flex-shrink:0;overflow:hidden;position:relative}
 .well img{width:100%;height:100%;object-fit:contain}
 .well.pending img{opacity:.4;filter:grayscale(1)}
-.well .initial{font-weight:800;color:var(--ink25);letter-spacing:-.04em}
+.well .initial{font-weight:800;color:var(--ink40);letter-spacing:-.04em}
 .well-168{width:168px;height:168px;border-radius:var(--rThumbLg);padding:20px}
 .well-88{width:88px;height:88px;border-radius:14px;padding:8px}
 .well-82{width:82px;height:82px;border-radius:var(--rThumbLg);padding:7px}
@@ -180,7 +183,7 @@ img{display:block;max-width:100%}
 .row{display:flex;align-items:center;gap:13px;padding:11px 0;width:100%;text-align:left;min-height:80px}
 .row + .row{border-top:var(--divider)}
 .row-b{flex:1;min-width:0}
-.row-brand{font-size:12px;font-weight:600;color:var(--ink40);letter-spacing:-.02em;
+.row-brand{font-size:12px;font-weight:600;color:var(--ink50);letter-spacing:-.02em;
   display:flex;align-items:center;gap:5px}
 .row-brand i{width:2px;height:2px;border-radius:50%;background:var(--ink20);display:inline-block;font-style:normal}
 .row-name{font-size:16px;font-weight:700;letter-spacing:-.035em;line-height:1.35;margin:2px 0 5px}
@@ -217,7 +220,7 @@ img{display:block;max-width:100%}
 /* display 를 명시한 요소는 hidden 속성이 안 먹는다. 명시적으로 눌러준다. */
 .tabbar[hidden]{display:none}
 .tabbar button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 0;
-  color:var(--ink25);font-size:11px;font-weight:600;letter-spacing:-.02em}
+  color:var(--ink50);font-size:11px;font-weight:600;letter-spacing:-.02em}
 .tabbar button .i{width:22px;height:22px}
 .tabbar button.on{color:var(--purple700);font-weight:700}
 
@@ -243,9 +246,9 @@ img{display:block;max-width:100%}
 
 /* ── 면책·고지 ──────────────────────────────────────── */
 .note{margin-top:26px;padding:0 var(--screenX);font-size:12px;font-weight:500;
-  color:#A8A2B0;letter-spacing:-.02em;line-height:1.6;white-space:pre-line}
+  color:var(--ink50);letter-spacing:-.02em;line-height:1.6;white-space:pre-line}
 .partners{margin-top:12px;border-radius:14px;background:var(--surface);padding:12px 14px;
-  font-size:12px;font-weight:500;color:var(--ink40);letter-spacing:-.02em;line-height:1.6}
+  font-size:12px;font-weight:500;color:var(--ink50);letter-spacing:-.02em;line-height:1.6}
 
 /* ── 토스트 ─────────────────────────────────────────── */
 .toast{position:fixed;left:50%;transform:translateX(-50%) translateY(8px);
@@ -302,3 +305,19 @@ img{display:block;max-width:100%}
   .press:active,.btn:active{transform:none}
   .screen.push{animation:fadeIn .12s ease}
 }
+
+/* ── 콘텐츠 본문 ─────────────────────────────────────
+   글에서 쓰는 마크다운은 제목·목록·인용·강조뿐이다. 그만큼만 스타일을 준다. */
+.sec.md{margin-top:22px}
+.md-p{font-size:15px;line-height:1.75;letter-spacing:-.02em;color:var(--ink70);margin:12px 0}
+.md-p b{color:var(--ink);font-weight:800}
+.md-list{margin:12px 0;padding-left:20px}
+.md-list li{font-size:15px;line-height:1.75;letter-spacing:-.02em;color:var(--ink70);margin:6px 0}
+.md-list li::marker{color:var(--purple500)}
+.md-list li b{color:var(--ink);font-weight:800}
+.md-quote{margin:16px 0;padding:14px 16px;border-radius:var(--rCard);
+  background:var(--purple50);box-shadow:inset 3px 0 0 var(--purple300);
+  font-size:14.5px;line-height:1.7;letter-spacing:-.02em;color:var(--ink70)}
+.md-quote b{color:var(--purple700);font-weight:800}
+.sec.md code{padding:1px 5px;border-radius:6px;background:var(--purple100);
+  color:var(--purple700);font-size:13.5px;font-weight:700}
