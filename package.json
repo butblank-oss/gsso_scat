@@ -18,6 +18,7 @@
     "ranking": "node scripts/collect-ranking.mjs",
     "lookup": "node scripts/danawa-product.mjs",
     "buylinks": "node scripts/buy-links.mjs",
-    "backfill": "node scripts/backfill-detail.mjs"
+    "backfill": "node scripts/backfill-detail.mjs",
+    "partners": "node scripts/coupang-partners.mjs"
   }
 }
