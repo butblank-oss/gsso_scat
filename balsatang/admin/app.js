@@ -127,6 +127,14 @@ function pgFoods(){
   const rows = list.slice((fPage-1)*per, fPage*per);
 
   el('wrap').innerHTML = `
+  <div style="background:#16233D;border:1px solid #23386b;border-radius:8px;padding:12px 14px;
+              margin-bottom:14px;font-size:12.5px;color:#9DBBF5;line-height:1.65;
+              display:flex;align-items:center;gap:12px">
+    <div style="flex:1">이 화면의 수정은 브라우저에만 남고, 파일로 내려받아 직접 올려야 반영돼요.
+      <b>발행된 데이터를 바로 고치려면</b> 사료 관리(GitHub) 화면을 쓰세요 — 고친 내용이 저장소에 커밋돼요.</div>
+    <a href="foods.html" style="flex-shrink:0;height:32px;padding:0 13px;border-radius:8px;background:#2F6FED;
+       color:#fff;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center">사료 관리 열기</a>
+  </div>
   <div class="filters">
     <input class="inp fw" style="width:220px" placeholder="브랜드·사료명 검색" value="${at(fQ)}"
            oninput="fQ=this.value;fPage=1;pgFoods()">
