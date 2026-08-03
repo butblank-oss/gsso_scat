@@ -206,14 +206,83 @@ function toast(msg, action) {
 }
 
 /* ═══ 비교함 ═══ */
-function addCompare(id) {
+/* 담고 나서 어디로 갈지가 중요하다.
+   담아만 두고 화면에 그대로 있으면 사용자는 다음에 뭘 할지 모른다.
+   그래서 담는 즉시 비교 화면으로 데려가고, 거기서 두 번째를 고르게 한다.
+   goCompare=false 는 이미 비교 화면 안에서 고른 경우다(화면 이동이 필요 없다). */
+function addCompare(id, goCompare = true) {
   if (state.compare.includes(id)) { toast('이미 담긴 사료예요'); return; }
   if (state.compare.length >= 2) {
-    toast('두 개까지 담을 수 있어요', { label: '바꾸기', run: () => { state.compare = [state.compare[1], id]; save(); render(); } });
+    toast('두 개까지 담을 수 있어요', {
+      label: '바꾸기', run: () => { state.compare = [state.compare[1], id]; save(); goCompare ? go('compare') : render(); }
+    });
     return;
   }
-  state.compare.push(id); save(); render();
-  toast('비교함에 담았어요', { label: '보기', run: () => go('compare') });
+  state.compare.push(id); save();
+  if (goCompare) go('compare'); else render();
+  toast(state.compare.length === 1 ? '담았어요. 비교할 사료를 하나 더 골라주세요' : '비교함에 담았어요');
+}
+
+/* ═══ 사료 고르기 시트 ═══
+   비교할 사료를 검색 화면으로 튕기지 않고 이 자리에서 고른다.
+   비교하다 말고 다른 화면으로 나가면 하던 일이 끊긴다. */
+function openPicker(slotIndex) {
+  const render_ = (q = '') => {
+    const list = FOODS
+      .filter(f => !state.compare.includes(f.id) || state.compare[slotIndex] === f.id)
+      .filter(f => !q || `${f.brand} ${f.name}`.toLowerCase().replace(/\s/g, '').includes(q.toLowerCase().replace(/\s/g, '')))
+      .slice(0, 40);
+    return `
+      <div class="searchbox sm" style="margin-bottom:6px">
+        ${icon('search', 18)}<input id="pk-q" value="${esc(q)}" placeholder="사료 이름으로 찾기" autocomplete="off">
+      </div>
+      <div id="pk-list">${pickerGroups(list, q)}</div>`;
+  };
+  sheet('비교할 사료 고르기', render_(), el => {
+    const bind = () => $$('[data-pick]', el).forEach(b =>
+      b.onclick = () => {
+        const id = b.dataset.pick;
+        closeSheet();
+        if (state.compare[slotIndex]) state.compare[slotIndex] = id, save(), render();
+        else addCompare(id, false);
+      });
+    bind();
+    const q = $('#pk-q', el);
+    let t;
+    q.addEventListener('input', () => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        $('#pk-list', el).innerHTML = pickerGroups(
+          FOODS.filter(f => !state.compare.includes(f.id) || state.compare[slotIndex] === f.id)
+            .filter(f => `${f.brand} ${f.name}`.toLowerCase().replace(/\s/g, '').includes(q.value.toLowerCase().replace(/\s/g, '')))
+            .slice(0, 40), q.value);
+        bind();
+      }, 200);
+    });
+    setTimeout(() => q.focus(), 80);
+  });
+}
+/* 검색어가 없으면 최근 본 사료를 앞에 따로 묶는다.
+   대개 그중 하나를 고른다. 다만 최근 본 게 실제로 있을 때만 머리말을 붙인다 —
+   아무거나 위에 두고 '최근 본 사료' 라고 쓰면 거짓말이 된다. */
+function pickerGroups(list, q) {
+  if (q) return pickerRows(list);
+  const recent = state.recent.map(id => list.find(f => f.id === id)).filter(Boolean);
+  const rest = list.filter(f => !recent.includes(f));
+  const head = t => `<div class="t-micro c-mute" style="margin:16px 0 2px">${t}</div>`;
+  return (recent.length ? head('최근 본 사료') + pickerRows(recent) : '')
+       + (rest.length ? (recent.length ? head('전체 사료') : '') + pickerRows(rest) : '');
+}
+function pickerRows(list) {
+  if (!list.length) return '<p class="t-bodySm c-sub" style="padding:24px 0;text-align:center">찾는 사료가 없어요.</p>';
+  return list.map(f => `<button class="row press" data-pick="${f.id}">
+    ${well(f, 44)}
+    <span class="row-b">
+      <span class="row-brand">${esc(f.brand)}</span>
+      <span class="row-name" style="display:block">${esc(f.name)}</span>
+      <span class="row-meta">${cautionState(f).label}${f.price?.pKg ? ` · 100g당 ${won(per100g(f))}원` : ''}</span>
+    </span>
+    ${icon('plus', 18, 'chev')}</button>`).join('');
 }
 
 /* ═══ 서버가 붙을 자리 ═══
@@ -711,7 +780,7 @@ function abLabels(a, b) {
 function slotView(f, side) {
   const color = side === 'A' ? 'var(--purple700)' : 'var(--blue700)';
   const chipBg = side === 'A' ? 'var(--purple100)' : 'var(--blue100)';
-  if (!f) return `<button class="press" data-go="search" style="flex:1;min-width:0;border-radius:var(--rCard);padding:16px 12px;display:flex;flex-direction:column;align-items:center;gap:10px;box-shadow:inset 0 0 0 1.5px var(--line);border:1.5px dashed transparent">
+  if (!f) return `<button class="press" data-pick-slot="${side === 'A' ? 0 : 1}" style="flex:1;min-width:0;border-radius:var(--rCard);padding:16px 12px;display:flex;flex-direction:column;align-items:center;gap:10px;box-shadow:inset 0 0 0 1.5px var(--line);border:1.5px dashed transparent">
     <div style="width:88px;height:88px;border-radius:14px;border:1.5px dashed var(--ink20);display:grid;place-items:center;color:var(--ink20);font-size:28px;font-weight:300">＋</div>
     <div class="t-caption c-cap" style="text-align:center;white-space:pre-line">비교할 사료를\n하나 더 골라주세요</div>
   </button>`;
@@ -723,7 +792,7 @@ function slotView(f, side) {
     <div style="width:100%;text-align:center">
       <div class="t-micro c-mute">${esc(f.brand)}</div>
       <div style="font-size:14px;font-weight:700;letter-spacing:-.03em;margin-top:2px">${esc(f.name)}</div>
-      <button class="press" data-drop="${f.id}" style="margin-top:6px;font-size:12px;font-weight:700;color:${color}">바꾸기</button>
+      <button class="press" data-pick-slot="${side === 'A' ? 0 : 1}" style="margin-top:6px;font-size:12px;font-weight:700;color:${color}">바꾸기</button>
     </div>
   </div>`;
 }
@@ -865,7 +934,7 @@ function renderCompareEmpty(one) {
     <p>지금 먹는 사료를 골라두면
 바꿀 때마다 바로 비교할 수 있어요.</p>
     <div class="acts">
-      <button class="btn pri press" data-go="search">사료 검색해서 담기</button>
+      <button class="btn pri press" data-pick-slot="${state.compare.length}">비교할 사료 고르기</button>
       ${recent.length ? `<button class="btn ghost press" data-recent-sheet>최근 본 사료에서 고르기</button>` : ''}
     </div>
   </div>`;
@@ -1115,6 +1184,7 @@ function wire() {
   on('[data-request]', 'click', e => submitRequest(e.currentTarget.dataset.request, { query: state.query, id: state.detailId }));
   on('[data-ingr-sheet]', 'click', () => openIngrSheet());
   on('[data-recent-sheet]', 'click', () => openRecentSheet());
+  on('[data-pick-slot]', 'click', e => openPicker(+e.currentTarget.dataset.pickSlot));
   on('[data-share]', 'click', () => {
     const f = FOODS.find(x => x.id === state.detailId);
     if (navigator.share) navigator.share({ title: `${f.brand} ${f.name} — 발사탕`, url: location.href }).catch(() => { });
@@ -1209,7 +1279,7 @@ function openRecentSheet() {
   sheet('최근 본 사료', list.map(f => `<button class="row press" data-pick="${f.id}">
     ${well(f, 44)}<span class="row-b"><span class="row-name" style="display:block">${esc(f.brand)} ${esc(f.name)}</span></span>
     ${icon('plus', 18, 'chev')}</button>`).join('') || '<p class="t-bodySm c-sub" style="padding:20px 0">최근 본 사료가 없어요.</p>',
-    el => $$('[data-pick]', el).forEach(b => b.onclick = () => { closeSheet(); addCompare(b.dataset.pick); }));
+    el => $$('[data-pick]', el).forEach(b => b.onclick = () => { closeSheet(); addCompare(b.dataset.pick, false); }));
 }
 
 /* ═══ 시작 ═══ */
