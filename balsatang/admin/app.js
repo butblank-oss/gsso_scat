@@ -23,41 +23,58 @@ function markDirty(){ el('dirtyDot').innerHTML = store.dirty ? '<span class="dir
 
 /* ═══ 한글 입력 ═══
    한글은 한 글자를 만드는 동안 IME 가 그 입력칸을 붙잡고 있다. 목록을 다시
-   그리면서 innerHTML 로 갈아치우면 붙잡고 있던 칸이 사라지면서 조합이 끊기고
-   'ㅇ오오ㄹ리리' 같은 찌꺼기가 남는다. 조합이 끝난 뒤에만 그리는 것으로는
-   부족하다 — 한 글자를 확정하는 순간 다음 조합이 곧바로 시작되므로 그 틈에도
-   칸이 사라지면 안 된다. 그래서 살아있는 입력칸을 그대로 옮겨 심는다. */
-function ime(fn){
-  const live = document.activeElement;
-  const keep = live && live.tagName === 'INPUT' ? live : null;
-  const ph = keep && keep.getAttribute('placeholder');
-  const at = keep && keep.selectionStart;
-  fn();
-  if(!keep) return;
-  const fresh = [...document.querySelectorAll('input')].find(i=>i.getAttribute('placeholder')===ph);
-  if(!fresh || fresh === keep) return;
-  fresh.replaceWith(keep);
-  keep.focus();
-  try{ keep.setSelectionRange(at, at); }catch{}
-}
+   그리면서 그 칸이 문서에서 잠깐이라도 떨어져 나가면 조합이 취소되어
+   'ㅈㅣㅇㅜㅍㅣㄱ' 처럼 자모가 흩어진다. 노드를 붙잡았다가 도로 꽂아도
+   소용없다 — 떨어지는 순간 이미 취소된다.
+
+   그래서 검색칸이 든 껍데기(…Shell)와 조건에 따라 바뀌는 목록(…List)을
+   나눴다. 검색할 때는 목록만 갈아끼우고 입력칸은 손대지 않는다.
+   새 목록 화면을 만들 때도 이 규칙을 지켜야 한다. */
 
 /* ═══ NAV ═══ */
 const NAV = [
   {h:'메인'},
   {k:'dash',   label:'대시보드',    ico:'chart'},
   {h:'콘텐츠 관리'},
+  /* 사료·가격·심사는 어드민 안에서 진짜 편집기를 띄운다.
+     예전에 이 화면이 갖고 있던 사료 편집기는 지금 데이터 형태를 몰라서
+     고쳐도 사이트에 닿지 않았다. 그래서 화면만 여기 두고 알맹이를 바꿨다. */
   {k:'foods',  label:'사료 관리',    ico:'package'},
   {k:'ingr',   label:'성분 관리',    ico:'microscope'},
   {k:'tags',   label:'맞춤찾기 태그', ico:'paw'},
   {h:'운영'},
   {k:'recall', label:'리콜 관리',    ico:'siren', badge:()=>store.recalls.filter(r=>r.active).length},
   {k:'price',  label:'가격 관리',    ico:'coins'},
+  {k:'review', label:'발행 심사',    ico:'check'},
   {k:'article',label:'콘텐츠',       ico:'book'},
-  {k:'review', label:'리뷰 관리',    ico:'star'}
+  {k:'reviews', label:'리뷰 관리',   ico:'star'}
 ];
+
+/* 어드민 안에 띄우는 편집기.
+   사료·가격·심사는 GitHub 에 직접 커밋하는 화면이 따로 있고, 그 화면이
+   진짜다. 코드를 두 벌로 베끼면 반드시 어긋나므로(예전 사료 편집기가 그래서
+   구매 링크를 버렸다) 같은 화면을 여기에 그대로 띄운다.
+   토큰은 같은 도메인의 localStorage 라 한 번만 넣으면 세 곳이 함께 쓴다. */
+const EMBED = {
+  foods:  { src:'foods.html',  title:'사료 관리',
+            note:'사료 정보·성분표·원료·판정 카드·맞춤 태그를 고치고 GitHub 에 커밋합니다. 몇 분 뒤 프론트에 그대로 반영됩니다.' },
+  price:  { src:'foods.html',  title:'가격 관리',
+            note:'가격과 쿠팡 구매 링크는 사료 편집 패널에서 고칩니다. 아래 목록에서 <b>구매링크 없음</b> 필터를 쓰세요.' },
+  review: { src:'review.html', title:'발행 심사',
+            note:'수집된 사료를 검토하고 발행합니다. 발행하면 data.js 에 병합되어 커밋됩니다.' }
+};
+function pgEmbed(k){
+  const e = EMBED[k];
+  el('wrap').innerHTML = `
+    <div class="card" style="margin-bottom:12px;background:var(--pri-soft);border-color:#23386b;
+         color:#9DBBF5;font-size:12.5px;line-height:1.65">${e.note}</div>
+    <iframe src="${e.src}" title="${e.title}"
+      style="width:100%;height:calc(100vh - 190px);min-height:520px;border:1px solid var(--line);
+             border-radius:12px;background:var(--bg);display:block"></iframe>`;
+}
 const TITLES = {dash:'대시보드', foods:'사료 관리', ingr:'성분 관리', tags:'맞춤찾기 태그 관리',
-  recall:'리콜 관리', price:'가격 관리', article:'콘텐츠 관리', review:'리뷰 관리',
-  wizard:'사료 등록'};
+  recall:'리콜 관리', price:'가격 관리', article:'콘텐츠 관리', reviews:'리뷰 관리',
+  review:'발행 심사', wizard:'사료 등록'};
 
 let page = 'dash';
 function renderNav(){
@@ -72,8 +89,9 @@ function go(k, arg){
   page = k;
   el('pgTitle').textContent = TITLES[k] || '';
   renderNav();
-  ({dash:pgDash, foods:pgFoods, ingr:pgIngr, tags:pgTags, recall:pgRecall,
-    price:pgPrice, article:pgArticle, review:pgReview, wizard:pgWizard}[k] || pgDash)(arg);
+  if(EMBED[k]){ pgEmbed(k); el('wrap').scrollTop = 0; return; }
+  ({dash:pgDash, ingr:pgIngr, tags:pgTags, recall:pgRecall,
+    article:pgArticle, reviews:pgReview}[k] || pgDash)(arg);
   el('wrap').scrollTop = 0;
 }
 
@@ -88,8 +106,7 @@ function pgDash(){
   const recent = store.foods.slice(0,4);
   const todos = [
     active   ? {c:'var(--bad)',  t:`활성 리콜 ${active}건 — 즉시 확인 필요`, a:'처리하기', go:'recall'} : null,
-    draft    ? {c:'var(--warn)', t:`임시저장 ${draft}건 발행 검토`,          a:'검토하기', go:'foods'}  : null,
-    noPrice  ? {c:'var(--warn)', t:`가격 미등록 ${noPrice}종 업데이트`,      a:'업데이트', go:'price'}  : null,
+    noPrice  ? {c:'var(--warn)', t:`가격 미등록 ${noPrice}종 업데이트`,      a:'업데이트', go:'price'} : null,
     unknown  ? {c:'var(--pri)',  t:`성분 사전에 없는 원료 ${unknown}종`,     a:'등록하기', go:'ingr'}   : null,
     {c:'var(--pri)', t:'이번 주 콘텐츠 1건 발행 예정', a:'작성하기', go:'article'}
   ].filter(Boolean);
@@ -137,61 +154,23 @@ function pgDash(){
 
 /* ═══ 사료 관리 ═══ */
 let fQ='', fType='', fStatus='', fPage=1;
-function pgFoods(){
-  let list = store.foods;
-  if(fQ) list = list.filter(f=>(f.brand+f.name).includes(fQ));
-  if(fType) list = list.filter(f=>f.type===fType);
-  if(fStatus) list = list.filter(f=>f.status===fStatus);
-  const per=12, pages=Math.max(1,Math.ceil(list.length/per));
-  fPage = Math.min(fPage, pages);
-  const rows = list.slice((fPage-1)*per, fPage*per);
+/* 검색 입력칸이 있는 껍데기와, 조건에 따라 바뀌는 목록을 나눈다.
 
-  el('wrap').innerHTML = `
-  <div style="background:#16233D;border:1px solid #23386b;border-radius:8px;padding:12px 14px;
-              margin-bottom:14px;font-size:12.5px;color:#9DBBF5;line-height:1.65;
-              display:flex;align-items:center;gap:12px">
-    <div style="flex:1">이 화면은 처음 열었을 때의 데이터를 브라우저에 복사해두고 그것만 보여줘요.
-      그래서 <b>사료 관리(GitHub)에서 커밋한 내용이 여기엔 안 보여요.</b>
-      여기서 고친 것도 브라우저에만 남고, 파일로 내려받아 직접 올려야 반영돼요.</div>
-    <button class="btn" onclick="reloadFromFile()" style="flex-shrink:0">최신 데이터 불러오기</button>
-    <a href="foods.html" style="flex-shrink:0;height:32px;padding:0 13px;border-radius:8px;background:#2F6FED;
-       color:#fff;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center">사료 관리 열기</a>
-  </div>
-  <div class="filters">
-    <input class="inp fw" style="width:220px" placeholder="브랜드·사료명 검색" value="${at(fQ)}"
-           oninput="fQ=this.value;fPage=1;ime(pgFoods)">
-    <select class="inp fw" onchange="fType=this.value;fPage=1;pgFoods()">
-      <option value="">전체 형태</option>${opts(TYPE_KO,fType)}</select>
-    <select class="inp fw" onchange="fStatus=this.value;fPage=1;pgFoods()">
-      <option value="">전체 상태</option>
-      <option value="published"${fStatus==='published'?' selected':''}>발행</option>
-      <option value="draft"${fStatus==='draft'?' selected':''}>임시저장</option></select>
-    <div style="flex:1"></div>
-    <button class="btn pri" onclick="newFood()">+ 사료 등록</button>
-  </div>
-  <div class="card" style="padding:0">
-    ${rows.length ? `<table><thead><tr>
-      <th style="width:34px"></th><th>사료명</th><th>형태</th><th>점수</th>
-      <th>원료</th><th>가격</th><th>상태</th><th style="width:104px">관리</th>
-    </tr></thead><tbody>
-    ${rows.map(f=>{
-      const warn = f.ingr.filter(i=>{const m=store.ingByName(i.name);return m&&m.safe!=='safe';}).length;
-      return `<tr>
-        <td>${hasThumb(f)?`<img src="${at(f.thumb)}" style="width:26px;height:26px;border-radius:6px;object-fit:cover;display:block">`:ico(BS.deriveIco(f),17)}</td>
-        <td><div class="t-main">${esc(f.name)}</div>
-            <div class="t-sub">${esc(f.brand)}${f.country?' · '+(COUNTRY_KO[f.country]||f.country):''}</div></td>
-        <td><span class="tag mute">${TYPE_KO[f.type]||f.type}</span>${f.rx?' <span class="tag info">처방식</span>':''}</td>
-        <td><b style="color:${f.score>=8?'var(--good)':f.score>=6?'var(--warn)':'var(--bad)'}">${f.score}</b></td>
-        <td>${f.ingr.length}종${warn?` <span class="tag warn">주의 ${warn}</span>`:''}</td>
-        <td>${f.prices.length?f.prices.length+'건':'<span class="tag warn">미등록</span>'}</td>
-        <td><span class="tag ${f.status==='published'?'good':'mute'}">${f.status==='published'?'발행':'임시저장'}</span></td>
-        <td><button class="btn sm" onclick="go('wizard','${f.id}')">수정</button>
-            <button class="btn sm dan" onclick="delFood('${f.id}')">삭제</button></td>
-      </tr>`}).join('')}
-    </tbody></table>` : `<div class="empty">조건에 맞는 사료가 없어요</div>`}
-  </div>
-  ${pages>1?pager(fPage,pages,'fPage',list.length,'pgFoods'):''}`;
-}
+   한 덩어리로 다시 그리면 입력칸이 문서에서 잠깐 떨어져 나간다. 노드를
+   붙잡았다가 도로 꽂아도 소용없다 — 떨어지는 순간 브라우저가 한글 조합을
+   취소해서 'ㅈㅣㅇㅜㅍㅣㄱ' 처럼 자모가 흩어진다.
+   그래서 입력칸이 든 껍데기는 그대로 두고 목록만 갈아끼운다. */
+/* 대시보드 '최근 등록 사료' 가 쓴다. https 로 시작하지 않는 주소는 안 불러와진다. */
+function hasThumb(f){ return /^https:\/\//.test(f.thumb||''); }
+
+/* 예전 사료 편집기는 걷어냈다.
+
+   이 화면이 만들어질 때의 데이터 형태를 기준으로 쓰여 있어서, 여기서 고친 값은
+   사이트에 닿지 않았고 내보내면 FOODS_ALL 선언과 구매 링크가 빠졌다.
+   지금은 사료 관리(foods.html)를 어드민 안에 그대로 띄운다 — 코드가 한 벌이라
+   어긋날 자리가 없다. 자세한 내용은 docs/운영-가이드.md.
+
+   pager 는 성분 관리가 아직 쓴다. */
 function pager(cur,pages,varName,total,fn){
   const btn=(p,l,d)=>`<button ${d?'disabled':''} class="${p===cur?'on':''}" onclick="${varName}=${p};${fn}()">${l||p}</button>`;
   let out=btn(cur-1,'‹',cur<=1);
@@ -200,385 +179,17 @@ function pager(cur,pages,varName,total,fn){
   out+=btn(cur+1,'›',cur>=pages);
   return `<div class="pager">${out}<span class="n">총 ${total}건</span></div>`;
 }
-function newFood(){ const f=store.newFood(); store.foods.unshift(f); save(); go('wizard',f.id); }
-function delFood(id){
-  const f=store.foodById(id); if(!f) return;
-  if(!confirm(`'${f.name}' 사료를 삭제할까요?`)) return;
-  store.foods = store.foods.filter(x=>x.id!==id); save(); pgFoods(); toast('삭제했어요');
-}
-
-/* ═══ 사료 위저드 ═══ */
-let wF=null, wStep=1;
-const STEPS=['기본 정보','영양성분','원료','점수 & 판단','가격 & 발행'];
-function pgWizard(id){
-  wF = store.foodById(id) || store.foods[0];
-  if(!wF){ go('foods'); return; }
-  el('pgTitle').textContent = wF.status==='draft' ? '사료 등록' : '사료 수정';
-  wStep = 1; renderWizard();
-}
-function renderWizard(){
-  el('wrap').innerHTML = `
-  <div style="background:#2A2010;border:1px solid #4a3a16;border-radius:8px;padding:12px 14px;
-              margin-bottom:14px;font-size:12.5px;color:#FCD34D;line-height:1.65;
-              display:flex;align-items:center;gap:12px">
-    <div style="flex:1">여기서 고친 내용은 <b>이 브라우저에만 남고 사이트에는 반영되지 않아요.</b>
-      사료를 실제로 고치려면 사료 관리(GitHub) 화면을 쓰세요 — 거기서 고치면 저장소에 바로 커밋돼요.
-      이 화면은 원료·판정 같은 값을 정리해 두는 용도로만 쓰세요.</div>
-    <a href="foods.html" style="flex-shrink:0;height:32px;padding:0 13px;border-radius:8px;background:#2F6FED;
-       color:#fff;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center">사료 관리 열기</a>
-  </div>
-  <div class="steps">${STEPS.map((s,i)=>{
-    const n=i+1, cls=n===wStep?'on':n<wStep?'done':'';
-    return `<div class="step ${cls}"><span class="step-n">${n<wStep?'✓':n}</span>${s}</div>`
-      + (i<4?'<div class="step-line"></div>':'');
-  }).join('')}</div>
-  <div class="tabs">${STEPS.map((s,i)=>
-    `<button class="${i+1===wStep?'on':''}" onclick="wGo(${i+1})">${i+1}. ${s}</button>`).join('')}</div>
-  <div id="wBody"></div>`;
-  [wS1,wS2,wS3,wS4,wS5][wStep-1]();
-}
-function wGo(n){ wStep=n; renderWizard(); }
-function wFoot(last){
-  return `<div class="wfoot">
-    ${wStep>1?`<button class="btn" onclick="wGo(${wStep-1})">← 이전</button>`:''}
-    <button class="btn" onclick="wSave()">임시저장</button>
-    <div class="sp"></div>
-    ${last ? `<button class="btn pri" onclick="wPublish()">발행하기</button>`
-           : `<button class="btn pri" onclick="wGo(${wStep+1})">다음 단계 →</button>`}
-  </div>`;
-}
-function wSave(){ save(); toast('임시저장했어요'); }
-
-/* 이 어드민은 data.js 를 처음 한 번만 읽고 그 뒤로는 브라우저에 복사해둔 초안만 본다.
-   그래서 사료 관리(GitHub) 화면에서 커밋한 내용이 여기엔 나타나지 않는다.
-   이 버튼이 그 초안을 버리고 지금 파일의 값으로 다시 채운다. */
-function reloadFromFile(){
-  if(store.dirty && !confirm('이 화면에서 고친 내용은 사라지고, 파일에 있는 최신 값으로 다시 채워요. 계속할까요?')) return;
-  store.discard();
-  markDirty();
-  pgFoods();
-  toast('최신 데이터로 다시 불러왔어요');
-}
-function wPublish(){
-  if(!wF.brand || !wF.name){ toast('브랜드와 사료명은 필수예요'); wGo(1); return; }
-  wF.status='published'; wF.ico=BS.deriveIco(wF); save(); toast('발행했어요'); go('foods');
-}
-function set(path,v){
-  const p=path.split('.'); let o=wF;
-  for(let i=0;i<p.length-1;i++) o=o[p[i]];
-  o[p[p.length-1]] = v;
-}
-function head(n,t){ return `<div class="wcard-h"><span class="n">Step ${n}/5</span><b>${t}</b></div>`; }
-
-/* Step 1 — 기본 정보 */
-function wS1(){
-  el('wBody').innerHTML = `<div class="wcard">${head(1,'기본 정보')}
-    <div class="row c2">
-      <div class="fld"><label>브랜드 <i>*</i></label>
-        <input class="inp" value="${at(wF.brand)}" placeholder="오리젠, 아카나 같이…"
-               oninput="wF.brand=this.value;save()"></div>
-      <div class="fld"><label>사료명 (한국어) <i>*</i></label>
-        <input class="inp" value="${at(wF.name)}" placeholder="오리지널 독"
-               oninput="wF.name=this.value;save()"></div>
-    </div>
-    <div class="fld"><label>사료 썸네일 <span>로고 또는 포장지 사진</span></label>
-      <div class="thumbrow">
-        <div class="thumbbox">${hasThumb(wF)
-          ? `<img src="${at(wF.thumb)}" alt="" onerror="this.parentNode.innerHTML='${
-              String(ico(BS.deriveIco(wF),30)).replace(/'/g,'&#39;')}'">`
-          : ico(BS.deriveIco(wF),30)}</div>
-        <div style="flex:1;min-width:0">
-          <input type="file" id="thumbFile" accept="image/jpeg,image/png,image/webp"
-                 style="display:none" onchange="pickThumb(this)">
-          <div style="display:flex;gap:7px">
-            <button class="btn sm" onclick="el('thumbFile').click()">${ico('package',13)}사진 업로드</button>
-            ${hasThumb(wF)?`<button class="btn sm dan" onclick="wF.thumb=null;save();wS1()">삭제</button>`:''}
-          </div>
-          <div class="hint">${!hasThumb(wF)
-            ? 'JPG·PNG·WebP, 최대 5MB · 320px로 자동 압축돼요'
-            : /^data:/.test(wF.thumb)
-              /* 올린 사진은 파일이 통째로 값 안에 들어있어 용량이 의미가 있다.
-                 바깥 주소는 길이를 재봐야 0KB 만 나온다 — 출처를 보여주는 게 맞다. */
-              ? `업로드 완료 ${ico('check',11)} <b style="color:var(--good)">${thumbKB(wF.thumb)}KB</b> · 320px로 자동 압축돼요`
-              : `이미지 주소 ${ico('check',11)} <b style="color:var(--good)">${esc(thumbHost(wF.thumb))}</b> · 사료 관리에서 넣은 값이에요`
-          }</div>
-        </div>
-      </div>
-      ${hasThumb(wF)?'':`<div class="hint" style="margin-top:6px">비워두면 주원료에 맞는 아이콘이 자동으로 쓰여요.</div>`}
-    </div>
-    <div class="fld"><label>처방식 여부</label>
-      <div class="swrow"><label class="sw"><input type="checkbox" ${wF.rx?'checked':''}
-        onchange="wF.rx=this.checked;save();renderWizard()"><i></i></label>
-        <div><b>처방식 사료</b><p>수의사 처방이 필요한 사료예요. 앱 화면에 태그로 표시됩니다.</p></div></div></div>
-    ${wF.rx?`<div class="fld"><label>처방식 안내 문구</label>
-      <textarea class="inp" placeholder="간 질환·수술 후 회복기 아이를 위한 처방식이에요…"
-        oninput="wF.rxInfo={vetGuidance:this.value};save()">${esc(wF.rxInfo?.vetGuidance||'')}</textarea></div>`:''}
-    <div class="row c3">
-      <div class="fld"><label>사료 형태 <i>*</i></label>
-        <select class="inp" onchange="wF.type=this.value;save()">${opts(TYPE_KO,wF.type)}</select></div>
-      <div class="fld"><label>생애단계 <i>*</i></label>
-        <select class="inp" onchange="wF.ages=[this.value];save()">${opts(AGE_KO,wF.ages[0]||'all')}</select></div>
-      <div class="fld"><label>원산지</label>
-        <select class="inp" onchange="wF.country=this.value;save()">${opts(COUNTRY_KO,wF.country,'선택 안 함')}</select></div>
-    </div>
-    <div class="fld"><label>체형 <span>복수 선택</span></label>
-      <div class="chips">${Object.entries(SIZE_KO).map(([k,v])=>
-        `<button class="chip${wF.sizes.includes(k)?' on':''}" onclick="tglArr(wF.sizes,'${k}');renderWizard()">${v}</button>`).join('')}</div></div>
-    ${wFoot()}</div>`;
-}
-function tglArr(arr,k){ const i=arr.indexOf(k); i>=0?arr.splice(i,1):arr.push(k); save(); }
-
-/* 썸네일 — 서버가 없어 이미지를 data URL 로 보관한다.
-   원본 크기 그대로 두면 용량이 감당이 안 되므로 320px·WebP 로 압축해서 저장한다. */
-const THUMB_MAX = 320, THUMB_Q = 0.82;
-function hasThumb(f){ return f.thumb && /^(data:|https?:)/.test(f.thumb); }
-function thumbKB(u){ return Math.round((u.length*3/4)/1024); }
-function thumbHost(u){ try{ return new URL(u).hostname; }catch{ return '외부 주소'; } }
-function pickThumb(input){
-  const file = input.files && input.files[0];
-  input.value = '';
-  if(!file) return;
-  if(!/^image\/(jpeg|png|webp)$/.test(file.type)){ toast('JPG·PNG·WebP만 올릴 수 있어요'); return; }
-  if(file.size > 5*1024*1024){ toast('5MB 이하 파일만 올릴 수 있어요'); return; }
-  const url = URL.createObjectURL(file);
-  const img = new Image();
-  img.onload = ()=>{
-    const s = Math.min(1, THUMB_MAX/Math.max(img.width, img.height));
-    const w = Math.max(1,Math.round(img.width*s)), h = Math.max(1,Math.round(img.height*s));
-    const c = document.createElement('canvas'); c.width=w; c.height=h;
-    const cx = c.getContext('2d');
-    cx.fillStyle = '#fff'; cx.fillRect(0,0,w,h);   // 투명 PNG 는 흰 배경으로
-    cx.drawImage(img, 0, 0, w, h);
-    let out = c.toDataURL('image/webp', THUMB_Q);
-    if(out.indexOf('data:image/webp') !== 0) out = c.toDataURL('image/jpeg', 0.85);
-    URL.revokeObjectURL(url);
-    wF.thumb = out;
-    if(save() === false){ wF.thumb = null; wS1(); return; }
-    wS1();
-    toast(`썸네일 등록했어요 (${thumbKB(out)}KB)`);
-  };
-  img.onerror = ()=>{ URL.revokeObjectURL(url); toast('이미지를 읽지 못했어요'); };
-  img.src = url;
-}
-
-/* Step 2 — 영양성분 */
-function wS2(){
-  const n=wF.nutrient, est=estimateCarb(n);
-  const f=(k,l,ph)=>`<div class="fld"><label>${l}</label>
-    <input class="inp" type="number" step="0.1" value="${n[k]??''}" placeholder="${ph||''}"
-      oninput="wF.nutrient.${k}=this.value===''?null:+this.value;save();wS2()"></div>`;
-  el('wBody').innerHTML = `<div class="wcard">${head(2,'영양성분')}
-    <div class="row c3">
-      ${f('protein','조단백 최소값 (%)','38')}${f('fat','조지방 최소값 (%)','18')}${f('fiber','조섬유 최대값 (%)','5')}
-    </div>
-    <div class="row c3">
-      ${f('moisture','수분 최대값 (%)','10')}${f('ash','조회분 최대값 (%)','7')}
-      <div class="fld"><label>탄수화물 추정값 (%)</label>
-        <input class="inp" value="${est}%" readonly style="color:var(--pri);font-weight:800">
-        <div class="hint">${ico('bulb',11)} 위 값 입력 시 자동 계산돼요 (100 − 단백 − 지방 − 섬유 − 수분 − 회분)</div></div>
-    </div>
-    <div class="row c2">
-      <div class="fld"><label>생육 함량 (%) <span>브랜드 공표값</span></label>
-        <input class="inp" type="number" step="0.1" value="${n.meat??''}" placeholder="85"
-          oninput="wF.nutrient.meat=this.value===''?null:+this.value;save()"></div>
-      <div class="fld"><label>데이터 출처</label>
-        <select class="inp" onchange="wF.nutrient.src=this.value;save()">
-          ${opts({label:'라벨 직접 표기',brand:'브랜드 공식 자료',estimate:'추정값'},n.src||'label')}</select></div>
-    </div>
-    <div class="fld"><label>열량 (kcal/kg) <span>비우면 영양성분으로 추정</span></label>
-      <input class="inp" type="number" value="${n.calKg??''}" placeholder="3590"
-        oninput="wF.nutrient.calKg=this.value===''?null:+this.value;save()"></div>
-    ${wFoot()}</div>`;
-  wF.nutrient.carb = est;
-}
-
-/* Step 3 — 원료 + 소비자 요약 카드 */
-function wS3(){
-  const rows = wF.ingr.map((it,i)=>{
-    const m = store.ingByName(it.name);
-    const badge = m ? `<span class="tag ${m.safe==='safe'?'good':m.safe==='caution'?'warn':'bad'}">${SAFE_KO[m.safe]}</span>`
-                    : `<span class="tag mute">미등록</span>`;
-    return `<div class="irow">
-      <div class="iarrows">
-        <button onclick="moveIngr(${i},-1)" ${i===0?'disabled':''}>${ico('chevronRight',11)}</button>
-        <button onclick="moveIngr(${i},1)" ${i===wF.ingr.length-1?'disabled':''}>${ico('chevronRight',11)}</button>
-      </div>
-      <div class="irank">${i+1}</div>
-      <div class="iname">${esc(it.name)}</div>
-      ${badge}
-      <select class="inp" style="width:118px;padding:5px 22px 5px 8px;font-size:11px"
-              onchange="wF.ingr[${i}].func=this.value;save()">
-        <option value="">기능 없음</option>${opts(FUNC_KO,it.func)}</select>
-      <button class="ix" onclick="wF.ingr.splice(${i},1);save();wS3()">${ico('ban',14)}</button>
-    </div>`;
-  }).join('');
-
-  const vc = (kind,list) => list.map((c,i)=>`
-    <div class="vcard ${kind}">
-      <div class="vcard-h">
-        <select onchange="moveVerdict('${kind}',${i},this.value)">
-          <option value="pos"${kind==='pos'?' selected':''}>✅ 좋은 점</option>
-          <option value="cau"${kind==='cau'?' selected':''}>⚠️ 주의할 점</option>
-          <option value="bad"${kind==='bad'?' selected':''}>🚨 위험</option>
-        </select><div class="sp"></div>
-        <button class="ix" onclick="wF.verdict.${kind}.splice(${i},1);save();wS3()">${ico('ban',13)}</button>
-      </div>
-      <input class="inp" value="${at(c.title)}" placeholder="제목 — 짧고 명료하게"
-             oninput="wF.verdict.${kind}[${i}].title=this.value;save()">
-      <textarea class="inp" placeholder="소비자가 이해할 수 있는 언어로 설명해주세요"
-        oninput="wF.verdict.${kind}[${i}].body=this.value;save()">${esc(c.body||'')}</textarea>
-    </div>`).join('');
-
-  el('wBody').innerHTML = `<div class="wcard">${head(3,'원료')}
-    <div class="fld"><label>원료표 입력</label>
-      <input class="inp" id="ingrPaste" placeholder="원료명 입력 후 Enter — 쉼표로 여러 개 한 번에"
-             onkeydown="if(event.key==='Enter')addIngr(this)">
-      <div class="hint">라벨에 표기된 순서 그대로 입력해주세요. 순서 = 함량 많은 순이에요.</div></div>
-    ${rows || '<div class="empty" style="padding:26px">아직 등록된 원료가 없어요</div>'}
-    <div class="fld" style="margin-top:20px">
-      <label style="display:flex;align-items:center">소비자 요약 카드
-        <button class="btn sm pri" style="margin-left:auto" onclick="autoVerdict()">✨ 자동 생성</button></label>
-      <div class="hint" style="margin-bottom:10px">앱 상세화면에 표시되는 판정이에요. 원료표를 "우리 아이 언어"로 번역해주세요.</div>
-      ${vc('pos',wF.verdict.pos)}${vc('cau',wF.verdict.cau)}${vc('bad',wF.verdict.bad)}
-      <button class="btn" style="width:100%;justify-content:center" onclick="wF.verdict.pos.push({icon:'🥩',title:'',body:'',category:''});save();wS3()">+ 카드 추가</button>
-      <div class="guide"><b>${ico('bulb',12)} 작성 가이드</b>
-        원료 이야기가 아니라 <b>우리 아이 이야기</b>로 바꿔요<br>
-        "닭고기가 1번 원료" → "진짜 고기가 주재료예요"<br>
-        "BHA 无첨가" → "화학 방부제가 들어있어요, 발암 가능성이 연구되고 있어요"<br>
-        카드는 최대 4개, 각 카드는 2~3줄이 적당해요</div>
-    </div>
-    ${wFoot()}</div>`;
-}
-function addIngr(inp){
-  const names = inp.value.split(',').map(s=>s.trim()).filter(Boolean);
-  for(const n of names) wF.ingr.push({name:n, func: store.ingByName(n)?.func || ''});
-  inp.value=''; save(); wS3();
-  setTimeout(()=>el('ingrPaste')?.focus(),0);
-}
-function moveIngr(i,d){
-  const j=i+d; if(j<0||j>=wF.ingr.length) return;
-  [wF.ingr[i],wF.ingr[j]]=[wF.ingr[j],wF.ingr[i]]; save(); wS3();
-}
-function moveVerdict(from,i,to){
-  if(from===to) return;
-  const c = wF.verdict[from].splice(i,1)[0];
-  wF.verdict[to].push(c); save(); wS3();
-}
-function autoVerdict(){
-  const n=wF.nutrient, added=[];
-  const has = t => [...wF.verdict.pos,...wF.verdict.cau,...wF.verdict.bad].some(c=>c.title===t);
-  const push=(k,icon,title,body)=>{ if(!has(title)){ wF.verdict[k].push({icon,title,body,category:'auto'}); added.push(title);} };
-  if(n.meat>=70) push('pos','🥩','상위 원료 대부분이 동물성이에요',`생육 함량 약 ${n.meat}%`);
-  if(n.protein>=30) push('pos','💪','단백질이 넉넉해요',`조단백 ${n.protein}%로 활동량 많은 아이에게도 충분해요.`);
-  const bad = wF.ingr.filter(i=>store.ingByName(i.name)?.safe==='danger').map(i=>i.name);
-  if(bad.length) push('bad','🚨','주의가 필요한 원료가 있어요',`${bad.join(', ')} — 상세 근거를 확인해주세요.`);
-  const cau = wF.ingr.filter(i=>store.ingByName(i.name)?.safe==='caution').map(i=>i.name);
-  if(cau.length) push('cau','⚠️','논쟁 중인 성분이 포함돼 있어요',`${cau.join(', ')} 등이 들어 있어요.`);
-  if(n.carb>=40) push('cau','🌾','탄수화물이 많은 편이에요',`이 사료의 약 ${n.carb}%가 탄수화물이에요. 살이 찌기 쉬운 아이라면 주의하세요.`);
-  save(); wS3(); toast(added.length?`${added.length}개 카드를 생성했어요`:'추가할 카드가 없어요');
-}
-
-/* Step 4 — 점수 & 판단 */
-function wS4(){
-  wF.score = totalScore(wF.ratings);
-  const RL = {quality:'원료 품질', carb:'탄수화물', additive:'주의성분', value:'가성비'};
-  const RC = {
-    quality:{5:'동물성만 사용',4:'대부분 동물성',3:'보통 수준',2:'곡물 위주',1:'출처 불명'},
-    carb:{5:'20% 미만',4:'20~30%',3:'30~40%',2:'40~50%',1:'50% 이상'},
-    additive:{5:'주의성분 없음',4:'거의 없음',3:'논쟁 성분',2:'위험 1개',1:'위험 다수'},
-    value:{5:'매우 저렴',4:'가성비 좋음',3:'보통',2:'비싼 편',1:'프리미엄'}};
-  const stars = k => `<div class="stars">${[1,2,3,4,5].map(v=>
-      `<button class="${v<=wF.ratings[k]?'on':''}" onclick="wF.ratings.${k}=${v};save();wS4()">${ico('star',18)}</button>`).join('')}
-      <span class="lbl">${RC[k][wF.ratings[k]]||''}</span></div>`;
-  const profRow = (arr,key) => Object.entries(CONCERN_KO).map(([k,v])=>
-    `<button class="chip${arr.some(x=>x.concernType===k)?' on':''}" onclick="tglProf('${key}','${k}')">${v}</button>`).join('');
-  const profInputs = (arr,key) => arr.map((p,i)=>`
-    <div style="display:flex;gap:9px;align-items:center;margin-top:7px">
-      <div style="width:104px;flex-shrink:0;font-size:11.5px;font-weight:700">${CONCERN_KO[p.concernType]||p.concernType}</div>
-      <input class="inp" value="${at(p.label)}" placeholder="이 아이에게 왜 맞는지 한 줄로"
-             oninput="wF.${key}[${i}].label=this.value;save()"></div>`).join('');
-
-  el('wBody').innerHTML = `<div class="wcard">${head(4,'점수 & 판단')}
-    <div class="scorebox">
-      <div class="w">총점 (가중치: 품질 40% · 탄수화물 25% · 주의성분 25% · 가성비 10%)</div>
-      <div class="v" style="color:${wF.score>=8?'var(--good)':wF.score>=6?'var(--warn)':'var(--bad)'}">${wF.score}</div>
-    </div>
-    <div class="row c2">${['quality','carb','additive','value'].map(k=>
-      `<div class="fld"><label>${RL[k]}</label>${stars(k)}</div>`).join('')}</div>
-    <div class="fld"><label>한줄평 <span>비우면 점수 기준으로 자동 생성</span></label>
-      <input class="inp" value="${at(wF.headline||'')}" placeholder="${at(autoHeadline(wF))}"
-             oninput="wF.headline=this.value||null;save()"></div>
-    <div class="fld" style="margin-top:22px">
-      <label style="color:var(--good)">✅ 이런 아이에게 잘 맞아요</label>
-      <div class="chips">${profRow(wF.fit,'fit')}</div>
-      ${profInputs(wF.fit,'fit')}</div>
-    <div class="fld" style="margin-top:20px">
-      <label style="color:var(--warn)">⚠️ 이런 경우 주의해요</label>
-      <div class="chips">${profRow(wF.fitCaution,'fitCaution')}</div>
-      ${profInputs(wF.fitCaution,'fitCaution')}</div>
-    ${wFoot()}</div>`;
-}
-function tglProf(key,k){
-  const arr=wF[key], i=arr.findIndex(x=>x.concernType===k);
-  i>=0 ? arr.splice(i,1) : arr.push({concernType:k, label:''});
-  save(); wS4();
-}
-
-/* Step 5 — 가격 & 발행 */
-function wS5(){
-  const rows = wF.prices.map((p,i)=>`
-    <div class="irow" style="flex-wrap:wrap">
-      <select class="inp" style="width:104px" onchange="wF.prices[${i}].shop=this.value;save()">${opts(SHOP_KO,p.shop)}</select>
-      <input class="inp" style="width:88px" type="number" value="${p.wg??''}" placeholder="용량(g)"
-             oninput="wF.prices[${i}].wg=+this.value;recalcPKg(${i})">
-      <input class="inp" style="width:104px" type="number" value="${p.price??''}" placeholder="가격(원)"
-             oninput="wF.prices[${i}].price=+this.value;recalcPKg(${i})">
-      <div style="width:104px;font-size:11.5px;color:var(--sub);font-weight:700">
-        ${p.pKg?Math.round(p.pKg).toLocaleString()+'원/kg':'—'}</div>
-      <input class="inp" style="flex:1;min-width:150px" value="${at(p.url||'')}" placeholder="구매 링크 (쿠팡 상품 URL)"
-             oninput="wF.prices[${i}].url=this.value||null;save()">
-      <button class="ix" onclick="wF.prices.splice(${i},1);save();wS5()">${ico('ban',14)}</button>
-    </div>`).join('');
-  const wo = wF.weightOpts.map((o,i)=>`
-    <div class="irow">
-      <input class="inp" style="width:104px" type="number" value="${o.g??''}" placeholder="용량(g)"
-             oninput="wF.weightOpts[${i}].g=+this.value;wF.weightOpts[${i}].label=fmtG(+this.value);save()">
-      <div class="iname">${esc(o.label||'')}</div>
-      <button class="ix" onclick="wF.weightOpts.splice(${i},1);save();wS5()">${ico('ban',14)}</button>
-    </div>`).join('');
-
-  el('wBody').innerHTML = `<div class="wcard">${head(5,'가격 & 발행')}
-    <div class="fld"><label>봉지 용량 <span>급여량 계산기에서 선택지로 쓰여요</span></label>
-      ${wo}<button class="btn sm" onclick="wF.weightOpts.push({g:2000,label:'2kg'});save();wS5()">+ 용량 추가</button></div>
-    <div class="fld" style="margin-top:20px"><label>판매처별 가격</label>
-      ${rows || '<div class="empty" style="padding:22px">등록된 가격이 없어요</div>'}
-      <button class="btn sm" onclick="wF.prices.push({shop:'coupang',wg:null,price:null,pKg:null,url:null,avail:true});save();wS5()">+ 판매처 추가</button>
-      <div class="hint">쿠팡 파트너스 제휴 링크를 넣으면 앱 구매 버튼에 연결돼요.</div></div>
-    <div class="fld" style="margin-top:20px"><label>리콜 이력</label>
-      <input class="inp" value="${at(wF.recall||'')}" placeholder="없으면 비워두세요"
-             oninput="wF.recall=this.value||null;save()"></div>
-    ${wFoot(true)}</div>`;
-}
-function fmtG(g){ return g>=1000 ? (g/1000)+'kg' : g+'g'; }
-function recalcPKg(i){
-  const p=wF.prices[i];
-  p.pKg = (p.price && p.wg) ? Math.round(p.price/(p.wg/1000)) : null;
-  save(); wS5();
-}
 
 /* ═══ 성분 관리 ═══ */
 let iQ='', iSafe='', iCat='', iPage=1;
+/* 사료 관리와 같은 이유로 껍데기와 목록을 나눈다 — 입력칸을 건드리지 않는다 */
 function pgIngr(){
-  let list = store.ingredients;
-  if(iQ) list = list.filter(i=>(i.name+i.nameEn).toLowerCase().includes(iQ.toLowerCase()));
-  if(iSafe) list = list.filter(i=>i.safe===iSafe);
-  if(iCat) list = list.filter(i=>i.cat===iCat);
-  const per=12, pages=Math.max(1,Math.ceil(list.length/per));
-  iPage=Math.min(iPage,pages);
-  const rows=list.slice((iPage-1)*per, iPage*per);
+  el('wrap').innerHTML = ingrShell();
+  pgIngrList();
+}
+function ingrShell(){
   const unknown = store.unknownIngredients();
-
-  el('wrap').innerHTML = `
+  return `
   ${unknown.length?`<div class="card" style="margin-bottom:14px;border-color:#4A3A12;background:#17130A">
     <div style="display:flex;align-items:center;gap:9px">
       ${ico('alert',16)}<b style="font-size:12.5px">성분 사전에 없는 원료 ${unknown.length}종</b>
@@ -589,14 +200,26 @@ function pgIngr(){
       ${unknown.length>14?` 외 ${unknown.length-14}종`:''}</div></div>`:''}
   <div class="filters">
     <input class="inp fw" style="width:220px" placeholder="성분명 검색" value="${at(iQ)}"
-           oninput="iQ=this.value;iPage=1;ime(pgIngr)">
-    <select class="inp fw" onchange="iSafe=this.value;iPage=1;pgIngr()">
+           oninput="iQ=this.value;iPage=1;pgIngrList()">
+    <select class="inp fw" onchange="iSafe=this.value;iPage=1;pgIngrList()">
       <option value="">전체 등급</option>${opts(SAFE_KO,iSafe)}</select>
-    <select class="inp fw" onchange="iCat=this.value;iPage=1;pgIngr()">
+    <select class="inp fw" onchange="iCat=this.value;iPage=1;pgIngrList()">
       <option value="">전체 카테고리</option>${opts(CATEGORY_KO,iCat)}</select>
     <div style="flex:1"></div>
     <button class="btn pri" onclick="openIngr()">+ 성분 등록</button>
   </div>
+  <div id="ingrList"></div>`;
+}
+function pgIngrList(){
+  let list = store.ingredients;
+  if(iQ) list = list.filter(i=>(i.name+i.nameEn).toLowerCase().includes(iQ.toLowerCase()));
+  if(iSafe) list = list.filter(i=>i.safe===iSafe);
+  if(iCat) list = list.filter(i=>i.cat===iCat);
+  const per=12, pages=Math.max(1,Math.ceil(list.length/per));
+  iPage=Math.min(iPage,pages);
+  const rows=list.slice((iPage-1)*per, iPage*per);
+
+  el('ingrList').innerHTML = `
   <div class="card" style="padding:0">
     ${rows.length?`<table><thead><tr>
       <th>성분명</th><th>카테고리</th><th>안전 등급</th><th>알러젠</th><th>기능</th>
@@ -613,7 +236,7 @@ function pgIngr(){
           <button class="btn sm dan" onclick="delIngr('${i.id}')">삭제</button></td>
     </tr>`).join('')}</tbody></table>`:`<div class="empty">조건에 맞는 성분이 없어요</div>`}
   </div>
-  ${pages>1?pager(iPage,pages,'iPage',list.length,'pgIngr'):''}`;
+  ${pages>1?pager(iPage,pages,'iPage',list.length,'pgIngrList'):''}`;
 }
 function addAllUnknown(){
   for(const u of store.unknownIngredients())
@@ -698,53 +321,6 @@ function delRecall(i){
   const f=store.foodById(r.foodId); if(f) f.recall=null;
   save(); pgRecall(); renderNav();
 }
-
-/* ═══ 가격 관리 ═══ */
-let pQ='', pOnly=false;
-function pgPrice(){
-  let list = store.foods;
-  if(pQ) list = list.filter(f=>(f.brand+f.name).includes(pQ));
-  if(pOnly) list = list.filter(f=>!f.prices.length);
-  const noPrice = store.foods.filter(f=>!f.prices.length).length;
-  const noLink  = store.foods.reduce((a,f)=>a+f.prices.filter(p=>!p.url).length,0);
-
-  el('wrap').innerHTML = `
-  <div class="kpis">
-    <div class="kpi"><div class="kpi-l">${ico('coins',14)}가격 레코드</div>
-      <div class="kpi-v">${store.foods.reduce((a,f)=>a+f.prices.length,0)}</div>
-      <div class="kpi-s">전체 사료 ${store.foods.length}종</div></div>
-    <div class="kpi${noPrice?' alert':' ok'}"><div class="kpi-l">${ico('alert',14)}가격 미등록</div>
-      <div class="kpi-v" style="color:${noPrice?'var(--bad)':'var(--good)'}">${noPrice}</div>
-      <div class="kpi-s">종</div></div>
-    <div class="kpi"><div class="kpi-l">${ico('ban',14)}구매 링크 없음</div>
-      <div class="kpi-v" style="color:${noLink?'var(--warn)':'var(--good)'}">${noLink}</div>
-      <div class="kpi-s">제휴 링크 미연결 레코드</div></div>
-  </div>
-  <div class="filters">
-    <input class="inp fw" style="width:220px" placeholder="브랜드·사료명 검색" value="${at(pQ)}"
-           oninput="pQ=this.value;ime(pgPrice)">
-    <button class="btn${pOnly?' pri':''}" onclick="pOnly=!pOnly;pgPrice()">미등록만 보기</button>
-  </div>
-  <div class="card" style="padding:0">
-    ${list.length?`<table><thead><tr><th>사료</th><th>판매처</th><th>용량</th>
-      <th>가격</th><th>kg당</th><th>링크</th><th style="width:70px"></th></tr></thead><tbody>
-    ${list.flatMap(f => f.prices.length
-      ? f.prices.map((p,pi)=>`<tr>
-          <td><div class="t-main">${esc(f.name)}</div><div class="t-sub">${esc(f.brand)}</div></td>
-          <td><span class="tag mute">${SHOP_KO[p.shop]||p.shop}</span></td>
-          <td>${p.wg?fmtG(p.wg):'—'}</td>
-          <td><b>${p.price?p.price.toLocaleString()+'원':'—'}</b></td>
-          <td style="color:var(--sub)">${p.pKg?Math.round(p.pKg).toLocaleString()+'원':'—'}</td>
-          <td>${p.url?`<span class="tag good">연결됨</span>`:`<span class="tag warn">없음</span>`}</td>
-          <td><button class="btn sm" onclick="editPrices('${f.id}')">수정</button></td>
-        </tr>`)
-      : [`<tr><td><div class="t-main">${esc(f.name)}</div><div class="t-sub">${esc(f.brand)}</div></td>
-          <td colspan="5"><span class="tag warn">가격 미등록</span></td>
-          <td><button class="btn sm pri" onclick="editPrices('${f.id}')">등록</button></td></tr>`]
-    ).join('')}</tbody></table>`:`<div class="empty">조건에 맞는 사료가 없어요</div>`}
-  </div>`;
-}
-function editPrices(id){ wF=store.foodById(id); wStep=5; el('pgTitle').textContent='사료 수정'; page='wizard'; renderNav(); renderWizard(); }
 
 /* ═══ 콘텐츠 ═══ */
 function pgArticle(){
@@ -943,8 +519,8 @@ function openExport(){
   const artPub=store.articles.filter(a=>a.status==='published').length;
   showModal(`<div class="modal">
     <div class="modal-h"><b>${ico('package',17)}데이터 내보내기</b>
-      <p>수정한 내용을 앱이 읽는 파일로 내려받아요. 받은 파일을 <code>balsatang/</code> 폴더에
-         덮어쓰고 커밋하면 사이트에 반영됩니다.</p></div>
+      <p>콘텐츠(articles.js)만 파일로 내려받습니다. 사료는 내려받을 필요가 없어요 —
+         사료 관리 화면이 GitHub 에 바로 커밋합니다.</p></div>
     <div class="card" style="background:var(--panel2);margin-bottom:14px">
       <div style="font-size:12px;line-height:2">
         발행 사료 <b>${pub}종</b>${draft?` <span style="color:var(--muted)">(임시저장 ${draft}종은 제외)</span>`:''}<br>
@@ -975,7 +551,7 @@ function dl(name){
      status·srcState·funcStrength·price.buyUrl 을 모르는 옛 형태로 쓴다.
      그 파일로 덮으면 구매 링크가 전부 사라지고 사이트가 깨진다.
      사료는 foods.html 이 고치고 커밋한다. */
-  if(name==='data.js'){ toast('사료는 사료 관리(GitHub) 화면에서 고쳐주세요'); return; }
+  if(name==='data.js'){ toast('사료는 사료 관리 화면에서 고치면 바로 반영돼요'); return; }
   const text = store.exportArticlesJs();
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([text],{type:'text/javascript'}));

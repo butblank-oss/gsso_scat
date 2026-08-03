@@ -19,7 +19,8 @@ const root = path.resolve(here, '../..');
 const SUITES = [
   ['front.mjs', '소비자 · 프론트'],
   ['foods.mjs', '운영자 · 사료 관리'],
-  ['admin.mjs', '운영자 · 예전 어드민'],
+  ['admin.mjs', '운영자 · 통합 어드민'],
+  ['hangul.mjs', '한글 입력'],
   ['review.mjs', '심사자 · 발행 심사']
 ];
 
