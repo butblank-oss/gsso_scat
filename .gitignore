@@ -33,8 +33,9 @@ warnings.log
 # 검증용 스크린샷 — 리포지터리에 남기지 않는다
 /.*.png
 
-# npm
+# npm — 슬래시만 쓰면 심링크로 붙여 둔 경우를 못 잡는다
 node_modules/
+node_modules
 
 # 심사 데이터 로컬 산출물 — 배포본은 review.json 만 커밋한다
 data/staging/_review.json
