@@ -154,8 +154,10 @@ function pgFoods(){
   <div style="background:#16233D;border:1px solid #23386b;border-radius:8px;padding:12px 14px;
               margin-bottom:14px;font-size:12.5px;color:#9DBBF5;line-height:1.65;
               display:flex;align-items:center;gap:12px">
-    <div style="flex:1">이 화면의 수정은 브라우저에만 남고, 파일로 내려받아 직접 올려야 반영돼요.
-      <b>발행된 데이터를 바로 고치려면</b> 사료 관리(GitHub) 화면을 쓰세요 — 고친 내용이 저장소에 커밋돼요.</div>
+    <div style="flex:1">이 화면은 처음 열었을 때의 데이터를 브라우저에 복사해두고 그것만 보여줘요.
+      그래서 <b>사료 관리(GitHub)에서 커밋한 내용이 여기엔 안 보여요.</b>
+      여기서 고친 것도 브라우저에만 남고, 파일로 내려받아 직접 올려야 반영돼요.</div>
+    <button class="btn" onclick="reloadFromFile()" style="flex-shrink:0">최신 데이터 불러오기</button>
     <a href="foods.html" style="flex-shrink:0;height:32px;padding:0 13px;border-radius:8px;background:#2F6FED;
        color:#fff;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center">사료 관리 열기</a>
   </div>
@@ -241,6 +243,17 @@ function wFoot(last){
   </div>`;
 }
 function wSave(){ save(); toast('임시저장했어요'); }
+
+/* 이 어드민은 data.js 를 처음 한 번만 읽고 그 뒤로는 브라우저에 복사해둔 초안만 본다.
+   그래서 사료 관리(GitHub) 화면에서 커밋한 내용이 여기엔 나타나지 않는다.
+   이 버튼이 그 초안을 버리고 지금 파일의 값으로 다시 채운다. */
+function reloadFromFile(){
+  if(store.dirty && !confirm('이 화면에서 고친 내용은 사라지고, 파일에 있는 최신 값으로 다시 채워요. 계속할까요?')) return;
+  store.discard();
+  markDirty();
+  pgFoods();
+  toast('최신 데이터로 다시 불러왔어요');
+}
 function wPublish(){
   if(!wF.brand || !wF.name){ toast('브랜드와 사료명은 필수예요'); wGo(1); return; }
   wF.status='published'; wF.ico=BS.deriveIco(wF); save(); toast('발행했어요'); go('foods');
