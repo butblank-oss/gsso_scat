@@ -1,0 +1,1205 @@
+/* 발사탕 — 화면 로직.
+
+   데이터(data.js)와 계산은 그대로 두고 UI 만 새 디자인으로 옮긴 것이다.
+
+   ⚠ 제품 종합 점수(f.score)는 화면에 렌더링하지 않는다.
+     정렬·추천 가중치로만 쓴다. 별점(f.ratings)은 사람이 판단하는 재료라 남긴다.
+     이유는 docs/DATA-POLICY 와 디자인 핸드오프 NOTES.md 참고.
+*/
+
+/* ═══ 짧은 도우미 ═══ */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const won = n => Math.round(n).toLocaleString('ko-KR');
+const gLabel = g => g >= 1000 ? (Math.round(g / 100) / 10) + 'kg' : g + 'g';
+const icon = (k, size = 20, cls = '') =>
+  `<span class="i ${cls}" style="width:${size}px;height:${size}px"><svg viewBox="0 0 24 24">${ICONS[k] || ''}</svg></span>`;
+
+/* 받침에 따라 조사를 고른다. '오리젠은/램은' 처럼 어색해지는 걸 막는다. */
+function josa(word, withJong, withoutJong) {
+  const ch = String(word ?? '').trim().slice(-1).charCodeAt(0);
+  const has = ch >= 0xAC00 && ch <= 0xD7A3 ? (ch - 0xAC00) % 28 !== 0 : true;
+  return has ? withJong : withoutJong;
+}
+
+/* ═══ 사료 상태 ═══
+   세 가지를 확실히 구분한다. 배지를 숨기면 '확인했고 없음' 과 '아직 확인 안 함' 이 섞인다. */
+function analysisState(f) {
+  const d = DETAIL[f.id];
+  return (d && (d.ingr || []).length) ? 'analyzed' : 'pending';
+}
+function cautionState(f) {
+  if (analysisState(f) === 'pending') return { k: 'pending', n: 0, label: '분석 준비 중' };
+  const n = f.warnN ?? 0;
+  return n > 0
+    ? { k: 'has', n, label: `주의성분 ${n >= 3 ? '3종+' : n + '종'}` }
+    : { k: 'none', n: 0, label: '주의성분 없음' };
+}
+function cautionBadge(f) {
+  const s = cautionState(f);
+  const mark = s.k === 'none' ? `<span class="dot">${icon('check', 9)}</span>`
+    : s.k === 'has' ? `<span class="dot">!</span>` : `<span class="dot"></span>`;
+  return `<span class="cbadge ${s.k}">${mark}${s.label}</span>`;
+}
+function cautionTag(f) {
+  const s = cautionState(f);
+  return `<span class="tag ${s.k === 'none' ? 'safe' : s.k === 'has' ? 'caution' : 'pending'}">${s.label}</span>`;
+}
+
+/* ═══ 성분 사실 태그 ═══
+   판단이 아니라 라벨에 적힌 사실만 태그로 만든다. */
+const GRAIN_WORDS = /옥수수|밀|소맥|대두|보리|귀리|쌀|현미|곡류|글루텐|콘그릿츠/;
+function foodTags(f) {
+  const d = DETAIL[f.id] || {};
+  const n = d.nutrient || {};
+  const out = [];
+  const names = (d.ingr || []).map(i => i.name);
+  if (names.length && !names.some(x => GRAIN_WORDS.test(x))) out.push('그레인프리');
+  if (n.protein >= 30) out.push(`조단백 ${n.protein}%`);
+  const first = (d.ingr || [])[0];
+  if (first && ['meat', 'fish', 'organ'].includes(first.cat)) {
+    out.push(`첫 원료 ${first.name.replace(/\s*\(.*$/, '').slice(0, 10)}`);
+  }
+  if (f.sizes?.includes('small')) out.push('소형견');
+  if (f.rx) out.push('처방식');
+  return out.slice(0, 3);
+}
+function tagRow(f) {
+  return `<div class="tags">${cautionTag(f)}${foodTags(f).slice(0, 2)
+    .map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>`;
+}
+
+/* ═══ 제품 이미지 웰 ═══ */
+function well(f, size) {
+  const pend = analysisState(f) === 'pending';
+  const src = /^https?:/.test(f.thumb || '') ? f.thumb : null;
+  const initial = `<span class="initial" style="font-size:${Math.round(size / 3)}px">${esc((f.brand || '?')[0])}</span>`;
+  /* 이미지가 안 뜨면 빈 칸이 남는다. 브랜드 이니셜로 바꿔 자리를 지킨다. */
+  const inner = src
+    ? `<img src="${esc(src)}" alt="" loading="lazy" onerror="this.parentNode.innerHTML=this.dataset.fb" data-fb="${esc(initial)}">`
+    : initial;
+  return `<div class="well well-${size}${pend ? ' pending' : ''}">${inner}</div>`;
+}
+
+/* ═══ 가격 ═══ */
+function per100g(f) {
+  if (!f.price?.pKg) return null;
+  return Math.round(f.price.pKg / 10);
+}
+function buyUrlOf(f) {
+  if (f.price?.buyUrl) return f.price.buyUrl;
+  const r = (f.src?.sources || []).find(s => s.role === 'retail');
+  return r ? r.url : null;
+}
+
+/* ═══ 칼로리 ═══ */
+function kcalPerKg(f) {
+  const n = (DETAIL[f.id] || {}).nutrient || {};
+  if (n.calKg) return { v: n.calKg, est: false };
+  const v = Math.round(((n.protein || 0) * 3.5 + (n.fat || 0) * 8.5 + (n.carb || 0) * 3.5) * 10);
+  return { v: v > 0 ? v : 3600, est: true };
+}
+
+/* ═══ 검색 ═══ */
+const SEARCH_SYNONYM = [
+  { tags: ['eye_tear'], words: ['눈물', '눈물자국', '눈물착색', '착색', '피부', '피모', '털', '가려움', '아토피', '눈곱'] },
+  { tags: ['weight'], words: ['다이어트', '체중', '비만', '살', '감량', '뚱뚱', '체중관리', '저칼로리', '칼로리'] },
+  { tags: ['kidney'], words: ['신장', '콩팥', '신부전', '요로', '방광', '결석', '유리너리'] },
+  { tags: ['liver'], words: ['간', '간수치', '간질환', '헤파틱', '담낭'] },
+  { tags: ['joint'], words: ['관절', '슬개골', '고관절', '다리', '절뚝', '연골', '관절염'] },
+  { tags: ['digestive'], words: ['소화', '장', '설사', '무른변', '구토', '위장', '장염', '변'] },
+  { tags: ['allergy'], words: ['알러지', '알레르기', '두드러기', '가수분해', '단일단백', '저알러지'] },
+  { tags: ['picky_eater'], words: ['입맛', '편식', '안먹', '기호성', '까다', '잘안먹'] },
+  { tags: ['senior'], words: ['시니어', '노견', '노령', '늙은', '고령', '노화'] },
+  { tags: ['post_surgery'], words: ['수술', '회복', '병후', '요양', '아픈'] },
+  { tags: ['healthy'], words: ['건강', '일반', '평범', '유지'] },
+  { tags: ['heart'], words: ['심장', '심장병', '심부전'] },
+  { tags: ['immune'], words: ['면역', '면역력', '기력', '활력'] },
+  { tags: ['dental'], words: ['치아', '이빨', '구강', '치석', '입냄새'] },
+  { tags: ['skin'], words: ['피부병', '습진', '각질'] }
+];
+/* 한 글자 단어는 정확히 일치할 때만 인정한다 — '신장' 안의 '장'이 소화 태그를 끌어오지 않게. */
+const wordHit = (n, w) => w.length <= 1 ? n === w : n.includes(w);
+function synonymTags(q) {
+  const n = q.replace(/\s/g, '');
+  if (!n) return [];
+  const out = new Set();
+  for (const g of SEARCH_SYNONYM) if (g.words.some(w => wordHit(n, w))) g.tags.forEach(t => out.add(t));
+  return [...out];
+}
+
+const state = {
+  tab: 'home',
+  query: '',
+  filters: new Set(),
+  sort: 'recommend',            /* recommend | priceAsc | recent — 품질 점수 정렬은 없다 */
+  compare: [],                  /* 최대 2, 탭을 옮겨도 유지 */
+  pet: null,
+  feeding: { weightKg: 5, meals: 2, bagG: 0 },
+  recent: [],
+  detailId: null,
+  detailTab: 'nutrition',
+  wizard: { step: 0, data: {} }
+};
+
+/* ═══ 저장 ═══ */
+const LS = 'balsatang.v2';
+function save() {
+  try {
+    localStorage.setItem(LS, JSON.stringify({
+      pet: state.pet, feeding: state.feeding, compare: state.compare, recent: state.recent.slice(0, 12)
+    }));
+  } catch { }
+}
+function load() {
+  try {
+    const j = JSON.parse(localStorage.getItem(LS) || '{}');
+    Object.assign(state, {
+      pet: j.pet ?? null,
+      feeding: j.feeding ?? state.feeding,
+      compare: (j.compare ?? []).filter(id => FOODS.some(f => f.id === id)).slice(0, 2),
+      recent: (j.recent ?? []).filter(id => FOODS.some(f => f.id === id))
+    });
+  } catch { }
+}
+
+/* ═══ 검색·필터·정렬 ═══ */
+function matchQuery(f, q) {
+  if (!q) return true;
+  const hay = `${f.brand} ${f.name}`.toLowerCase().replace(/\s/g, '');
+  const nq = q.toLowerCase().replace(/\s/g, '');
+  if (hay.includes(nq)) return true;
+  const tags = synonymTags(q);
+  return tags.length > 0 && tags.some(t => (f.func || []).includes(t) || (f.concerns || []).includes(t));
+}
+const FILTERS = {
+  noCaution: { label: '주의성분 없음', test: f => cautionState(f).k === 'none' },
+  grainFree: { label: '그레인프리', test: f => foodTags(f).includes('그레인프리') },
+  small: { label: '소형견', test: f => (f.sizes || []).some(s => s === 'small' || s === 'all') }
+};
+function searchResults() {
+  let list = FOODS.filter(f => matchQuery(f, state.query));
+  for (const k of state.filters) list = list.filter(FILTERS[k].test);
+  const s = state.sort;
+  /* '많이 찾는 순'은 조회수가 있어야 한다. 아직 없으므로 라벨을 '발사탕 추천순'으로 두고
+     내부 score 로 정렬한다. 없는 데이터를 있는 것처럼 말하지 않는다. */
+  if (s === 'priceAsc') list.sort((a, b) => (a.price?.pKg ?? 9e9) - (b.price?.pKg ?? 9e9));
+  else if (s === 'recent') list = list.slice().reverse();
+  else list.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+  return list;
+}
+const SORT_LABEL = { recommend: '발사탕 추천순', priceAsc: '가격 낮은 순', recent: '최근 분석 순' };
+const AGE_KO = { all: '전연령', puppy: '퍼피', adult: '성견', senior: '시니어' };
+const ageLabel = f => (f.ages || []).map(a => AGE_KO[a] || a).join('·') || '전연령';
+
+/* ═══ 토스트 ═══ */
+let toastTimer;
+function toast(msg, action) {
+  const el = $('#toast');
+  el.innerHTML = `<span>${esc(msg)}</span>` +
+    (action ? `<button data-toast-act>${esc(action.label)}</button>` : '');
+  if (action) $('[data-toast-act]', el).onclick = () => { el.classList.remove('on'); action.run(); };
+  el.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('on'), 2400);
+}
+
+/* ═══ 비교함 ═══ */
+function addCompare(id) {
+  if (state.compare.includes(id)) { toast('이미 담긴 사료예요'); return; }
+  if (state.compare.length >= 2) {
+    toast('두 개까지 담을 수 있어요', { label: '바꾸기', run: () => { state.compare = [state.compare[1], id]; save(); render(); } });
+    return;
+  }
+  state.compare.push(id); save(); render();
+  toast('비교함에 담았어요', { label: '보기', run: () => go('compare') });
+}
+
+/* ═══ 서버가 붙을 자리 ═══
+   분석 요청·알림 신청은 접수할 서버가 아직 없다. 지금은 폼으로 보내고,
+   백엔드가 생기면 이 함수 안만 fetch 로 바꾸면 화면은 건드릴 필요가 없다. */
+const REQUEST_FORM = null;   /* 예: 'https://docs.google.com/forms/d/e/…/viewform?usp=pp_url&entry.1=' */
+function submitRequest(type, payload) {
+  if (REQUEST_FORM) {
+    window.open(REQUEST_FORM + encodeURIComponent(`[${type}] ${JSON.stringify(payload)}`), '_blank', 'noopener');
+    return;
+  }
+  toast('접수 창구를 준비 중이에요');
+}
+
+/* ═══ 화면 이동 ═══ */
+const TABS = ['home', 'compare', 'content', 'custom'];
+function go(screen, opt = {}) {
+  if (screen === 'detail' && opt.id) {
+    state.detailId = opt.id;
+    state.detailTab = opt.tab || 'nutrition';
+    state.recent = [opt.id, ...state.recent.filter(x => x !== opt.id)].slice(0, 12);
+    save();
+  }
+  if (TABS.includes(screen)) state.tab = screen;
+  state.screen = screen;
+  render();
+  window.scrollTo(0, 0);
+  history.pushState({ screen, ...opt }, '');
+}
+window.addEventListener('popstate', e => {
+  const s = e.state?.screen;
+  if (!s) { state.screen = state.tab = 'home'; }
+  else { state.screen = s; if (s === 'detail') state.detailId = e.state.id ?? state.detailId; if (TABS.includes(s)) state.tab = s; }
+  render();
+});
+
+/* ═══════════════════════════════════════════════════════
+   01 홈
+   ═══════════════════════════════════════════════════════ */
+const CONCERNS = [
+  { key: 'skin', label: '피부·알러지', ico: 'droplet', tags: ['skin', 'allergy', 'eye_tear'] },
+  { key: 'weight', label: '체중 관리', ico: 'scale', tags: ['weight'] },
+  { key: 'joint', label: '관절', ico: 'bone', tags: ['joint'] },
+  { key: 'gut', label: '장·소화', ico: 'soup', tags: ['digestive'] },
+  { key: 'tear', label: '눈물자국', ico: 'eye', tags: ['eye_tear'] },
+  { key: 'picky', label: '잘 안 먹어요', ico: 'utensils', tags: ['picky_eater'] },
+  { key: 'senior', label: '노령견 케어', ico: 'heartPulse', tags: ['senior'] },
+  { key: 'rx', label: '처방식', ico: 'cross', tags: [] }
+];
+
+function homeCard(f) {
+  return `<button class="press" data-go-detail="${f.id}" style="width:168px;flex-shrink:0;text-align:left">
+    <div style="position:relative">${well(f, 168)}
+      <span style="position:absolute;top:9px;right:9px">${cautionBadge(f)}</span></div>
+    <div style="margin-top:11px;font-size:12px;font-weight:600;color:var(--ink40)">${esc(f.brand)}</div>
+    <div class="t-item" style="margin-top:2px">${esc(f.name)}</div>
+    <div class="t-caption c-sub" style="margin-top:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(foodTags(f)[0] || '분석 준비 중')}</div>
+  </button>`;
+}
+
+function renderHome() {
+  const analyzed = FOODS.filter(f => analysisState(f) === 'analyzed');
+  const fresh = analyzed.slice(-8).reverse();
+  const value = analyzed.filter(f => f.price?.pKg).sort((a, b) => a.price.pKg - b.price.pKg).slice(0, 4);
+  const popular = ['오리젠', '지위픽', '뉴트리나'];
+
+  return `
+  <div class="top">
+    <div class="logo">발<b>사탕</b></div>
+    <div style="flex:1"></div>
+    <div class="adfree">광고 0원 분석</div>
+  </div>
+
+  <div style="padding:26px var(--screenX) 0">
+    <h1 class="t-hero">우리 아이 사료,<br><span style="color:var(--purple700)">진짜</span> 괜찮을까?</h1>
+    <p class="t-body c-sub" style="margin-top:10px">성분표만 보고 솔직하게 분석해요.<br>광고비는 1원도 받지 않아요.</p>
+  </div>
+
+  <div style="padding:20px var(--screenX) 0">
+    <button class="searchbox press" data-go="search">
+      ${icon('search', 20)}<span style="flex:1">사료 이름을 검색해보세요</span>
+    </button>
+  </div>
+
+  <div class="chiprow" style="margin-top:12px">
+    ${popular.map(p => `<button class="chip press" data-search="${esc(p)}">${esc(p)}</button>`).join('')}
+  </div>
+
+  <div style="padding:26px var(--screenX) 0">
+    <button class="card dark press" data-go="custom" style="width:100%;text-align:left;display:flex;align-items:center;gap:14px;padding:20px">
+      <div style="flex:1;min-width:0">
+        <div class="t-tag" style="color:var(--purple300)">맞춤 추천</div>
+        <div style="margin-top:7px;font-size:19px;font-weight:800;letter-spacing:-.035em;line-height:1.36">몸무게·나이·고민만<br>알려주시면 돼요</div>
+        <span style="display:inline-flex;align-items:center;gap:4px;margin-top:13px;height:32px;padding:0 14px;border-radius:999px;background:#fff;color:var(--purple900);font-size:13px;font-weight:700">1분이면 끝나요 ›</span>
+      </div>
+      <div style="width:76px;height:76px;border-radius:var(--rThumbLg);background:#4A0A66;display:grid;place-items:center;color:var(--purple300);font-size:11px;font-weight:700;text-align:center;line-height:1.4">우리아이<br>사진</div>
+    </button>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2 class="t-section">고민별로 찾기</h2></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      ${CONCERNS.map(c => `<button class="press" data-concern="${c.key}" style="display:flex;align-items:center;gap:10px;height:62px;padding:0 13px;border-radius:var(--rInput);background:var(--surface);text-align:left">
+        <span style="width:34px;height:34px;border-radius:11px;background:#fff;display:grid;place-items:center;color:var(--purple700);flex-shrink:0">${icon(c.ico, 21)}</span>
+        <span style="font-size:15px;font-weight:700;letter-spacing:-.03em">${c.label}</span>
+      </button>`).join('')}
+    </div>
+  </div>
+
+  <div class="sec lg">
+    <div class="sec-h"><h2 class="t-section">이번 주 새로 분석한 사료</h2>
+      <button class="sec-more" data-go="search">전체보기</button></div>
+    <div style="display:flex;gap:14px;overflow-x:auto;margin:0 calc(var(--screenX) * -1);padding:0 var(--screenX)">
+      ${fresh.map(homeCard).join('')}
+    </div>
+  </div>
+
+  <div class="sec lg">
+    <div class="sec-h"><h2 class="t-section">가성비 좋은 사료</h2></div>
+    ${value.map(f => `<button class="row press" data-go-detail="${f.id}">
+      ${well(f, 56)}
+      <span class="row-b">
+        <span class="row-brand">${esc(f.brand)}</span>
+        <span class="row-name" style="display:block">${esc(f.name)}</span>
+        <span class="row-meta">100g당 ${won(per100g(f))}원 · ${cautionState(f).label}</span>
+      </span>
+      ${icon('chevronRight', 16, 'chev')}
+    </button>`).join('')}
+  </div>
+
+  <p class="note">모든 분석은 라벨 표기 성분 기준의 참고용이에요.
+건강 문제는 수의사와 상담해주세요.</p>`;
+}
+
+/* ═══════════════════════════════════════════════════════
+   02 검색 결과
+   ═══════════════════════════════════════════════════════ */
+function renderSearch() {
+  const list = searchResults();
+  const allCount = FOODS.filter(f => matchQuery(f, state.query)).length;
+  const picked = state.compare.length;
+
+  const chips = [
+    `<button class="chip press${state.filters.size === 0 ? ' on' : ''}" data-filter="">전체<em>${allCount}</em></button>`,
+    ...Object.entries(FILTERS).map(([k, v]) =>
+      `<button class="chip press${state.filters.has(k) ? ' on' : ''}" data-filter="${k}">${v.label}</button>`)
+  ].join('');
+
+  const body = list.length ? list.map(f => `
+    <button class="row press" data-go-detail="${f.id}" style="align-items:flex-start">
+      ${well(f, 82)}
+      <span class="row-b">
+        <span class="row-brand">${esc(f.brand)}<i></i>${esc(ageLabel(f))}</span>
+        <span class="row-name" style="display:block">${esc(f.name)}</span>
+        ${tagRow(f)}
+        <span class="row-meta" style="display:block;margin-top:6px">${esc(searchSummary(f))}</span>
+      </span>
+    </button>`).join('') : renderEmptySearch();
+
+  return `
+  <div class="top icons">
+    <button class="iconbtn press" data-back>${icon('chevronRight', 24, 'ui')}</button>
+    <div class="searchbox sm" style="flex:1">
+      ${icon('search', 18)}
+      <input id="q" value="${esc(state.query)}" placeholder="사료 이름을 검색해보세요" autocomplete="off">
+    </div>
+  </div>
+  <div class="chiprow" style="margin-top:14px">${chips}</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:20px var(--screenX) 6px">
+    <div class="t-caption c-sub"><b style="color:var(--ink);font-size:15px;font-weight:800">${list.length}개</b>의 사료</div>
+    <button class="t-caption c-sub press" data-sort style="display:flex;align-items:center;gap:3px">
+      ${SORT_LABEL[state.sort]} ${icon('chevronRight', 14)}
+    </button>
+  </div>
+  <div style="padding:0 var(--screenX)">${body}</div>
+  ${picked ? `<div class="dock"><button class="btn dark press" data-go="compare">선택한 ${picked}개 비교하기</button></div>` : ''}
+  `;
+}
+
+/* 사실 서술만. 판단하지 않는다. */
+function searchSummary(f) {
+  const d = DETAIL[f.id] || {}, n = d.nutrient || {};
+  const bits = [];
+  const first = (d.ingr || [])[0];
+  if (first) bits.push(`첫 원료가 ${first.name}`);
+  if (n.protein) bits.push(`조단백 ${n.protein}%`);
+  if (!bits.length && f.price?.pKg) bits.push(`100g당 ${won(per100g(f))}원`);
+  if (!bits.length) return '원료표를 확보하는 중이에요';
+  return bits.join(' · ');
+}
+
+/* E1 — 검색 결과 없음 */
+function renderEmptySearch() {
+  const q = state.query.trim();
+  const near = FOODS.filter(f => analysisState(f) === 'analyzed').slice(0, 3);
+  return `<div class="empty">
+    <div class="orb">${icon('search', 38)}</div>
+    <h2>${q ? `'${esc(q)}'${josa(q, '은', '는')}\n아직 분석하지 못했어요` : '조건을 다 만족하는\n사료가 없어요'}</h2>
+    <p>원료표를 구하는 대로 올려드릴게요.
+요청하시면 우선순위로 올라가요.</p>
+    <div class="acts">
+      <button class="btn pri press" data-request="analysis">이 사료 분석 요청하기</button>
+      <button class="btn ghost press" data-clear-search>다른 이름으로 검색</button>
+    </div>
+    ${near.length ? `<div style="width:100%;margin-top:30px;text-align:left">
+      <div class="t-sub" style="margin-bottom:10px">혹시 이걸 찾으셨나요?</div>
+      ${near.map(f => `<button class="row press" data-go-detail="${f.id}">
+        ${well(f, 44)}<span class="row-b"><span class="row-name" style="display:block">${esc(f.brand)} ${esc(f.name)}</span></span>
+        ${icon('chevronRight', 16, 'chev')}</button>`).join('')}
+    </div>` : ''}
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════
+   03 / 07 사료 상세 — 성분 분석 · 급여량·가격
+   ═══════════════════════════════════════════════════════ */
+const RATING_LABEL = { quality: '원료 품질', carb: '탄수화물', additive: '주의성분', value: '가성비' };
+
+function renderDetail() {
+  const f = FOODS.find(x => x.id === state.detailId);
+  if (!f) return renderHome();
+  const pend = analysisState(f) === 'pending';
+  const s = cautionState(f);
+  const d = DETAIL[f.id] || {};
+  const attrs = [
+    foodTags(f)[0], f.type === 'dry' ? '건식' : f.type,
+    f.price?.pKg ? `${won(per100g(f))}원/100g` : null
+  ].filter(Boolean);
+
+  return `
+  <div style="background:${pend ? 'var(--ink70)' : 'var(--purple900)'};color:#fff;padding:14px 18px 30px">
+    <div style="display:flex;align-items:center">
+      <button class="iconbtn press" data-back style="color:#fff">${icon('chevronRight', 24, 'ui')}</button>
+      <div style="flex:1"></div>
+      <button class="iconbtn press" style="color:#fff" data-share>${icon('refresh', 22, 'ui')}</button>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:14px;margin-top:10px;padding:0 4px">
+      ${well(f, 64)}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;color:var(--purple300)">${esc(f.brand)} · ${esc(ageLabel(f))}</div>
+        <h1 class="t-product" style="margin-top:4px">${esc(f.name)}</h1>
+      </div>
+      <div class="cbadge-lg ${s.k}">${s.k === 'none' ? icon('check', 22) : s.k === 'has' ? '!' : '·'}</div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:14px;padding:0 4px">
+      ${attrs.map(a => `<span style="height:26px;padding:0 10px;border-radius:999px;background:rgba(255,255,255,.14);color:#fff;font-size:12px;font-weight:700;display:inline-flex;align-items:center">${esc(a)}</span>`).join('')}
+    </div>
+  </div>
+
+  <div style="margin-top:-18px;border-radius:var(--rSheet) var(--rSheet) 0 0;background:#fff;position:relative;z-index:1;min-height:60dvh">
+    <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:var(--divider)">
+      ${[['nutrition', '성분 분석'], ['feeding', '급여량 · 가격']].map(([k, l]) => `
+        <button class="press" data-dtab="${k}" style="height:52px;font-size:15px;font-weight:${state.detailTab === k ? 800 : 600};color:${state.detailTab === k ? 'var(--ink)' : 'var(--ink35)'};box-shadow:${state.detailTab === k ? 'inset 0 -2.5px 0 var(--purple700)' : 'none'};transition:box-shadow .22s ease-out">${l}</button>`).join('')}
+    </div>
+    ${pend ? renderPending(f) : state.detailTab === 'nutrition' ? renderNutritionTab(f, d) : renderFeedingTab(f, d)}
+  </div>
+
+  ${pend ? '' : `<div class="dock">
+    <button class="btn ghost icon press" data-add-compare="${f.id}">${icon('compare', 18)}비교 담기</button>
+    <button class="btn pri press" data-dtab="${state.detailTab === 'nutrition' ? 'feeding' : 'nutrition'}">${state.detailTab === 'nutrition' ? '급여량 · 가격 보기' : '성분 분석 보기'}</button>
+  </div>`}`;
+}
+
+/* E7 — 분석 준비 중 */
+function renderPending(f) {
+  return `<div style="padding:8px var(--screenX) 40px">
+    <div class="empty" style="padding:34px 8px 24px">
+      <div class="orb neutral">${icon('package', 38)}</div>
+      <h2>아직 원료표를\n확보하지 못했어요</h2>
+      <p>확실하지 않은 정보로 판단하면
+안 하느니만 못하다고 생각해요.
+제조사에 자료를 요청해둔 상태예요.</p>
+    </div>
+    <div class="t-sub" style="margin-top:6px">지금 알 수 있는 것</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px">
+      ${[['분류', f.type === 'dry' ? '일반식 · 건식' : f.type], ['원산지', COUNTRY_KO[f.country] || f.country],
+       ['가격', f.price?.p ? `${won(f.price.p)}원 / ${gLabel(f.price.wg)}` : '확인 전'],
+       ['성분', '확인 전']].map(([k, v]) => `
+        <div style="border-radius:var(--rThumbMd);background:var(--surface);padding:13px 14px">
+          <div class="t-micro c-mute">${k}</div>
+          <div style="margin-top:4px;font-size:15px;font-weight:700;letter-spacing:-.03em">${esc(v)}</div>
+        </div>`).join('')}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:9px;margin-top:24px">
+      <button class="btn pri press" data-request="notify">분석되면 알림 받기</button>
+      <button class="btn ghost press" data-go="search">비슷한 사료 보기</button>
+    </div>
+  </div>`;
+}
+
+/* 03 성분 분석 */
+function renderNutritionTab(f, d) {
+  const v = d.verdict || {};
+  const cards = [
+    ...(v.pos || []).map(x => ['pos', x]),
+    ...(v.cau || []).map(x => ['cau', x]),
+    ...(v.dan || []).map(x => ['cau', x])   /* 빨강 금지 — 위험도 앰버로 */
+  ].slice(0, 5);
+  const n = d.nutrient || {};
+  const NUT = [['protein', '조단백', 45], ['fat', '조지방', 30], ['fiber', '조섬유', 12], ['moisture', '수분', 20]];
+  const ingr = (d.ingr || []).slice().sort((a, b) => (a.rank || 99) - (b.rank || 99));
+  const feed = feedingNumbers(f);
+
+  return `<div style="padding:22px var(--screenX) 40px">
+    ${cards.length ? `<h2 class="t-section">이 사료를 이렇게 봤어요</h2>
+    <div style="margin-top:13px">${cards.map(([k, c]) => `
+      <div class="reason ${k}">${icon(k === 'pos' ? 'check' : 'alert', 18)}
+        <div style="flex:1;min-width:0"><b>${esc(c.title)}</b><p>${esc(c.body)}</p></div></div>`).join('')}</div>` : ''}
+
+    <h2 class="t-section" style="margin-top:${cards.length ? 30 : 0}px">영양 성분</h2>
+    <div style="margin-top:14px">${NUT.map(([k, label, max]) => {
+      const val = n[k];
+      return `<div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:600;letter-spacing:-.02em">
+          <span class="c-sub">${label}</span><b style="font-weight:800">${val != null ? val + '%' : '표기 없음'}</b></div>
+        <div style="height:6px;border-radius:99px;background:var(--lineSoft);margin-top:7px;overflow:hidden">
+          <div style="height:100%;border-radius:99px;background:var(--purple700);width:${val != null ? Math.min(100, val / max * 100) : 0}%;transition:width .6s ease-out"></div></div>
+      </div>`;
+    }).join('')}</div>
+
+    ${ingr.length ? `<div style="display:flex;align-items:center;justify-content:space-between;margin-top:30px">
+      <h2 class="t-section">원료 전체</h2>
+      <button class="sec-more press" data-ingr-sheet>${ingr.length}개 모두 보기</button></div>
+    <p class="t-bodySm c-sub" style="margin-top:10px;line-height:1.75">${ingr.slice(0, 10).map(i => esc(i.name)).join(', ')}${ingr.length > 10 ? '…' : ''}</p>` : ''}
+
+    ${ratingCards(f)}
+
+    <div class="card soft" style="margin-top:30px;border-radius:var(--rCard);padding:18px">
+      <div class="t-caption c-sub">우리 아이 기준 급여량</div>
+      <div style="display:flex;align-items:baseline;gap:7px;margin-top:6px">
+        <span style="font-size:32px;font-weight:800;letter-spacing:-.04em;color:var(--purple700)">${feed.daily}g</span>
+        <span class="t-caption c-sub">/ 하루 (${state.feeding.weightKg}kg 기준)</span>
+      </div>
+      <div class="t-caption c-mute" style="margin-top:6px">${feed.bagLabel}</div>
+    </div>
+
+    <p class="note" style="padding:0">모든 분석은 라벨 표기 성분 기준의 참고용이에요.
+건강 문제는 수의사와 상담해주세요.</p>
+  </div>`;
+}
+
+/* 별점 4카드 — 종합 점수는 노출하지 않지만 항목별 판단 재료는 남긴다 */
+function ratingCards(f) {
+  const r = f.ratings;
+  if (!r) return '';
+  const dot = v => [1, 2, 3, 4, 5].map(i =>
+    `<span style="width:7px;height:7px;border-radius:50%;background:${i <= v ? 'var(--purple700)' : 'var(--lineSoft)'};display:inline-block"></span>`).join('');
+  return `<h2 class="t-section" style="margin-top:30px">항목별로 보면</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px">
+    ${Object.entries(RATING_LABEL).map(([k, label]) => r[k] == null ? '' : `
+      <div style="border-radius:var(--rThumbMd);background:var(--surface);padding:13px 14px">
+        <div class="t-micro c-mute">${label}</div>
+        <div style="display:flex;gap:3px;margin-top:8px;align-items:center">${dot(r[k])}</div>
+      </div>`).join('')}
+  </div>`;
+}
+
+/* 급여량 계산 — 성견 유지 기준 RER×1.6 */
+function feedingNumbers(f) {
+  const w = Math.max(0.5, Math.min(90, Number(state.feeding.weightKg) || 5));
+  const meals = state.feeding.meals || 2;
+  const kcal = kcalPerKg(f);
+  const rer = 70 * Math.pow(w, 0.75);
+  const daily = Math.round(rer * 1.6 / kcal.v * 1000);
+  const bagG = state.feeding.bagG || f.price?.wg || 2000;
+  const days = daily > 0 ? Math.round(bagG / daily) : 0;
+  const monthCost = f.price?.pKg ? Math.round(daily * 30 / 1000 * f.price.pKg) : null;
+  return {
+    daily, perMeal: Math.round(daily / meals), days, bagG, kcal,
+    bagLabel: `${gLabel(bagG)} 한 봉지로 약 ${days}일` + (monthCost ? ` · 월 약 ${won(monthCost)}원` : '')
+  };
+}
+
+/* 07 급여량 · 가격 */
+function renderFeedingTab(f, d) {
+  const n = d.nutrient || {};
+  const feed = feedingNumbers(f);
+  const opts = (f.price?.wgOptions || [f.price?.wg]).filter(Boolean);
+  const prices = (d.prices && d.prices.length) ? d.prices
+    : (f.price?.p ? [{ wg: f.price.wg, shop: f.price.shop, price: f.price.p, pKg: f.price.pKg, url: buyUrlOf(f) }] : []);
+
+  return `<div style="padding:22px var(--screenX) 40px">
+    <h2 class="t-section">기본 정보</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px">
+      ${[['분류', (f.rx ? '처방식' : '일반식') + ' · ' + (f.type === 'dry' ? '건식' : f.type)],
+         ['원산지', COUNTRY_KO[f.country] || f.country],
+         ['단백질 / 지방', `${n.protein ?? '—'}% / ${n.fat ?? '—'}%`],
+         ['탄수화물 (추정)', n.dmCarb != null ? n.dmCarb + '%' : '—']].map(([k, v]) => `
+        <div style="border-radius:var(--rThumbMd);background:var(--surface);padding:13px 14px">
+          <div class="t-micro c-mute">${k}</div>
+          <div style="margin-top:4px;font-size:15px;font-weight:700;letter-spacing:-.03em">${esc(v)}</div>
+        </div>`).join('')}
+    </div>
+
+    <div class="card" style="margin-top:26px;border-radius:var(--rCardLg);padding:20px 18px">
+      <h2 class="t-sub">하루에 얼마나 줄까요?</h2>
+      <p class="t-caption c-cap" style="margin-top:4px">몸무게와 하루 끼니 수를 입력해주세요</p>
+
+      <div class="t-caption c-sub" style="margin-top:18px">우리 아이 몸무게</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:8px">
+        <div style="width:96px;height:52px;border-radius:14px;background:var(--surfaceInput);display:grid;place-items:center">
+          <input id="fw" type="number" inputmode="decimal" min="0.5" max="90" step="0.1" value="${state.feeding.weightKg}"
+            style="width:100%;text-align:center;font-size:22px;font-weight:800;letter-spacing:-.04em">
+        </div>
+        <span class="t-caption c-sub">kg</span>
+        <input id="fwr" type="range" min="1" max="40" step="0.5" value="${Math.min(40, state.feeding.weightKg)}" style="flex:1">
+      </div>
+
+      <div class="t-caption c-sub" style="margin-top:18px">하루 끼니 수</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:8px">
+        ${[1, 2, 3, 4].map(m => `<button class="press" data-meals="${m}" style="height:44px;border-radius:var(--rSegment);font-size:14px;font-weight:700;${state.feeding.meals === m ? 'background:var(--purple700);color:#fff' : 'box-shadow:var(--outline);color:var(--ink70)'}">${m}끼</button>`).join('')}
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;border-radius:var(--rInput);background:var(--surface);margin-top:16px;overflow:hidden">
+        <div style="padding:15px 10px;text-align:center;border-right:var(--divider)">
+          <div class="t-caption c-sub">하루 권장량</div>
+          <div style="font-size:26px;font-weight:800;letter-spacing:-.04em;color:var(--purple700);margin-top:3px">${feed.daily}g</div>
+        </div>
+        <div style="padding:15px 10px;text-align:center">
+          <div class="t-caption c-sub">1회 (하루 ${state.feeding.meals}끼)</div>
+          <div style="font-size:26px;font-weight:800;letter-spacing:-.04em;margin-top:3px">${feed.perMeal}g</div>
+        </div>
+      </div>
+
+      ${opts.length ? `<div class="t-caption c-sub" style="margin-top:18px">봉지 용량</div>
+      <div style="display:flex;gap:7px;margin-top:8px;flex-wrap:wrap">
+        ${opts.map(g => `<button class="press" data-bag="${g}" style="flex:1;min-width:88px;height:44px;border-radius:var(--rSegment);font-size:14px;font-weight:700;${feed.bagG === g ? 'background:var(--purple900);color:#fff' : 'box-shadow:var(--outline);color:var(--ink70)'}">${gLabel(g)}</button>`).join('')}
+      </div>` : ''}
+      <p class="t-caption c-sub" style="margin-top:12px">${gLabel(feed.bagG)} 한 봉지로 하루 ${state.feeding.meals}끼 급여 시 약 <b style="color:var(--ink);font-weight:800">${feed.days}</b>일</p>
+
+      <p class="t-micro" style="margin-top:14px;color:#A8A2B0;font-weight:500;line-height:1.6">성견 유지 기준(RER×1.6) 계산값이에요. 활동량·나이에 따라 달라져요.${feed.kcal.est ? `<br>이 사료는 칼로리 표기가 없어 영양성분으로 추정한 값(약 ${won(feed.kcal.v)}kcal/kg)을 썼어요.` : ''}</p>
+    </div>
+
+    <button class="card dark press" style="width:100%;margin-top:22px;display:flex;align-items:center;gap:12px;padding:18px;border-radius:var(--rCard);text-align:left" data-go="compare">
+      ${icon('compare', 20)}
+      <span style="flex:1"><b style="display:block;font-size:15px;font-weight:700">지금 먹는 사료와 비교하기</b>
+      <span style="font-size:12.5px;color:var(--purple300)">성분을 나란히 놓고 비교해드려요</span></span>
+      ${icon('chevronRight', 18)}
+    </button>
+
+    <h2 class="t-section" style="margin-top:30px">최저가 비교</h2>
+    <div style="margin-top:13px">
+      ${prices.length ? prices.map((p, i) => `
+        <div class="card" style="display:flex;align-items:center;gap:12px;padding:14px 16px;margin-bottom:9px">
+          <div style="flex:1;min-width:0">
+            <div class="t-micro c-mute">${esc(SHOP_KO[p.shop] || p.shop || '판매처')} · ${gLabel(p.wg)}</div>
+            <div style="margin-top:3px"><b style="font-size:18px;font-weight:800;letter-spacing:-.04em">${won(p.price)}원</b>
+              <span class="t-caption c-sub" style="margin-left:5px">(kg당 ${won(p.pKg)}원)</span></div>
+          </div>
+          ${p.url ? `<button class="press" data-buy="${esc(p.url)}" style="height:40px;padding:0 18px;border-radius:var(--rSegment);font-size:14px;font-weight:700;${i === 0 ? 'background:var(--purple700);color:#fff' : 'box-shadow:var(--outline);color:var(--ink70)'}">구매</button>`
+        : `<span class="t-caption c-cap">링크 준비 중</span>`}
+        </div>`).join('') : `<p class="t-bodySm c-sub">등록된 판매처 가격이 없어요.</p>`}
+    </div>
+    <p class="partners">이 페이지의 구매 링크는 쿠팡 파트너스 활동의 일환으로, 이에 따라 일정액의 수수료를 제공받습니다. 수수료는 발사탕의 성분 분석에 영향을 주지 않아요.</p>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════
+   08 / 09 비교 — A/B 구분 시스템
+   ═══════════════════════════════════════════════════════
+   브랜드가 아니라 A/B 로 부른다. 같은 브랜드끼리 비교하는 일이 흔해서
+   양쪽 라벨이 같아지면 표가 무용지물이 된다.
+   색만으로 구분하면 색각 이상 사용자가 못 읽으므로 A/B 문자를 항상 함께 둔다. */
+
+/* 두 이름에서 가장 짧은 구별어를 뽑는다. 사람이 실제로 그렇게 부른다 — '벤슨', '램'. */
+function abLabels(a, b) {
+  if (a.brand !== b.brand) return [a.brand, b.brand];
+  const wa = a.name.split(/\s+/), wb = b.name.split(/\s+/);
+  let p = 0; while (p < wa.length && p < wb.length && wa[p] === wb[p]) p++;
+  let s = 0; while (s < wa.length - p && s < wb.length - p && wa[wa.length - 1 - s] === wb[wb.length - 1 - s]) s++;
+  const ra = wa.slice(p, wa.length - s).join(' '), rb = wb.slice(p, wb.length - s).join(' ');
+  if (ra.length >= 2 && rb.length >= 2) return [ra, rb];
+  if (a.name !== b.name) return [a.name, b.name];
+  const diff = k => a[k] !== b[k];
+  if (diff('price') && a.price?.wg !== b.price?.wg) return [gLabel(a.price.wg), gLabel(b.price.wg)];
+  if (String(a.ages) !== String(b.ages)) return [String(a.ages), String(b.ages)];
+  return [COUNTRY_KO[a.country] || a.country, COUNTRY_KO[b.country] || b.country];
+}
+
+function slotView(f, side) {
+  const color = side === 'A' ? 'var(--purple700)' : 'var(--blue700)';
+  const chipBg = side === 'A' ? 'var(--purple100)' : 'var(--blue100)';
+  if (!f) return `<button class="press" data-go="search" style="flex:1;min-width:0;border-radius:var(--rCard);padding:16px 12px;display:flex;flex-direction:column;align-items:center;gap:10px;box-shadow:inset 0 0 0 1.5px var(--line);border:1.5px dashed transparent">
+    <div style="width:88px;height:88px;border-radius:14px;border:1.5px dashed var(--ink20);display:grid;place-items:center;color:var(--ink20);font-size:28px;font-weight:300">＋</div>
+    <div class="t-caption c-cap" style="text-align:center;white-space:pre-line">비교할 사료를\n하나 더 골라주세요</div>
+  </button>`;
+  const other = state.compare.map(id => FOODS.find(x => x.id === id)).filter(Boolean).find(x => x.id !== f.id);
+  const label = other ? abLabels(side === 'A' ? f : other, side === 'A' ? other : f)[side === 'A' ? 0 : 1] : f.brand;
+  return `<div style="flex:1;min-width:0;border-radius:var(--rCard);padding:14px 12px;box-shadow:inset 0 0 0 2px ${color};display:flex;flex-direction:column;align-items:center;gap:9px">
+    <span style="align-self:flex-start;height:22px;padding:0 9px;border-radius:999px;background:${chipBg};color:${color};font-size:11px;font-weight:800;display:inline-flex;align-items:center">${side} · ${esc(label)}</span>
+    ${well(f, 88)}
+    <div style="width:100%;text-align:center">
+      <div class="t-micro c-mute">${esc(f.brand)}</div>
+      <div style="font-size:14px;font-weight:700;letter-spacing:-.03em;margin-top:2px">${esc(f.name)}</div>
+      <button class="press" data-drop="${f.id}" style="margin-top:6px;font-size:12px;font-weight:700;color:${color}">바꾸기</button>
+    </div>
+  </div>`;
+}
+
+/* 상황별 판단 — 사실 서술만. 우열을 단정하지 않는다. */
+const CASES = [
+  { key: 'eye_tear', label: '눈물이 많은 아이라면', fn: 'eye_tear' },
+  { key: 'joint', label: '관절이 걱정된다면', fn: 'joint' },
+  { key: 'weight', label: '체중 관리 중이라면', metric: f => (DETAIL[f.id]?.nutrient?.dmCarb ?? 99), lower: true,
+    say: (w, l) => `${w.n}가 탄수화물이 ${Math.abs(Math.round((l.v - w.v) * 10) / 10)}%p 낮아요.` },
+  { key: 'allergy', label: '알러지가 의심된다면', metric: f => (DETAIL[f.id]?.ingr || []).filter(i => i.allergen).length, lower: true,
+    say: (w, l) => `${w.n} 쪽에 알러지 유발 가능 원료가 ${l.v - w.v}개 적어요.` },
+  { key: 'gut', label: '장이 약하다면', fn: 'digestive' }
+];
+function compareCases(A, B, la, lb) {
+  const out = [];
+  for (const c of CASES) {
+    let win = null, body = '';
+    if (c.fn) {
+      const na = (DETAIL[A.id]?.funcIngr?.[c.fn] || []).length, nb = (DETAIL[B.id]?.funcIngr?.[c.fn] || []).length;
+      if (na === nb) { out.push({ label: c.label, win: null, body: '두 사료 모두 이 기준으론 차이가 없어요.' }); continue; }
+      win = na > nb ? 'A' : 'B';
+      const w = win === 'A' ? A : B, items = (DETAIL[w.id]?.funcIngr?.[c.fn] || []).map(x => x.n).join(', ');
+      body = `${win === 'A' ? la : lb}에 ${items} 원료가 들어있어요.`;
+    } else {
+      const va = c.metric(A), vb = c.metric(B);
+      if (va === vb || va == null || vb == null) { out.push({ label: c.label, win: null, body: '두 사료 모두 이 기준으론 차이가 없어요.' }); continue; }
+      win = (c.lower ? va < vb : va > vb) ? 'A' : 'B';
+      const w = win === 'A' ? { n: la, v: va } : { n: lb, v: vb };
+      const l = win === 'A' ? { n: lb, v: vb } : { n: la, v: va };
+      body = c.say(w, l);
+    }
+    out.push({ label: c.label, win, body });
+  }
+  return out;
+}
+
+const CMP_ROWS = [
+  { label: '주의성분', get: f => f.warnN ?? 0, fmt: v => v ? `${v}종` : '없음', lower: true },
+  { label: '조단백', get: f => DETAIL[f.id]?.nutrient?.protein, fmt: v => v != null ? v + '%' : '표기 없음', higher: true },
+  { label: '조지방', get: f => DETAIL[f.id]?.nutrient?.fat, fmt: v => v != null ? v + '%' : '표기 없음' },  /* 방향이 갈려 강조 안 함 */
+  { label: '탄수화물 (추정)', get: f => DETAIL[f.id]?.nutrient?.dmCarb, fmt: v => v != null ? v + '%' : '표기 없음', lower: true },
+  { label: '생육 함량', get: f => DETAIL[f.id]?.nutrient?.meat, fmt: v => v != null ? v + '%' : '표기 없음', higher: true },
+  { label: 'kg당 가격', get: f => f.price?.pKg, fmt: v => v != null ? won(v) + '원' : '표기 없음', lower: true }
+];
+
+function renderCompare() {
+  const [A, B] = [0, 1].map(i => FOODS.find(x => x.id === state.compare[i]));
+  if (!A || !B) return renderCompareEmpty(A || B);
+  const [la, lb] = abLabels(A, B);
+  const cases = compareCases(A, B, la, lb);
+  const sameBrand = A.brand === B.brand;
+
+  return `
+  <div class="top" style="padding-top:18px">
+    <h1 class="t-page">두 사료, 이렇게 달라요</h1>
+    <div style="flex:1"></div>
+    <button class="sec-more press" data-reset-compare>초기화</button>
+  </div>
+  <p class="t-bodySm c-sub" style="padding:6px var(--screenX) 0">우열이 아니라, 우리 아이 상황에 맞는 쪽을 찾아드려요</p>
+
+  ${sameBrand ? `<div style="margin:16px var(--screenX) 0;border-radius:14px;background:var(--purple100);padding:11px 13px;font-size:12.5px;font-weight:600;color:var(--purple700);letter-spacing:-.02em">같은 <b>${esc(A.brand)}</b> 제품이라 <b>맛 이름</b>으로 구분해드려요.</div>` : ''}
+
+  <div style="display:flex;align-items:center;gap:9px;padding:18px var(--screenX) 0">
+    ${slotView(A, 'A')}
+    <span style="width:30px;height:30px;border-radius:50%;background:var(--purple900);color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center;flex-shrink:0">VS</span>
+    ${slotView(B, 'B')}
+  </div>
+
+  <div class="sec lg">
+    <h2 class="t-section">상황별로 보면 이래요</h2>
+    <div style="margin-top:13px;display:flex;flex-direction:column;gap:9px">
+      ${cases.map(c => `<div class="card soft" style="padding:15px 16px">
+        <div class="t-caption" style="color:var(--ink50)">${c.label}</div>
+        <div style="display:flex;align-items:center;gap:7px;margin-top:8px;flex-wrap:wrap">
+          ${c.win
+      ? `<span style="height:24px;padding:0 9px;border-radius:999px;background:${c.win === 'A' ? 'var(--purple700)' : 'var(--blue700)'};color:#fff;font-size:11px;font-weight:800;display:inline-flex;align-items:center">${c.win} · ${esc(c.win === 'A' ? la : lb)}</span>
+             <b style="font-size:15px;font-weight:700;letter-spacing:-.03em">쪽이 더 맞아요</b>`
+      : `<span class="chip neutral" style="height:24px;font-size:11px;padding:0 9px">차이 없음</span>`}
+        </div>
+        <p class="t-bodySm c-sub" style="margin-top:8px">${esc(c.body)}</p>
+      </div>`).join('')}
+    </div>
+  </div>
+
+  <div class="sec lg">
+    <h2 class="t-section">숫자로 자세히 비교하기</h2>
+    <div style="margin-top:13px;border-radius:var(--rInput);box-shadow:inset 0 0 0 1px var(--line);overflow:hidden">
+      <div style="display:flex;background:#FAF9FB">
+        <div style="flex:1;padding:12px 14px;font-size:12px;font-weight:800;color:var(--purple700)">Ⓐ ${esc(la)}</div>
+        <div style="width:88px;text-align:center;padding:12px 4px;font-size:12px;font-weight:600;color:var(--ink50)">항목</div>
+        <div style="flex:1;padding:12px 14px;text-align:right;font-size:12px;font-weight:800;color:var(--blue700)">${esc(lb)} Ⓑ</div>
+      </div>
+      ${CMP_ROWS.map(r => {
+        const va = r.get(A), vb = r.get(B);
+        let winA = false, winB = false;
+        if (va != null && vb != null && va !== vb && (r.lower || r.higher)) {
+          const aWins = r.lower ? va < vb : va > vb;
+          winA = aWins; winB = !aWins;
+        }
+        const cell = (v, win, color, align) =>
+          `<div style="flex:1;padding:14px;text-align:${align};background:${color === 'A' ? 'var(--purple50)' : 'var(--blue50)'};
+            font-size:15px;font-weight:${win ? 800 : 600};letter-spacing:-.03em;
+            color:${win ? (color === 'A' ? 'var(--purple700)' : 'var(--blue700)') : 'var(--ink70)'}">${esc(r.fmt(v))}</div>`;
+        return `<div style="display:flex;border-top:var(--divider)">
+          ${cell(va, winA, 'A', 'left')}
+          <div style="width:88px;padding:14px 4px;text-align:center;font-size:12px;font-weight:600;color:var(--ink50)">${r.label}</div>
+          ${cell(vb, winB, 'B', 'right')}</div>`;
+      }).join('')}
+    </div>
+    <p class="t-micro c-mute" style="margin-top:10px;font-weight:500">진하게 표시된 값이 해당 항목에서 더 나은 쪽이에요.</p>
+  </div>
+
+  <div class="sec lg">
+    <h2 class="t-section">각 사료 자세히 보기</h2>
+    <div style="display:flex;gap:9px;margin-top:13px">
+      ${[[A, la], [B, lb]].map(([f, l]) => `<button class="press" data-go-detail="${f.id}" style="flex:1;min-width:0;border-radius:var(--rThumbMd);box-shadow:var(--outline);padding:13px;text-align:left">
+        <div class="t-micro c-mute">${esc(f.brand)}</div>
+        <div style="font-size:14px;font-weight:700;letter-spacing:-.03em;margin-top:3px">${esc(f.name)} ›</div></button>`).join('')}
+    </div>
+  </div>
+  <p class="note">비교 결과는 라벨 표기 성분 기준 참고용이에요.
+건강 문제는 수의사와 상담해주세요.</p>`;
+}
+
+/* E5 — 슬롯이 덜 찼을 때 */
+function renderCompareEmpty(one) {
+  const recent = state.recent.map(id => FOODS.find(f => f.id === id)).filter(Boolean).filter(f => !state.compare.includes(f.id)).slice(0, 3);
+  return `
+  <div class="top" style="padding-top:18px"><h1 class="t-page">비교하기</h1></div>
+  ${one ? `<div style="display:flex;align-items:center;gap:9px;padding:20px var(--screenX) 0">
+    ${slotView(one, 'A')}
+    <span style="width:30px;height:30px;border-radius:50%;background:var(--purple900);color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center;flex-shrink:0">VS</span>
+    ${slotView(null, 'B')}
+  </div>` : ''}
+  <div class="empty">
+    ${one ? '' : `<div class="orb">${icon('compare', 38)}</div>`}
+    <h2>하나만 있으면 비교가 안 돼요</h2>
+    <p>지금 먹는 사료를 골라두면
+바꿀 때마다 바로 비교할 수 있어요.</p>
+    <div class="acts">
+      <button class="btn pri press" data-go="search">사료 검색해서 담기</button>
+      ${recent.length ? `<button class="btn ghost press" data-recent-sheet>최근 본 사료에서 고르기</button>` : ''}
+    </div>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════
+   05 맞춤 추천 입력 (5스텝)
+   ═══════════════════════════════════════════════════════
+   입력은 다섯 가지를 다 받되, 추천 계산에는 지금 근거가 있는 것부터 쓴다.
+   견종·활동량·중성화는 급여량 보정에 먼저 쓰고, 추천 가중치는 단계적으로 넓힌다. */
+const WIZ = [
+  { key: 'basic', q: p => '우리 아이를\n뭐라고 부르나요?', sub: '이름과 견종을 알려주세요', type: 'basic' },
+  { key: 'body', q: p => `${p.name || '우리 아이'}는 지금\n몇 살이고 몇 kg인가요?`, sub: '급여량 계산에 써요', type: 'body' },
+  {
+    key: 'concerns', q: p => `${p.name || '우리 아이'}가 요즘\n가장 신경 쓰이는 건\n무엇인가요?`, sub: '여러 개 골라도 괜찮아요.',
+    type: 'multi', opts: [['skin', '피부가 자주 붉어져요'], ['eye_tear', '눈물자국이 심해요'], ['digestive', '변이 무르고 잦아요'],
+    ['weight', '체중이 늘고 있어요'], ['joint', '관절이 약해요'], ['none', '딱히 없어요']]
+  },
+  {
+    key: 'activity', q: p => `${p.name || '우리 아이'}는\n얼마나 활동적인가요?`, sub: '급여량 계산에 반영해요', type: 'single',
+    opts: [['low', '거의 실내에 있어요'], ['mid', '하루 30분~1시간 산책'], ['high', '한 시간 이상 뛰어놀아요'], ['neutered', '중성화했어요']]
+  },
+  {
+    key: 'allergens', q: p => `피해야 할 원료가\n있나요?`, sub: '고른 원료가 든 사료는 빼드려요', type: 'multi',
+    opts: [['닭', '닭'], ['소', '소고기'], ['양', '양고기'], ['연어', '연어'], ['옥수수', '옥수수'], ['밀', '밀'], ['대두', '대두'], ['none', '없어요']]
+  }
+];
+
+function renderWizard() {
+  const i = state.wizard.step, w = WIZ[i], d = state.wizard.data;
+  const val = d[w.key];
+  let body = '';
+  if (w.type === 'basic') {
+    body = `<input class="wz-in" id="wz-name" placeholder="이름" value="${esc(d.name || '')}">
+            <input class="wz-in" id="wz-breed" placeholder="견종 (선택)" value="${esc(d.breed || '')}" style="margin-top:10px">`;
+  } else if (w.type === 'body') {
+    body = `<div style="display:flex;gap:10px">
+      <input class="wz-in" id="wz-age" type="number" inputmode="numeric" placeholder="나이 (살)" value="${esc(d.age ?? '')}">
+      <input class="wz-in" id="wz-kg" type="number" inputmode="decimal" step="0.1" placeholder="몸무게 (kg)" value="${esc(d.kg ?? '')}"></div>
+      <p class="t-caption c-cap" style="margin-top:10px">0.5kg에서 90kg 사이로 입력해주세요</p>`;
+  } else {
+    const sel = new Set(Array.isArray(val) ? val : val ? [val] : []);
+    body = w.opts.map(([k, label]) => {
+      const on = sel.has(k);
+      return `<button class="press wz-opt${on ? ' on' : ''}" data-wz-opt="${k}">
+        <span class="mark">${on ? icon('check', 13) : ''}</span><span>${label}</span></button>`;
+    }).join('');
+  }
+  return `
+  <div class="top icons" style="align-items:center;gap:12px">
+    <button class="iconbtn press" data-wz-back>${icon('chevronRight', 24, 'ui')}</button>
+    <div style="flex:1;height:4px;border-radius:2px;background:var(--lineSoft);overflow:hidden">
+      <div style="height:100%;background:var(--purple700);width:${(i + 1) / WIZ.length * 100}%;transition:width .3s ease-out"></div></div>
+    <div class="t-caption c-sub">${i + 1}/${WIZ.length}</div>
+  </div>
+  <div style="padding:30px var(--screenX) 0">
+    <h1 class="t-question" style="white-space:pre-line">${esc(w.q(d))}</h1>
+    <p class="t-body c-sub" style="margin-top:10px">${esc(w.sub)}</p>
+    <div style="margin-top:26px;display:flex;flex-direction:column;gap:10px">${body}</div>
+  </div>
+  <div class="dock" style="flex-direction:column;gap:8px">
+    <button class="btn dark press" data-wz-next>${i === WIZ.length - 1 ? '추천 받기' : '다음'}</button>
+    <p class="t-caption c-cap" style="text-align:center">입력한 정보는 맞춤 추천에만 사용해요</p>
+  </div>`;
+}
+
+/* ═══ 06 추천 결과 ═══ */
+function matchScore(f, pet) {
+  let s = 50;
+  const d = DETAIL[f.id] || {};
+  for (const c of pet.concerns || []) {
+    if (c === 'none') continue;
+    if ((d.funcIngr?.[c] || []).length) s += 12;
+    if ((f.concerns || []).includes(c)) s += 6;
+  }
+  if ((pet.allergens || []).some(a => a !== 'none' && (d.ingr || []).some(i => i.name.includes(a)))) s -= 40;
+  if (cautionState(f).k === 'none') s += 10;
+  s += Math.round((f.score ?? 0) * 1.5);          /* 내부 점수는 가중치로만 */
+  return Math.max(5, Math.min(99, s));
+}
+function renderResult() {
+  const pet = state.pet;
+  if (!pet) return renderProfileEmpty();
+  const ranked = FOODS.filter(f => analysisState(f) === 'analyzed')
+    .map(f => ({ f, m: matchScore(f, pet) })).sort((a, b) => b.m - a.m);
+  const [top, ...rest] = ranked;
+  if (!top) return renderProfileEmpty();
+  const reasons = matchReasons(top.f, pet);
+
+  return `
+  <div class="top" style="padding-top:18px;align-items:center;gap:11px">
+    <div style="width:44px;height:44px;border-radius:50%;background:var(--surface);display:grid;place-items:center;color:var(--ink25)">${icon('dog', 22)}</div>
+    <div style="flex:1;min-width:0">
+      <div class="t-item">${esc(pet.name || '우리 아이')}</div>
+      <div class="t-micro c-mute" style="font-weight:600">${[pet.breed, pet.age ? pet.age + '살' : null, pet.kg ? pet.kg + 'kg' : null].filter(Boolean).join(' · ')}</div>
+    </div>
+    <button class="chip press" data-go="custom" data-wz-reset>정보 수정</button>
+  </div>
+
+  <div style="padding:24px var(--screenX) 0">
+    <h1 class="t-product" style="white-space:pre-line">${esc(headline(pet))}</h1>
+  </div>
+
+  <div class="sec">
+    <button class="press" data-go-detail="${top.f.id}" style="width:100%;text-align:left;border-radius:var(--rCardLg);box-shadow:var(--outline);overflow:hidden">
+      <div style="background:#fff;height:180px;display:grid;place-items:center;position:relative;box-shadow:var(--imageWell)">
+        ${/^https?:/.test(top.f.thumb || '') ? `<img src="${esc(top.f.thumb)}" alt="" style="height:150px;object-fit:contain">` : ''}
+        <span style="position:absolute;top:12px;left:12px;height:26px;padding:0 11px;border-radius:999px;background:var(--purple900);color:#fff;font-size:11px;font-weight:800;display:inline-flex;align-items:center">${esc(pet.name || '우리 아이')} 맞춤 1위</span>
+      </div>
+      <div style="padding:16px">
+        <div class="t-micro c-mute">${esc(top.f.brand)}</div>
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-top:3px">
+          <div style="font-size:18px;font-weight:800;letter-spacing:-.04em;min-width:0">${esc(top.f.name)}</div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:22px;font-weight:800;letter-spacing:-.04em;color:var(--purple700);line-height:1">${top.m}%</div>
+            <div class="t-tag c-mute" style="margin-top:3px">${esc(pet.name || '우리 아이')} 매칭</div>
+          </div>
+        </div>
+        <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
+          ${reasons.map(r => `<div style="display:flex;gap:8px;align-items:flex-start">
+            <span style="width:16px;height:16px;border-radius:50%;background:var(--purple100);color:var(--purple700);display:grid;place-items:center;flex-shrink:0;margin-top:2px">${icon('check', 10)}</span>
+            <span class="t-bodySm">${esc(r)}</span></div>`).join('')}
+        </div>
+      </div>
+    </button>
+  </div>
+
+  <div class="sec lg">
+    <h2 class="t-section">다음 후보</h2>
+    <div style="margin-top:8px">
+      ${rest.slice(0, 2).map(({ f, m }) => `<button class="row press" data-go-detail="${f.id}">
+        ${well(f, 44)}
+        <span class="row-b"><span class="row-name" style="display:block">${esc(f.brand)} ${esc(f.name)}</span>
+        <span class="row-meta">매칭 ${m}% · ${esc(nextReason(f, top.f))}</span></span>
+        ${icon('chevronRight', 16, 'chev')}</button>`).join('')}
+    </div>
+  </div>
+  <p class="note">모든 분석은 라벨 표기 성분 기준의 참고용이에요.
+건강 문제는 수의사와 상담해주세요.</p>`;
+}
+function headline(pet) {
+  const cs = (pet.concerns || []).filter(c => c !== 'none');
+  const KO = { skin: '피부', eye_tear: '눈물', digestive: '소화', weight: '체중', joint: '관절' };
+  if (!cs.length) return '주의성분이 적고\n영양이 고른 사료예요';
+  return `${cs.slice(0, 2).map(c => KO[c] || c).join('와 ')}를 함께 보면\n이 사료가 가장 맞아요`;
+}
+function matchReasons(f, pet) {
+  const d = DETAIL[f.id] || {}, out = [];
+  for (const c of (pet.concerns || [])) {
+    const items = d.funcIngr?.[c] || [];
+    if (items.length) out.push(`${items.map(x => x.n).join('·')}가 들어 있어 도움될 수 있어요`);
+  }
+  if (cautionState(f).k === 'none') out.push('주의성분으로 볼 원료가 없어요');
+  if (f.price?.pKg) out.push(`100g당 ${won(per100g(f))}원 · 하루 약 ${feedingNumbers(f).daily}g`);
+  return out.slice(0, 3);
+}
+function nextReason(f, top) {
+  if ((f.price?.pKg ?? 9e9) < (top.price?.pKg ?? 9e9)) return '가격이 조금 더 낮아요';
+  if (cautionState(f).k === 'none') return '주의성분이 없어요';
+  return '성분 구성이 비슷해요';
+}
+/* E6 */
+function renderProfileEmpty() {
+  return `<div class="top" style="padding-top:18px"><h1 class="t-page">맞춤 추천</h1></div>
+  <div class="empty">
+    <div class="orb">${icon('dog', 38)}</div>
+    <h2>우리 아이를 아직\n모르고 있어요</h2>
+    <p>몸무게·나이·고민 다섯 가지만 알려주시면
+맞는 사료를 골라드릴게요. 1분이면 돼요.</p>
+    <div class="acts">
+      <button class="btn pri press" data-go="wizard">우리 아이 등록하기</button>
+      <button class="btn ghost press" data-go="search">등록 없이 둘러보기</button>
+    </div>
+  </div>`;
+}
+
+/* ═══ 콘텐츠 ═══ */
+function renderContent() {
+  const list = (typeof ARTICLES !== 'undefined' ? ARTICLES : []);
+  return `<div class="top" style="padding-top:18px"><h1 class="t-page">사료, 제대로 알기</h1></div>
+  <p class="t-bodySm c-sub" style="padding:6px var(--screenX) 0">헷갈렸던 것들을 쉽게 풀어드려요</p>
+  <div class="sec">
+    ${list.length ? list.map(a => `<button class="row press" data-article="${esc(a.id)}" style="align-items:flex-start">
+      <span style="width:56px;height:56px;border-radius:var(--rThumbMd);background:var(--purple100);display:grid;place-items:center;color:var(--purple700);flex-shrink:0">${icon('book', 22)}</span>
+      <span class="row-b">
+        <span class="t-micro" style="color:var(--purple700)">${esc(a.cat || '읽을거리')}</span>
+        <span class="row-name" style="display:block;margin-top:3px">${esc(a.title)}</span>
+        <span class="row-meta">${esc((a.summary || '').slice(0, 46))}</span>
+      </span></button>`).join('')
+      : `<div class="empty"><div class="orb neutral">${icon('book', 38)}</div>
+         <h2>준비 중이에요</h2><p>사료를 고를 때 도움되는 글을 쓰고 있어요.</p></div>`}
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════
+   렌더 + 이벤트
+   ═══════════════════════════════════════════════════════ */
+const VIEW = {
+  home: renderHome, search: renderSearch, detail: renderDetail,
+  compare: renderCompare, custom: () => state.pet ? renderResult() : renderProfileEmpty(),
+  wizard: renderWizard, content: renderContent
+};
+const TAB_META = [['home', '홈', 'house'], ['compare', '비교', 'compare'], ['content', '콘텐츠', 'book'], ['custom', '맞춤', 'paw']];
+
+function render() {
+  const s = state.screen || 'home';
+  $('#view').innerHTML = (VIEW[s] || renderHome)();
+  const bar = $('#tabbar');
+  const showTabs = ['home', 'compare', 'content', 'custom'].includes(s);
+  bar.hidden = !showTabs;
+  bar.innerHTML = TAB_META.map(([k, l, ic]) =>
+    `<button data-tab="${k}" class="${state.tab === k ? 'on' : ''}">${icon(ic, 22, 'ui')}<span>${l}</span></button>`).join('');
+  wire();
+}
+
+function wire() {
+  const v = $('#view');
+  const on = (sel, ev, fn) => $$(sel, v).forEach(el => el.addEventListener(ev, fn));
+
+  on('[data-go]', 'click', e => {
+    const t = e.currentTarget.dataset.go;
+    if (t === 'custom' && !state.pet) { go('wizard'); return; }
+    if (t === 'search') { state.query = ''; state.filters.clear(); }
+    go(t);
+  });
+  on('[data-go-detail]', 'click', e => go('detail', { id: e.currentTarget.dataset.goDetail }));
+  on('[data-back]', 'click', () => history.back());
+  on('[data-search]', 'click', e => { state.query = e.currentTarget.dataset.search; go('search'); });
+  on('[data-concern]', 'click', e => {
+    const c = CONCERNS.find(x => x.key === e.currentTarget.dataset.concern);
+    state.query = c.key === 'rx' ? '처방식' : c.label.split('·')[0];
+    state.filters.clear(); go('search');
+  });
+  on('[data-filter]', 'click', e => {
+    const k = e.currentTarget.dataset.filter;
+    if (!k) state.filters.clear();
+    else state.filters.has(k) ? state.filters.delete(k) : state.filters.add(k);
+    render();
+  });
+  on('[data-sort]', 'click', () => openSortSheet());
+  on('[data-clear-search]', 'click', () => { state.query = ''; state.filters.clear(); render(); $('#q')?.focus(); });
+  on('[data-add-compare]', 'click', e => addCompare(e.currentTarget.dataset.addCompare));
+  on('[data-drop]', 'click', e => { state.compare = state.compare.filter(x => x !== e.currentTarget.dataset.drop); save(); render(); });
+  on('[data-reset-compare]', 'click', () => { state.compare = []; save(); render(); });
+  on('[data-dtab]', 'click', e => { state.detailTab = e.currentTarget.dataset.dtab; render(); });
+  on('[data-buy]', 'click', e => window.open(e.currentTarget.dataset.buy, '_blank', 'noopener'));
+  on('[data-request]', 'click', e => submitRequest(e.currentTarget.dataset.request, { query: state.query, id: state.detailId }));
+  on('[data-ingr-sheet]', 'click', () => openIngrSheet());
+  on('[data-recent-sheet]', 'click', () => openRecentSheet());
+  on('[data-share]', 'click', () => {
+    const f = FOODS.find(x => x.id === state.detailId);
+    if (navigator.share) navigator.share({ title: `${f.brand} ${f.name} — 발사탕`, url: location.href }).catch(() => { });
+    else toast('링크를 복사했어요');
+  });
+
+  const q = $('#q', v);
+  if (q) {
+    let t;
+    q.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { state.query = q.value; render(); $('#q')?.focus(); }, 250); });
+    if (state.screen === 'search' && !state.query) setTimeout(() => q.focus(), 60);
+  }
+
+  /* 급여량 계산기 */
+  const fw = $('#fw', v), fwr = $('#fwr', v);
+  const setW = val => {
+    const n = Math.max(0.5, Math.min(90, Number(val) || 5));
+    state.feeding.weightKg = Math.round(n * 10) / 10; save(); render();
+  };
+  if (fw) fw.addEventListener('change', () => setW(fw.value));
+  if (fwr) fwr.addEventListener('change', () => setW(fwr.value));
+  on('[data-meals]', 'click', e => { state.feeding.meals = +e.currentTarget.dataset.meals; save(); render(); });
+  on('[data-bag]', 'click', e => { state.feeding.bagG = +e.currentTarget.dataset.bag; save(); render(); });
+
+  /* 위저드 */
+  on('[data-wz-opt]', 'click', e => {
+    const w = WIZ[state.wizard.step], k = e.currentTarget.dataset.wzOpt, d = state.wizard.data;
+    if (w.type === 'multi') {
+      const cur = new Set(d[w.key] || []);
+      if (k === 'none') { d[w.key] = cur.has('none') ? [] : ['none']; }
+      else { cur.delete('none'); cur.has(k) ? cur.delete(k) : cur.add(k); d[w.key] = [...cur]; }
+    } else d[w.key] = d[w.key] === k ? null : k;
+    render();
+  });
+  on('[data-wz-next]', 'click', () => {
+    const w = WIZ[state.wizard.step], d = state.wizard.data;
+    if (w.type === 'basic') { d.name = $('#wz-name')?.value.trim(); d.breed = $('#wz-breed')?.value.trim(); }
+    if (w.type === 'body') {
+      d.age = $('#wz-age')?.value; const kg = Number($('#wz-kg')?.value);
+      if (!(kg >= 0.5 && kg <= 90)) { toast('0.5kg에서 90kg 사이로 입력해주세요'); return; }
+      d.kg = kg; state.feeding.weightKg = kg;
+    }
+    if (state.wizard.step < WIZ.length - 1) { state.wizard.step++; render(); window.scrollTo(0, 0); }
+    else { state.pet = { ...d }; save(); state.wizard.step = 0; go('custom'); }
+  });
+  on('[data-wz-back]', 'click', () => {
+    if (state.wizard.step > 0) { state.wizard.step--; render(); }
+    else history.back();
+  });
+  on('[data-wz-reset]', 'click', () => { state.wizard = { step: 0, data: { ...(state.pet || {}) } }; });
+
+  $$('#tabbar button').forEach(b => b.onclick = () => {
+    const k = b.dataset.tab;
+    if (k === 'custom' && !state.pet) { go('wizard'); return; }
+    go(k);
+  });
+}
+
+/* ═══ 바텀시트 ═══ */
+function sheet(title, bodyHtml, onWire) {
+  const dim = $('#dim'), sh = $('#sheet');
+  $('.sh-h', sh).textContent = title;
+  $('.sh-b', sh).innerHTML = bodyHtml;
+  dim.classList.add('on'); sh.classList.add('on'); document.body.classList.add('noscroll');
+  onWire?.($('.sh-b', sh));
+}
+function closeSheet() {
+  $('#dim').classList.remove('on'); $('#sheet').classList.remove('on');
+  document.body.classList.remove('noscroll');
+}
+function openSortSheet() {
+  sheet('정렬', Object.entries(SORT_LABEL).map(([k, l]) =>
+    `<button class="press" data-s="${k}" style="display:flex;align-items:center;justify-content:space-between;width:100%;height:54px;font-size:15px;font-weight:${state.sort === k ? 800 : 500};color:${state.sort === k ? 'var(--purple700)' : 'var(--ink70)'};border-bottom:var(--divider)">${l}${state.sort === k ? icon('check', 18) : ''}</button>`).join(''),
+    el => $$('[data-s]', el).forEach(b => b.onclick = () => { state.sort = b.dataset.s; closeSheet(); render(); }));
+}
+function openIngrSheet() {
+  const d = DETAIL[state.detailId] || {};
+  const list = (d.ingr || []).slice().sort((a, b) => (a.rank || 99) - (b.rank || 99));
+  sheet(`원료 ${list.length}개`, list.map(i => `
+    <div style="display:flex;gap:10px;align-items:flex-start;padding:11px 0;border-bottom:var(--divider)">
+      <span class="t-micro c-mute" style="width:20px;flex-shrink:0">${i.rank}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:${i.main ? 700 : 500};letter-spacing:-.03em">${esc(i.name)}
+          ${i.safe === 'caution' ? '<span class="tag caution" style="margin-left:5px">주의</span>'
+      : i.safe === 'danger' ? '<span class="tag caution" style="margin-left:5px">주의</span>'
+        : i.safe === 'unknown' ? '<span class="tag pending" style="margin-left:5px">분류 전</span>' : ''}</div>
+        ${i.basis ? `<p class="t-caption c-sub" style="margin-top:3px;font-weight:500">${esc(i.basis)}</p>` : ''}
+      </div></div>`).join(''));
+}
+function openRecentSheet() {
+  const list = state.recent.map(id => FOODS.find(f => f.id === id)).filter(Boolean).filter(f => !state.compare.includes(f.id));
+  sheet('최근 본 사료', list.map(f => `<button class="row press" data-pick="${f.id}">
+    ${well(f, 44)}<span class="row-b"><span class="row-name" style="display:block">${esc(f.brand)} ${esc(f.name)}</span></span>
+    ${icon('plus', 18, 'chev')}</button>`).join('') || '<p class="t-bodySm c-sub" style="padding:20px 0">최근 본 사료가 없어요.</p>',
+    el => $$('[data-pick]', el).forEach(b => b.onclick = () => { closeSheet(); addCompare(b.dataset.pick); }));
+}
+
+/* ═══ 시작 ═══ */
+load();
+state.screen = 'home';
+render();
+history.replaceState({ screen: 'home' }, '');
+$('#dim').addEventListener('click', closeSheet);
