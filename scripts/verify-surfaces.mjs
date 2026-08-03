@@ -102,6 +102,17 @@ const badKey = Object.entries(DETAIL).filter(([, d]) => d?.verdict && 'bad' in d
 if (badKey.length)
   problems.push(`verdict.bad 를 쓰는 항목 ${badKey.length}건 — 화면은 dan 을 읽습니다`);
 
+/* ── 4-3. 로직이 한 벌인지 ──
+   채점·원료 판정은 balsatang/admin/engine.js 한 곳에만 있어야 한다. 화면이 같은 식을
+   따로 적어 두면 한쪽만 고쳐졌을 때 화면과 발행 결과가 달라진다.
+   실제로 심사 화면이 루브릭을 따로 갖고 있었다. */
+for (const [file, label] of [['balsatang/admin/review.html', '심사'],
+                             ['balsatang/admin/foods.js', '사료 관리']]) {
+  const src = read(file);
+  const dup = /const\s+rateCarb\s*=\s*[^E]|function\s+rateCarb\s*\(|const\s+SCORE_WEIGHT\s*=|function\s+computeScore\s*\([^)]*\)\s*\{[^}]*0\.45/.test(src);
+  if (dup) problems.push(`${label} 화면이 루브릭을 따로 갖고 있습니다 — engine.js 한 곳만 써야 합니다`);
+}
+
 /* ── 5. 썸네일·상세 연결 ── */
 const orphan = Object.keys(DETAIL).filter(id => !FOODS_ALL.some(f => f.id === id));
 if (orphan.length) problems.push(`DETAIL 에만 있고 사료 목록엔 없는 항목 ${orphan.length}건`);

@@ -33,5 +33,6 @@ export const {
   computeScore, SCORE_WEIGHT, RUBRIC_TEXT, REQUIRED_FACT_KEYS,
   deriveNutrient, deriveIngredients, deriveDist, deriveFuncIngr,
   deriveVerdict, deriveFit, deriveDetail,
-  fillPhrase, phraseVars, FUNC_LABEL
+  fillPhrase, phraseVars, FUNC_LABEL,
+  strengthOf, strengthMap, publishRecord
 } = ENGINE;

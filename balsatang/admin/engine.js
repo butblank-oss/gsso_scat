@@ -409,11 +409,65 @@ function phraseVars({ nutrient = {}, ingr = [], price = {} } = {}) {
   };
 }
 
+
+/* ── 기능성 근거 강도 ───────────────────────────────────
+   태그가 붙었다/안 붙었다만으로는 변별력이 없다. eye_tear 는 43종 중 32종에 붙는데
+   근거가 대부분 생선·어유(오메가3)라 프리미엄 사료 대부분이 해당한다.
+   근거 원료의 개수와 등급으로 강도를 매겨 정렬과 표시에 쓴다.
+     강도 = proven 원료 × 2 + possible 원료 × 1 */
+const EV_WEIGHT = { proven: 2, possible: 1 };
+function strengthOf(list) {
+  return (list || []).reduce((s, i) => s + (EV_WEIGHT[i.ev] ?? 1), 0);
+}
+function strengthMap(funcIngr) {
+  if (!funcIngr) return undefined;
+  const out = {};
+  for (const [k, v] of Object.entries(funcIngr)) { const n = strengthOf(v); if (n > 0) out[k] = n; }
+  return out;
+}
+
+/* ── 스테이징 한 건 → 발행용 사료 레코드 ────────────────
+   scripts/merge-approved.mjs 가 하던 일을 여기로 옮겼다. 심사 화면이 브라우저에서
+   그대로 발행할 수 있어야 하기 때문이다. 점수는 제출값이 아니라 항상 공식으로
+   다시 계산한다 — 사람이든 AI 든 점수를 직접 써넣는 경로는 없다. */
+function publishRecord(item, uuid, now) {
+  const p = item.proposed;
+  const detail = (p.ga || p.ingredients)
+    ? deriveDetail({
+        ga: p.ga, ingredients: p.ingredients, facts: p.facts,
+        price: p.price, weightOptions: p.price?.wgOptions, rxInfo: p.rxInfo ?? null
+      })
+    : null;
+  const food = {
+    id: uuid,
+    brand: p.brand, brandSlug: p.brandSlug, country: p.country, name: p.name,
+    type: p.type, rx: p.rx, ages: p.ages, sizes: p.sizes,
+    thumb: p.thumb ?? null, ico: p.ico ?? 'dog',
+    score: computeScore(p.ratings),
+    ratings: p.ratings, func: p.func, warnN: p.warnN ?? 0,
+    concerns: p.concerns, price: p.price,
+    funcStrength: strengthMap(p.funcIngr ?? detail?.funcIngr),
+    specOrigin: p.specOrigin,
+    status: 'published',
+    srcState: 'sourced',
+    src: {
+      sources: item.sources,
+      evidence: item.evidence,
+      audit: { verdict: item.audit?.verdict ?? null, model: item.audit?.auditor?.model ?? null },
+      stagingId: item.stagingId,
+      publishedAt: now
+    }
+  };
+  if (food.funcStrength === undefined) delete food.funcStrength;
+  return { food, detail };
+}
+
 globalThis.ENGINE = {
   normalizeIngredient, lookupIngredient,
   rateCarb, rateQuality, rateAdditive, rateValue, rateAll, computeDmCarb,
   computeScore, SCORE_WEIGHT, RUBRIC_TEXT, REQUIRED_FACT_KEYS,
   deriveNutrient, deriveIngredients, deriveDist, deriveFuncIngr,
   deriveVerdict, deriveFit, deriveDetail,
-  fillPhrase, phraseVars, iyeyo, FUNC_LABEL
+  fillPhrase, phraseVars, iyeyo, FUNC_LABEL,
+  strengthOf, strengthMap, publishRecord
 };

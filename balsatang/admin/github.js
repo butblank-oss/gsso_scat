@@ -88,3 +88,56 @@ const GH = {
     });
   }
 };
+
+/* 여러 파일을 한 커밋으로 올린다.
+
+   발행은 파일 여러 개를 동시에 건드린다 — data.js, 스테이징 배치, 반려 기록,
+   심사 목록. 하나씩 PUT 하면 커밋이 네 개로 쪼개지고, 중간에 실패하면 반쪽만
+   반영된 상태가 남는다. 그래서 Git Data API 로 트리를 통째로 만들어 한 번에 올린다.
+
+   files: [{ path, text }] — text 가 null 이면 그 파일을 지운다.
+   base 는 우리가 읽은 시점의 커밋 sha. 그 사이 저장소가 바뀌었으면 밀리지 않고 막힌다. */
+Object.assign(GH, {
+  async headSha() {
+    const r = await this.api(`/repos/${this.owner}/${this.repo}/git/ref/heads/${this.branch}`);
+    return r.object.sha;
+  },
+
+  async commitFiles(files, message, baseSha) {
+    const base = baseSha || await this.headSha();
+    const baseCommit = await this.api(`/repos/${this.owner}/${this.repo}/git/commits/${base}`);
+
+    /* 지울 파일은 sha:null 로, 남길 파일은 blob 을 만들어 붙인다.
+       base64 로 올려야 한글이 깨지지 않는다. */
+    const tree = [];
+    for (const f of files) {
+      if (f.text == null) { tree.push({ path: f.path, mode: '100644', type: 'blob', sha: null }); continue; }
+      const blob = await this.api(`/repos/${this.owner}/${this.repo}/git/blobs`, {
+        method: 'POST',
+        body: JSON.stringify({ content: this.enc(f.text), encoding: 'base64' })
+      });
+      tree.push({ path: f.path, mode: '100644', type: 'blob', sha: blob.sha });
+    }
+
+    const newTree = await this.api(`/repos/${this.owner}/${this.repo}/git/trees`, {
+      method: 'POST',
+      body: JSON.stringify({ base_tree: baseCommit.tree.sha, tree })
+    });
+    const commit = await this.api(`/repos/${this.owner}/${this.repo}/git/commits`, {
+      method: 'POST',
+      body: JSON.stringify({ message, tree: newTree.sha, parents: [base] })
+    });
+    /* force 를 주지 않는다. 그 사이 누가 올렸으면 여기서 막히는 게 맞다. */
+    await this.api(`/repos/${this.owner}/${this.repo}/git/refs/heads/${this.branch}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ sha: commit.sha, force: false })
+    });
+    return commit;
+  },
+
+  /* 없는 파일은 null 을 준다. 반려 기록처럼 '있으면 이어 쓰고 없으면 새로' 가 필요하다. */
+  async getFileOrNull(path) {
+    try { return await this.getFile(path); }
+    catch (e) { if (/찾을 수 없|Not Found|404/i.test(e.message)) return null; throw e; }
+  }
+});
