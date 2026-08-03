@@ -67,8 +67,10 @@ if (/onclick="dl\('data\.js'\)"/.test(adminSrc))
   problems.push("예전 어드민에 data.js 받기 버튼이 다시 생겼습니다");
 /* 그 화면의 사료 편집은 지금 아무 데도 도달하지 않는다. 사람이 10분 채우고
    잃어버리지 않도록 위저드 안에 그 사실이 적혀 있어야 한다. */
-if (!/사이트에는 반영되지 않아요/.test(adminSrc))
-  problems.push('예전 어드민 사료 위저드에 "반영되지 않는다" 안내가 없습니다');
+/* 문장을 통째로 비교하면 말만 다듬어도 깨진다. 뜻이 남아 있는지만 본다. */
+const wizardWarn = adminSrc.slice(adminSrc.indexOf('function renderWizard'), adminSrc.indexOf('function wGo'));
+if (!/반영되지 않아/.test(wizardWarn) || !/사료 관리/.test(wizardWarn))
+  problems.push('사료 위저드에 "여기 편집은 반영되지 않는다 · 사료 관리를 쓰라" 는 안내가 없습니다');
 
 /* ── 4. 심사 화면이 보는 스테이징이 발행본과 겹치지 않는지 ── */
 const stagingDir = 'data/staging';

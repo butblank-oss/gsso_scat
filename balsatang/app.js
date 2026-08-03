@@ -102,6 +102,10 @@ function kcalPerKg(f) {
 }
 
 /* ═══ 검색 ═══ */
+const TYPE_KO = { dry: '건식', wet: '습식', freeze_dried: '동결건조',
+  air_dried: '에어드라이', raw: '화식', topping: '토핑' };
+const typeKo = t => TYPE_KO[t] || t;
+
 const SEARCH_SYNONYM = [
   { tags: ['eye_tear'], words: ['눈물', '눈물자국', '눈물착색', '착색', '피부', '피모', '털', '가려움', '아토피', '눈곱'] },
   { tags: ['weight'], words: ['다이어트', '체중', '비만', '살', '감량', '뚱뚱', '체중관리', '저칼로리', '칼로리'] },
@@ -542,7 +546,7 @@ function renderDetail() {
   const s = cautionState(f);
   const d = DETAIL[f.id] || {};
   const attrs = [
-    foodTags(f)[0], f.type === 'dry' ? '건식' : f.type,
+    foodTags(f)[0], typeKo(f.type),
     f.price?.pKg ? `${won(per100g(f))}원/100g` : null
   ].filter(Boolean);
 
@@ -576,7 +580,13 @@ function renderDetail() {
 
   ${pend ? '' : `<div class="dock">
     <button class="btn ghost icon press" data-add-compare="${f.id}">${icon('compare', 18)}비교 담기</button>
-    <button class="btn pri press" data-dtab="${state.detailTab === 'nutrition' ? 'feeding' : 'nutrition'}">${state.detailTab === 'nutrition' ? '급여량 · 가격 보기' : '성분 분석 보기'}</button>
+    ${/* 급여량·가격 탭까지 온 사람은 사러 가려는 사람이다. 그 탭에서는 구매를 주 버튼으로 둔다.
+          링크가 없으면 없는 대로 말해야 한다 — 눌러놓고 아무 일도 없으면 안 된다. */
+      state.detailTab === 'nutrition'
+        ? `<button class="btn pri press" data-dtab="feeding">급여량 · 가격 보기</button>`
+        : buyUrlOf(f)
+          ? `<button class="btn pri press" data-buy="${esc(buyUrlOf(f))}">구매하러 가기</button>`
+          : `<button class="btn pri press" data-request="price" disabled style="opacity:.55">구매 링크 준비 중</button>`}
   </div>`}`;
 }
 
@@ -592,7 +602,7 @@ function renderPending(f) {
     </div>
     <div class="t-sub" style="margin-top:6px">지금 알 수 있는 것</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px">
-      ${[['분류', f.type === 'dry' ? '일반식 · 건식' : f.type], ['원산지', COUNTRY_KO[f.country] || f.country],
+      ${[['분류', (f.rx ? '처방식' : '일반식') + ' · ' + typeKo(f.type)], ['원산지', COUNTRY_KO[f.country] || f.country],
        ['가격', f.price?.p ? `${won(f.price.p)}원 / ${gLabel(f.price.wg)}` : '확인 전'],
        ['성분', '확인 전']].map(([k, v]) => `
         <div style="border-radius:var(--rThumbMd);background:var(--surface);padding:13px 14px">
@@ -607,6 +617,43 @@ function renderPending(f) {
   </div>`;
 }
 
+/* 고민별 관련 원료 — 어떤 고민에 도움되는 원료가 몇 종 들어있는지.
+   6종을 늘 같은 순서로 보여준다. 0종이면 회색으로 '없음' 이라고 말한다.
+   해당되는 것만 보여주면 사료마다 항목이 달라져 비교가 안 된다. */
+const FUNC_ROWS = [
+  { k: 'skin', fn: ['skin'], icon: 'skin', label: '피부 · 알러지' },
+  { k: 'eye_tear', fn: ['eye_tear'], icon: 'tear', label: '눈물자국' },
+  { k: 'joint', fn: ['joint'], icon: 'joint', label: '관절' },
+  { k: 'digestive', fn: ['digestive'], icon: 'gut', label: '장 · 소화' },
+  { k: 'heart', fn: ['heart'], icon: 'senior', label: '심장' },
+  { k: 'immune', fn: ['immune'], icon: 'picky', label: '면역 · 활력' }
+];
+
+function funcBars(d) {
+  const fi = d.funcIngr || {};
+  const rows = FUNC_ROWS.map(r => {
+    const items = r.fn.flatMap(k => fi[k] || []);
+    return { ...r, n: items.length, names: items.map(x => x.n) };
+  });
+  const max = Math.max(3, ...rows.map(r => r.n));
+  return `
+  <h2 class="t-section" style="margin-top:30px">고민별 관련 원료</h2>
+  <p class="t-caption c-sub" style="margin-top:4px">원료 목록에서 찾은 관련 원료 종류 수예요</p>
+  <div style="margin-top:14px">${rows.map(r => `
+    <div style="margin-bottom:15px${r.n ? '' : ';opacity:.5'}">
+      <div style="display:flex;align-items:center;gap:7px">
+        ${cicon(r.icon, 17)}
+        <span style="font-size:13.5px;font-weight:700;letter-spacing:-.02em">${r.label}</span>
+        <span style="flex:1"></span>
+        <span class="t-caption ${r.n ? 'c-sub' : 'c-mute'}">${r.n ? `관련 원료 ${r.n}종` : '관련 원료 없음'}</span>
+      </div>
+      <div style="height:6px;border-radius:99px;background:var(--lineSoft);margin-top:7px;overflow:hidden">
+        <div style="height:100%;border-radius:99px;background:var(--purple700);width:${r.n / max * 100}%;transition:width .6s ease-out"></div>
+      </div>
+      ${r.names.length ? `<div class="t-micro c-mute" style="margin-top:5px">${esc(r.names.join(', '))}</div>` : ''}
+    </div>`).join('')}</div>`;
+}
+
 /* 03 성분 분석 */
 function renderNutritionTab(f, d) {
   const v = d.verdict || {};
@@ -618,60 +665,65 @@ function renderNutritionTab(f, d) {
     ...(v.dan || v.bad || []).map(x => ['cau', x])   /* 빨강 금지 — 위험도 앰버로 */
   ].slice(0, 5);
   const n = d.nutrient || {};
-  const NUT = [['protein', '조단백', 45], ['fat', '조지방', 30], ['fiber', '조섬유', 12], ['moisture', '수분', 20]];
   const ingr = (d.ingr || []).slice().sort((a, b) => (a.rank || 99) - (b.rank || 99));
-  const feed = feedingNumbers(f);
+
+  /* 기본 정보는 이 탭의 것이다. 성분을 보러 온 사람이 제일 먼저 확인하는 값이다. */
+  const basic = [
+    ['분류', (f.rx ? '처방식' : '일반식') + ' · ' + typeKo(f.type)],
+    ['원산지', COUNTRY_KO[f.country] || f.country],
+    ['단백질 / 지방', `${n.protein ?? '—'}% / ${n.fat ?? '—'}%`],
+    ['탄수화물 (추정)', n.dmCarb != null ? n.dmCarb + '%' : '—'],
+    ['조섬유', n.fiber != null ? n.fiber + '%' : '—'],
+    ['수분', n.moisture != null ? n.moisture + '%' : '—']
+  ];
 
   return `<div style="padding:22px var(--screenX) 40px">
-    ${cards.length ? `<h2 class="t-section">이 사료를 이렇게 봤어요</h2>
+    <h2 class="t-section">기본 정보</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px">
+      ${basic.map(([k, val]) => `
+        <div style="border-radius:var(--rThumbMd);background:var(--surface);padding:13px 14px">
+          <div class="t-micro c-mute">${k}</div>
+          <div style="margin-top:4px;font-size:15px;font-weight:700;letter-spacing:-.03em">${esc(val)}</div>
+        </div>`).join('')}
+    </div>
+
+    ${ratingCards(f)}
+
+    ${cards.length ? `<h2 class="t-section" style="margin-top:30px">이 사료를 이렇게 봤어요</h2>
     <div style="margin-top:13px">${cards.map(([k, c]) => `
       <div class="reason ${k}">${icon(k === 'pos' ? 'check' : 'alert', 18)}
         <div style="flex:1;min-width:0"><b>${esc(c.title)}</b><p>${esc(c.body)}</p></div></div>`).join('')}</div>` : ''}
 
-    <h2 class="t-section" style="margin-top:${cards.length ? 30 : 0}px">영양 성분</h2>
-    <div style="margin-top:14px">${NUT.map(([k, label, max]) => {
-      const val = n[k];
-      return `<div style="margin-bottom:14px">
-        <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:600;letter-spacing:-.02em">
-          <span class="c-sub">${label}</span><b style="font-weight:800">${val != null ? val + '%' : '표기 없음'}</b></div>
-        <div style="height:6px;border-radius:99px;background:var(--lineSoft);margin-top:7px;overflow:hidden">
-          <div style="height:100%;border-radius:99px;background:var(--purple700);width:${val != null ? Math.min(100, val / max * 100) : 0}%;transition:width .6s ease-out"></div></div>
-      </div>`;
-    }).join('')}</div>
+    ${funcBars(d)}
 
     ${ingr.length ? `<div style="display:flex;align-items:center;justify-content:space-between;margin-top:30px">
       <h2 class="t-section">원료 전체</h2>
       <button class="sec-more press" data-ingr-sheet>${ingr.length}개 모두 보기</button></div>
     <p class="t-bodySm c-sub" style="margin-top:10px;line-height:1.75">${ingr.slice(0, 10).map(i => esc(i.name)).join(', ')}${ingr.length > 10 ? '…' : ''}</p>` : ''}
 
-    ${ratingCards(f)}
-
-    <div class="card soft" style="margin-top:30px;border-radius:var(--rCard);padding:18px">
-      <div class="t-caption c-sub">우리 아이 기준 급여량</div>
-      <div style="display:flex;align-items:baseline;gap:7px;margin-top:6px">
-        <span style="font-size:32px;font-weight:800;letter-spacing:-.04em;color:var(--purple700)">${feed.daily}g</span>
-        <span class="t-caption c-sub">/ 하루 (${state.feeding.weightKg}kg 기준)</span>
-      </div>
-      <div class="t-caption c-mute" style="margin-top:6px">${feed.bagLabel}</div>
-    </div>
-
     <p class="note" style="padding:0">모든 분석은 라벨 표기 성분 기준의 참고용이에요.
 건강 문제는 수의사와 상담해주세요.</p>
   </div>`;
 }
 
-/* 별점 4카드 — 종합 점수는 노출하지 않지만 항목별 판단 재료는 남긴다 */
+/* 별점 4카드 — 종합 점수는 노출하지 않지만 항목별 판단 재료는 남긴다.
+   동그라미로는 몇 점인지 한눈에 안 들어와서 별로 바꿨다.
+   채운 별은 보라, 빈 별은 윤곽만 — 색 없이도 개수로 읽힌다. */
+const STAR_PATH = 'M12 2.6l2.9 5.9 6.5.95-4.7 4.6 1.1 6.5L12 17.5l-5.8 3.05 1.1-6.5-4.7-4.6 6.5-.95z';
+function stars(v) {
+  return [1, 2, 3, 4, 5].map(i => `<svg width="15" height="15" viewBox="0 0 24 24" style="display:block">
+    <path d="${STAR_PATH}" fill="${i <= v ? 'var(--purple700)' : 'none'}"
+      stroke="${i <= v ? 'none' : 'var(--ink20)'}" stroke-width="1.6" stroke-linejoin="round"></path></svg>`).join('');
+}
 function ratingCards(f) {
   const r = f.ratings;
   if (!r) return '';
-  const dot = v => [1, 2, 3, 4, 5].map(i =>
-    `<span style="width:7px;height:7px;border-radius:50%;background:${i <= v ? 'var(--purple700)' : 'var(--lineSoft)'};display:inline-block"></span>`).join('');
   return `<h2 class="t-section" style="margin-top:30px">항목별로 보면</h2>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px">
     ${Object.entries(RATING_LABEL).map(([k, label]) => r[k] == null ? '' : `
       <div style="border-radius:var(--rThumbMd);background:var(--surface);padding:13px 14px">
         <div class="t-micro c-mute">${label}</div>
-        <div style="display:flex;gap:3px;margin-top:8px;align-items:center">${dot(r[k])}</div>
+        <div style="display:flex;gap:2px;margin-top:8px;align-items:center">${stars(r[k])}</div>
       </div>`).join('')}
   </div>`;
 }
@@ -687,7 +739,7 @@ function feedingNumbers(f) {
   const days = daily > 0 ? Math.round(bagG / daily) : 0;
   const monthCost = f.price?.pKg ? Math.round(daily * 30 / 1000 * f.price.pKg) : null;
   return {
-    daily, perMeal: Math.round(daily / meals), days, bagG, kcal,
+    daily, perMeal: Math.round(daily / meals), days, bagG, kcal, monthCost,
     bagLabel: `${gLabel(bagG)} 한 봉지로 약 ${days}일` + (monthCost ? ` · 월 약 ${won(monthCost)}원` : '')
   };
 }
@@ -703,7 +755,7 @@ function renderFeedingTab(f, d) {
   /* 이 탭에 들어온 사람은 대개 '얼마인지'와 '어디서 사는지'를 먼저 본다.
      그래서 최저가·구매 링크를 맨 위에 둔다. */
   const priceBlock = `
-    <h2 class="t-section">최저가 비교</h2>
+    <h2 class="t-section">구매하러 가기</h2>
     <div style="margin-top:13px">
       ${prices.length ? prices.map((p, i) => `
         <div class="card" style="display:flex;align-items:center;gap:12px;padding:14px 16px;margin-bottom:9px">
@@ -720,17 +772,6 @@ function renderFeedingTab(f, d) {
 
   return `<div style="padding:22px var(--screenX) 40px">
     ${priceBlock}
-    <h2 class="t-section" style="margin-top:30px">기본 정보</h2>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px">
-      ${[['분류', (f.rx ? '처방식' : '일반식') + ' · ' + (f.type === 'dry' ? '건식' : f.type)],
-         ['원산지', COUNTRY_KO[f.country] || f.country],
-         ['단백질 / 지방', `${n.protein ?? '—'}% / ${n.fat ?? '—'}%`],
-         ['탄수화물 (추정)', n.dmCarb != null ? n.dmCarb + '%' : '—']].map(([k, v]) => `
-        <div style="border-radius:var(--rThumbMd);background:var(--surface);padding:13px 14px">
-          <div class="t-micro c-mute">${k}</div>
-          <div style="margin-top:4px;font-size:15px;font-weight:700;letter-spacing:-.03em">${esc(v)}</div>
-        </div>`).join('')}
-    </div>
 
     <div class="card" style="margin-top:26px;border-radius:var(--rCardLg);padding:20px 18px">
       <h2 class="t-sub">하루에 얼마나 줄까요?</h2>
@@ -766,7 +807,13 @@ function renderFeedingTab(f, d) {
       <div style="display:flex;gap:7px;margin-top:8px;flex-wrap:wrap">
         ${opts.map(g => `<button class="press" data-bag="${g}" style="flex:1;min-width:88px;height:44px;border-radius:var(--rSegment);font-size:14px;font-weight:700;${feed.bagG === g ? 'background:var(--purple900);color:#fff' : 'box-shadow:var(--outline);color:var(--ink70)'}">${gLabel(g)}</button>`).join('')}
       </div>` : ''}
-      <p class="t-caption c-sub" style="margin-top:12px">${gLabel(feed.bagG)} 한 봉지로 하루 ${state.feeding.meals}끼 급여 시 약 <b style="color:var(--ink);font-weight:800">${feed.days}</b>일</p>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:14px;padding:16px 18px;
+                  border-radius:var(--rInput);background:var(--purple900);color:#fff">
+        <div style="flex:1;min-width:0;font-size:12.5px;font-weight:600;letter-spacing:-.02em;line-height:1.5;color:var(--purple300)">
+          ${gLabel(feed.bagG)} 한 봉지 · 하루 ${state.feeding.meals}끼 기준${feed.monthCost ? `<br>월 예상 약 ${won(feed.monthCost)}원` : ''}
+        </div>
+        <div style="font-size:30px;font-weight:800;letter-spacing:-.04em">${feed.days}<span style="font-size:17px;margin-left:1px">일</span></div>
+      </div>
 
       <p class="t-micro" style="margin-top:14px;color:#A8A2B0;font-weight:500;line-height:1.6">성견 유지 기준(RER×1.6) 계산값이에요. 활동량·나이에 따라 달라져요.${feed.kcal.est ? `<br>이 사료는 칼로리 표기가 없어 영양성분으로 추정한 값(약 ${won(feed.kcal.v)}kcal/kg)을 썼어요.` : ''}</p>
     </div>
@@ -812,13 +859,22 @@ function slotView(f, side) {
   </button>`;
   const other = state.compare.map(id => FOODS.find(x => x.id === id)).filter(Boolean).find(x => x.id !== f.id);
   const label = other ? abLabels(side === 'A' ? f : other, side === 'A' ? other : f)[side === 'A' ? 0 : 1] : f.brand;
+  const slot = side === 'A' ? 0 : 1;
+  /* 썸네일을 눌러도 다른 사료를 고를 수 있게 한다. '바꾸기' 글자만 있으면
+     누를 수 있는 줄 모른다 — 실제로 그래서 못 찾는다는 말을 들었다. */
   return `<div style="flex:1;min-width:0;border-radius:var(--rCard);padding:14px 12px;box-shadow:inset 0 0 0 2px ${color};display:flex;flex-direction:column;align-items:center;gap:9px">
     <span style="align-self:flex-start;height:22px;padding:0 9px;border-radius:999px;background:${chipBg};color:${color};font-size:11px;font-weight:800;display:inline-flex;align-items:center">${side} · ${esc(label)}</span>
-    ${well(f, 88)}
+    <button class="press" data-pick-slot="${slot}" style="position:relative;display:block" aria-label="다른 사료로 바꾸기">
+      ${well(f, 88)}
+      <span style="position:absolute;right:-3px;bottom:-3px;width:28px;height:28px;border-radius:50%;
+        background:${color};color:#fff;display:grid;place-items:center;box-shadow:0 0 0 3px #fff">
+        ${icon('compare', 14)}</span>
+    </button>
     <div style="width:100%;text-align:center">
       <div class="t-micro c-mute">${esc(f.brand)}</div>
       <div style="font-size:14px;font-weight:700;letter-spacing:-.03em;margin-top:2px">${esc(f.name)}</div>
-      <button class="press" data-pick-slot="${side === 'A' ? 0 : 1}" style="margin-top:6px;font-size:12px;font-weight:700;color:${color}">바꾸기</button>
+      <button class="press" data-pick-slot="${slot}" style="margin-top:9px;width:100%;height:34px;border-radius:var(--rChip);
+        font-size:12.5px;font-weight:700;letter-spacing:-.02em;color:${color};background:${chipBg}">다른 사료로 바꾸기</button>
     </div>
   </div>`;
 }
@@ -975,7 +1031,7 @@ function renderCompareEmpty(one) {
 const CONCERN_OPTS = [
   ['skin', '피부가 자주 붉어져요'], ['eye_tear', '눈물자국이 심해요'], ['digestive', '변이 무르고 잦아요'],
   ['weight', '체중이 늘고 있어요'], ['joint', '관절이 약해요'], ['senior', '나이가 많아요'],
-  ['picky_eater', '잘 안 먹어요'], ['none', '딱히 없어요']
+  ['picky_eater', '잘 안 먹어요'], ['value', '가성비가 중요해요'], ['none', '딱히 없어요']
 ];
 const ALLERGEN_OPTS = ['닭', '소고기', '양고기', '연어', '오리', '옥수수', '밀', '대두', '유제품'];
 const ACTIVITY_OPTS = [['low', '거의 실내'], ['mid', '하루 30분~1시간'], ['high', '한 시간 이상']];
@@ -1038,17 +1094,37 @@ function renderWizard() {
 }
 
 /* ═══ 06 추천 결과 ═══ */
+/* kg당 가격을 0~1 로 환산한다. 1 이 가장 싸다.
+   구간은 루브릭의 가성비 기준과 같은 눈금을 쓴다(1만/1.6만/3.2만/4.5만). */
+function valueScale(pKg) {
+  if (pKg == null) return null;
+  if (pKg <= 10000) return 1;
+  if (pKg <= 16000) return 0.75;
+  if (pKg <= 32000) return 0.5;
+  if (pKg <= 45000) return 0.25;
+  return 0;
+}
+
 function matchScore(f, pet) {
   let s = 50;
   const d = DETAIL[f.id] || {};
-  for (const c of pet.concerns || []) {
-    if (c === 'none') continue;
+  const concerns = (pet.concerns || []).filter(c => c !== 'none');
+  for (const c of concerns) {
+    if (c === 'value') continue;                  /* 가격은 아래에서 따로 본다 */
     if ((d.funcIngr?.[c] || []).length) s += 12;
     if ((f.concerns || []).includes(c)) s += 6;
   }
   if ((pet.allergens || []).some(a => a !== 'none' && (d.ingr || []).some(i => i.name.includes(a)))) s -= 40;
   if (cautionState(f).k === 'none') s += 10;
   s += Math.round((f.score ?? 0) * 1.5);          /* 내부 점수는 가중치로만 */
+
+  /* 가성비를 고민으로 골랐으면 kg당 가격을 크게 본다.
+     이게 없으면 점수만 높은 비싼 사료가 늘 1등이 된다 — 실제로 그랬다.
+     가격을 모르는 사료는 올려줄 근거가 없으니 중간으로 둔다. */
+  if (concerns.includes('value')) {
+    const v = valueScale(f.price?.pKg);
+    s += v == null ? -6 : Math.round((v - 0.5) * 44);
+  }
   return Math.max(5, Math.min(99, s));
 }
 function renderResult() {
@@ -1130,6 +1206,12 @@ function matchReasons(f, pet) {
       const names = items.map(x => x.n).join('·');
       out.push(`${names}${josa(names, '이', '가')} 들어 있어 도움될 수 있어요`);
     }
+  }
+  if ((pet.concerns || []).includes('value') && f.price?.pKg) {
+    const v = valueScale(f.price.pKg);
+    out.unshift(v >= 0.75 ? `kg당 ${won(f.price.pKg)}원으로 저렴한 편이에요`
+      : v >= 0.5 ? `kg당 ${won(f.price.pKg)}원으로 보통 수준이에요`
+        : `kg당 ${won(f.price.pKg)}원이라 가격은 높은 편이에요`);
   }
   if (cautionState(f).k === 'none') out.push('주의성분으로 볼 원료가 없어요');
   if (f.price?.pKg) out.push(`100g당 ${won(per100g(f))}원 · 하루 약 ${feedingNumbers(f).daily}g`);
