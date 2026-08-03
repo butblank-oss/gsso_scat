@@ -1,0 +1,90 @@
+/* GitHub 저장소에 직접 커밋한다.
+
+   발사탕은 정적 사이트라 서버가 없다. 그래서 어드민이 파일을 고치고
+   GitHub Contents API 로 커밋을 올린다. 커밋이 올라가면 CI 가 게이트를 돌리고,
+   통과하면 Pages 가 배포한다. 서버를 사지 않고도 사람이 혼자 발행할 수 있다.
+
+   ── 토큰에 대해 ──
+   fine-grained personal access token 이 필요하다.
+     Repository access : butblank-oss/gsso_scat 하나만
+     Permissions       : Contents = Read and write
+     Expiration        : 되도록 짧게 (90일)
+
+   토큰은 이 브라우저의 localStorage 에만 둔다. 저장소에 절대 넣지 않는다.
+   어드민 페이지는 공개 도메인에 있으므로, 이 페이지에 XSS 가 생기면
+   토큰이 새어나갈 수 있다. 그래서 권한을 저장소 하나·Contents 로만 좁히고
+   만료를 짧게 두는 것이 전제다. 조직 계정 토큰이나 classic 토큰은 쓰지 않는다.
+*/
+const GH = {
+  owner: 'butblank-oss',
+  repo: 'gsso_scat',
+  branch: 'main',
+  KEY: 'balsatang.gh.token',
+
+  get token() { return localStorage.getItem(this.KEY) || ''; },
+  set token(v) { v ? localStorage.setItem(this.KEY, v) : localStorage.removeItem(this.KEY); },
+
+  async api(path, opt = {}) {
+    const res = await fetch(`https://api.github.com${path}`, {
+      ...opt,
+      headers: {
+        'Accept': 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
+        ...(opt.body ? { 'Content-Type': 'application/json' } : {}),
+        ...opt.headers
+      }
+    });
+    const text = await res.text();
+    let json = null;
+    try { json = text ? JSON.parse(text) : null; } catch { }
+    if (!res.ok) {
+      const msg = json?.message || `HTTP ${res.status}`;
+      throw new Error(res.status === 401 ? '토큰이 유효하지 않습니다'
+        : res.status === 403 ? `권한이 없습니다 — ${msg}`
+          : res.status === 409 ? '다른 곳에서 먼저 바뀌었습니다. 새로고침하고 다시 시도하세요'
+            : msg);
+    }
+    return json;
+  },
+
+  /* 토큰이 이 저장소에 쓸 수 있는지 확인한다 */
+  async check() {
+    const r = await this.api(`/repos/${this.owner}/${this.repo}`);
+    return { name: r.full_name, canWrite: !!r.permissions?.push };
+  },
+
+  /* UTF-8 문자열 ↔ base64. 한글이 섞여 있어 그냥 btoa 를 쓰면 깨진다. */
+  enc(str) {
+    const bytes = new TextEncoder().encode(str);
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    }
+    return btoa(bin);
+  },
+  dec(b64) {
+    const bin = atob(b64.replace(/\s/g, ''));
+    const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  },
+
+  /* 경로는 구분자 '/' 를 살린 채 세그먼트별로만 인코딩한다.
+     통째로 encodeURIComponent 하면 '/' 가 %2F 가 돼서 경로가 깨진다. */
+  path(p) { return p.split('/').map(encodeURIComponent).join('/'); },
+
+  async getFile(path) {
+    const r = await this.api(
+      `/repos/${this.owner}/${this.repo}/contents/${this.path(path)}?ref=${this.branch}`);
+    return { text: this.dec(r.content), sha: r.sha };
+  },
+
+  /* sha 를 같이 보내야 한다. 그 사이 다른 곳에서 바뀌었으면 409 로 막힌다 —
+     모르고 덮어쓰는 것보다 낫다. */
+  async putFile(path, text, sha, message) {
+    return this.api(`/repos/${this.owner}/${this.repo}/contents/${this.path(path)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ message, content: this.enc(text), sha, branch: this.branch })
+    });
+  }
+};
