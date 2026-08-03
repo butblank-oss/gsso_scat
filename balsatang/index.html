@@ -45,7 +45,7 @@ svg.i{display:inline-block;vertical-align:-.14em;fill:none;stroke:currentColor;
   border-bottom:1px solid transparent;transition:border-color var(--t)}
 .topbar.stuck{border-bottom-color:var(--line)}
 /* 증상 키워드로 찾아준 결과를 알리는 안내 */
-.fcol .sbadge{margin:5px 0 0;font-size:9.5px;padding:1.5px 6px}
+.fbar .sbadge{font-size:9.5px;padding:1.5px 6px}
 .sbadge{display:inline-flex;align-items:center;font-size:10.5px;font-weight:700;
   padding:2px 7px;border-radius:99px;margin-left:6px;white-space:nowrap}
 .sbadge.strong{background:#E8F5EA;color:#1F7A2E;border:1px solid #C3E4C9}
@@ -249,18 +249,28 @@ svg.i{display:inline-block;vertical-align:-.14em;fill:none;stroke:currentColor;
   border-radius:var(--r-lg);padding:18px 16px}
 .fsec-l{font-size:11.5px;font-weight:700;color:var(--muted);letter-spacing:.3px;margin-bottom:5px}
 .fsec-s{font-size:15px;font-weight:800;letter-spacing:-.5px;line-height:1.4;margin-bottom:18px}
-/* 4열 고정 — 5개 이상이면 다음 줄로 내린다(가로 스크롤 금지) */
-.fchart{display:grid;grid-template-columns:repeat(4,1fr);gap:20px 6px}
-.fcol{min-width:0;display:flex;flex-direction:column;align-items:center;text-align:center}
-.fcnt{font-size:15px;font-weight:900;letter-spacing:-.5px;margin-bottom:6px}
-.fcnt.zero{color:var(--muted);font-weight:700}
-.fbar-o{height:58px;width:38px;display:flex;align-items:flex-end;justify-content:center;margin-bottom:9px}
-.fbar-i{width:100%;border-radius:7px;transition:height .5s var(--ease)}
-.fbar-i.has{background:linear-gradient(180deg,var(--brand) 0%,var(--brand-deep) 100%)}
-.fbar-i.none{background:var(--line)}
-.flab{font-size:11px;font-weight:700;color:var(--ink2);line-height:1.4;letter-spacing:-.3px}
-.flab .i{color:var(--sub);margin-bottom:2px}
-.fitems{margin-top:4px;font-size:10px;color:var(--muted);line-height:1.4;word-break:keep-all}
+/* 가로 막대. 세로 막대 4열은 라벨과 원료명이 좁은 칸에서 뭉개졌다.
+   가로로 눕히면 한글 라벨도 원료명도 줄 하나를 온전히 쓴다. */
+.fbars{display:flex;flex-direction:column;gap:14px}
+.fbar{min-width:0}
+.fbar-h{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.fbar-n{display:flex;align-items:center;gap:5px;font-size:13px;font-weight:800;
+  letter-spacing:-.3px;color:var(--ink)}
+.fbar-n .i{color:var(--sub)}
+.fbar-c{margin-left:auto;font-size:13px;font-weight:900;letter-spacing:-.4px;color:var(--brand)}
+.fbar-c i{font-style:normal;font-size:10.5px;font-weight:700;color:var(--muted);margin-left:1px}
+.fbar-t{height:8px;border-radius:99px;background:var(--card2);overflow:hidden}
+.fbar-f{height:100%;border-radius:99px;transition:width .55s var(--ease);
+  background:linear-gradient(90deg,var(--brand-mid) 0%,var(--brand) 100%)}
+.fbar.strong .fbar-f{background:linear-gradient(90deg,var(--good-mid) 0%,var(--good) 100%)}
+.fbar.strong .fbar-c{color:var(--good)}
+.fbar-i{margin-top:6px;font-size:11.5px;color:var(--sub);line-height:1.5;word-break:keep-all}
+.fbar-none{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:2px;
+  padding-top:12px;border-top:1px solid var(--line)}
+.fbar-none span{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;
+  color:var(--muted);background:var(--card2);border-radius:99px;padding:3px 9px}
+.fbar-none span .i{color:var(--muted)}
+.fbar-none em{font-style:normal;font-size:11px;color:var(--muted);margin-left:2px}
 
 /* fit profiles */
 .fitsec{margin:22px 20px 4px}
@@ -1232,14 +1242,21 @@ function openDetail(id){
     .filter((b,i)=> i < 4 || (fi[b.key] && fi[b.key].length))
     .map(b=>({...b, items:(fi[b.key]||[]).map(x=>x.n).filter(Boolean)}));
   const maxC = Math.max(...buckets.map(b=>b.items.length), 1);
+  /* 원료가 있는 것만 막대로 그리고, 없는 것은 맨 아래 한 줄로 모은다.
+     0 짜리 막대를 네 개씩 세워두면 정작 있는 것이 묻힌다. */
   const present = buckets.filter(b=>b.items.length)
-    .sort((a,b)=>(f.funcStrength?.[b.key]||0)-(f.funcStrength?.[a.key]||0));
+    .sort((a,b)=>(f.funcStrength?.[b.key]||0)-(f.funcStrength?.[a.key]||0)
+              || b.items.length-a.items.length);
+  const empty = buckets.filter(b=>!b.items.length);
   const strong = present.filter(b=>strengthLevel(f.funcStrength?.[b.key])==='strong').map(b=>b.label);
+  /* 요약 한 줄. 다 나열하면 두 줄을 넘겨 오히려 안 읽힌다. 앞의 셋만 쓴다. */
+  const listUpTo3 = arr => arr.length <= 3
+    ? arr.join(', ') : `${arr.slice(0,3).join(', ')} 외 ${arr.length-3}가지`;
   const funcSummary = !present.length
     ? '기능성 원료는 확인되지 않았어요'
     : strong.length
-      ? `${strong.join(', ')}에 도움되는 원료가 뚜렷해요`
-      : `${present.map(b=>b.label).join(', ')}에 도움되는 원료가 있어요`;
+      ? `${listUpTo3(strong)}에 도움되는 원료가 뚜렷해요`
+      : `${listUpTo3(present.map(b=>b.label))}에 도움되는 원료가 있어요`;
 
   /* 적합 / 주의 프로필 */
   const strengthFor = s => s >= 9 ? 5 : s >= 8 ? 4 : 3;
@@ -1339,18 +1356,25 @@ function openDetail(id){
     <div class="fsec">
       <div class="fsec-l">목적별 원료</div>
       <div class="fsec-s">${funcSummary}</div>
-      <div class="fchart">
-        ${buckets.map(b=>{
+      <div class="fbars">
+        ${present.map(b=>{
           const c = b.items.length;
-          const h = c > 0 ? Math.max(Math.round(c/maxC*56), 16) : 6;
-          return `<div class="fcol">
-            <div class="fcnt${c===0?' zero':''}">${c}</div>
-            <div class="fbar-o"><div class="fbar-i ${c>0?'has':'none'}" style="height:${h}px"></div></div>
-            <div class="flab">${icon(b.ico,18)}<br>${b.label}</div>
-            <div class="fitems">${b.items.length?b.items.join(', '):'해당 없음'}</div>
-            ${strengthBadge(f, b.key)}
+          const w = Math.max(Math.round(c/maxC*100), 8);
+          const lv = strengthLevel(f.funcStrength?.[b.key]) || 'weak';
+          return `<div class="fbar ${lv}">
+            <div class="fbar-h">
+              <span class="fbar-n">${icon(b.ico,15)}${b.label}</span>
+              ${strengthBadge(f, b.key)}
+              <span class="fbar-c">${c}<i>종</i></span>
+            </div>
+            <div class="fbar-t"><div class="fbar-f" style="width:${w}%"></div></div>
+            <div class="fbar-i">${b.items.join(' · ')}</div>
           </div>`;
         }).join('')}
+        ${empty.length?`<div class="fbar-none">
+          ${empty.map(b=>`<span>${icon(b.ico,13)}${b.label}</span>`).join('')}
+          <em>해당 원료 없음</em>
+        </div>`:''}
       </div>
     </div>
 
