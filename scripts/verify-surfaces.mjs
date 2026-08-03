@@ -65,6 +65,10 @@ if (!/name\s*===\s*'data\.js'\s*\)\s*\{\s*toast/.test(dlFn))
   problems.push('예전 어드민의 data.js 내보내기가 다시 열렸습니다 — 그 출력은 구매 링크를 버립니다');
 if (/onclick="dl\('data\.js'\)"/.test(adminSrc))
   problems.push("예전 어드민에 data.js 받기 버튼이 다시 생겼습니다");
+/* 그 화면의 사료 편집은 지금 아무 데도 도달하지 않는다. 사람이 10분 채우고
+   잃어버리지 않도록 위저드 안에 그 사실이 적혀 있어야 한다. */
+if (!/사이트에는 반영되지 않아요/.test(adminSrc))
+  problems.push('예전 어드민 사료 위저드에 "반영되지 않는다" 안내가 없습니다');
 
 /* ── 4. 심사 화면이 보는 스테이징이 발행본과 겹치지 않는지 ── */
 const stagingDir = 'data/staging';
@@ -82,11 +86,19 @@ if (fs.existsSync(stagingDir)) {
   if (dup) problems.push(`이미 발행된 사료가 스테이징에 ${dup}건 남아 있습니다 (심사 화면에 중복으로 뜹니다)`);
 }
 
+/* ── 4-1. 죽은 썸네일 주소 ──
+   예전 앱이 남긴 /objects/uploads/... 는 값은 있지만 안 불러와진다.
+   목록에서는 '썸네일 있음' 으로 세어져 운영자가 영영 못 찾는다. */
+const deadThumb = FOODS_ALL.filter(f => f.thumb && !/^https:\/\//.test(f.thumb));
+if (deadThumb.length)
+  problems.push(`https 가 아닌 썸네일 주소 ${deadThumb.length}건: ${deadThumb.map(f => f.name).slice(0, 3).join(', ')}`);
+
 /* ── 5. 썸네일·상세 연결 ── */
 const orphan = Object.keys(DETAIL).filter(id => !FOODS_ALL.some(f => f.id === id));
 if (orphan.length) problems.push(`DETAIL 에만 있고 사료 목록엔 없는 항목 ${orphan.length}건`);
 notes.push(`사료 ${FOODS_ALL.length}종 (발행 ${FOODS.length}) · 상세 ${Object.keys(DETAIL).length}종`);
 notes.push(`썸네일 없음 ${FOODS_ALL.filter(f => !f.thumb).length}종`);
+notes.push(`콘텐츠 ${(() => { try { return new Function(`${read('balsatang/articles.js')}; return ARTICLES.length`)(); } catch { return '?'; } })()}편`);
 
 /* ── 결과 ── */
 console.log('\n화면 간 연동 검사');

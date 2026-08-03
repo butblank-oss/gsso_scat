@@ -1,6 +1,6 @@
 {
   "batchId": "example",
-  "note": "형식 설명용 예시입니다. 파일명이 _ 로 시작하면 게이트가 건너뜁니다. 실제 데이터가 아닙니다.",
+  "note": "형식 설명용 예시입니다. 파일명이 _ 로 시작하면 게이트가 건너뜁니다. 실제 데이터가 아닙니다. 이 파일은 지금 게이트를 그대로 통과하는 상태로 유지합니다 — 여기 없는 필드는 게이트가 요구하지 않습니다.",
   "collectedAt": "2026-08-03T01:00:00Z",
   "collector": {
     "agent": "사료-수집",
@@ -23,10 +23,10 @@
           "all"
         ],
         "ico": "drumstick",
-        "score": 8.8,
+        "score": 8.4,
         "ratings": {
           "quality": 5,
-          "carb": 4,
+          "carb": 3,
           "additive": 4,
           "value": 3
         },
@@ -41,15 +41,37 @@
           "p": 60000,
           "wg": 3000,
           "shop": "coupang",
-          "pKg": 20000
+          "pKg": 20000,
+          "wgOptions": [
+            3000,
+            6000
+          ],
+          "buyUrl": "https://link.coupang.com/a/EXAMPLE"
         },
         "facts": {
-          "dmCarb": 30,
+          "dmCarb": 40,
           "protein": 35,
           "firstIngrCat": "meat",
           "cautionN": 2,
-          "dangerN": 0
-        }
+          "dangerN": 0,
+          "pKg": 20000
+        },
+        "specOrigin": "overseas",
+        "ga": {
+          "protein": 35,
+          "fat": 15,
+          "fiber": 4,
+          "moisture": 10,
+          "ash": 8
+        },
+        "ingredients": [
+          "닭고기",
+          "닭고기분말",
+          "고구마",
+          "완두콩",
+          "아마씨",
+          "건조 치커리 뿌리"
+        ]
       },
       "sources": [
         {
