@@ -279,7 +279,8 @@ function wS1(){
     <div class="fld"><label>사료 썸네일 <span>로고 또는 포장지 사진</span></label>
       <div class="thumbrow">
         <div class="thumbbox">${hasThumb(wF)
-          ? `<img src="${at(wF.thumb)}" alt="">`
+          ? `<img src="${at(wF.thumb)}" alt="" onerror="this.parentNode.innerHTML='${
+              String(ico(BS.deriveIco(wF),30)).replace(/'/g,'&#39;')}'">`
           : ico(BS.deriveIco(wF),30)}</div>
         <div style="flex:1;min-width:0">
           <input type="file" id="thumbFile" accept="image/jpeg,image/png,image/webp"
@@ -288,9 +289,14 @@ function wS1(){
             <button class="btn sm" onclick="el('thumbFile').click()">${ico('package',13)}사진 업로드</button>
             ${hasThumb(wF)?`<button class="btn sm dan" onclick="wF.thumb=null;save();wS1()">삭제</button>`:''}
           </div>
-          <div class="hint">${hasThumb(wF)
-            ? `업로드 완료 ${ico('check',11)} <b style="color:var(--good)">${thumbKB(wF.thumb)}KB</b> · 320px로 자동 압축돼요`
-            : 'JPG·PNG·WebP, 최대 5MB · 320px로 자동 압축돼요'}</div>
+          <div class="hint">${!hasThumb(wF)
+            ? 'JPG·PNG·WebP, 최대 5MB · 320px로 자동 압축돼요'
+            : /^data:/.test(wF.thumb)
+              /* 올린 사진은 파일이 통째로 값 안에 들어있어 용량이 의미가 있다.
+                 바깥 주소는 길이를 재봐야 0KB 만 나온다 — 출처를 보여주는 게 맞다. */
+              ? `업로드 완료 ${ico('check',11)} <b style="color:var(--good)">${thumbKB(wF.thumb)}KB</b> · 320px로 자동 압축돼요`
+              : `이미지 주소 ${ico('check',11)} <b style="color:var(--good)">${esc(thumbHost(wF.thumb))}</b> · 사료 관리에서 넣은 값이에요`
+          }</div>
         </div>
       </div>
       ${hasThumb(wF)?'':`<div class="hint" style="margin-top:6px">비워두면 주원료에 맞는 아이콘이 자동으로 쓰여요.</div>`}
@@ -322,6 +328,7 @@ function tglArr(arr,k){ const i=arr.indexOf(k); i>=0?arr.splice(i,1):arr.push(k)
 const THUMB_MAX = 320, THUMB_Q = 0.82;
 function hasThumb(f){ return f.thumb && /^(data:|https?:)/.test(f.thumb); }
 function thumbKB(u){ return Math.round((u.length*3/4)/1024); }
+function thumbHost(u){ try{ return new URL(u).hostname; }catch{ return '외부 주소'; } }
 function pickThumb(input){
   const file = input.files && input.files[0];
   input.value = '';
@@ -940,13 +947,18 @@ function openExport(){
           <span style="color:var(--muted)">(${Math.round(store.thumbBytes()/1024)}KB)</span><br>
         성분 사전 <b>${store.ingredients.length}종</b><br>
         발행 콘텐츠 <b>${artPub}편</b></div></div>
+    <div class="warnbox">
+      <b>사료(data.js) 내보내기는 막아뒀어요.</b><br>
+      이 화면은 지금 데이터 형태가 생기기 전에 만든 거라, 내보내면
+      <b>FOODS_ALL 선언</b>과 <b>status·srcState·funcStrength</b>,
+      그리고 <b>쿠팡 파트너스 구매 링크</b>가 통째로 빠져요.
+      그 파일로 덮으면 사이트가 깨집니다.<br>
+      사료는 <b>사료 관리(GitHub)</b> 화면에서 고치세요 — 거기서 고치면 저장소에 바로 커밋되고,
+      이 기기 밖에서도 그대로 보여요.</div>
     <div style="display:flex;gap:8px">
-      <button class="btn pri" style="flex:1;justify-content:center" onclick="dl('data.js')">data.js 받기</button>
-      <button class="btn pri" style="flex:1;justify-content:center" onclick="dl('articles.js')">articles.js 받기</button>
+      <a class="btn pri" href="foods.html" style="flex:1;justify-content:center">사료 관리 열기</a>
+      <button class="btn" style="flex:1;justify-content:center" onclick="dl('articles.js')">articles.js 받기</button>
     </div>
-    <div class="warnbox" style="background:var(--panel2);border-color:var(--line2);color:var(--sub)">
-      브라우저에 저장된 임시 데이터는 이 기기에서만 보여요.
-      다른 기기에서 이어서 작업하려면 파일을 내려받아 커밋해주세요.</div>
     <div class="modal-f">
       <button class="btn dan" onclick="resetDraft()">임시 데이터 초기화</button>
       <div style="flex:1"></div>
@@ -954,7 +966,12 @@ function openExport(){
   </div>`);
 }
 function dl(name){
-  const text = name==='data.js' ? store.exportDataJs() : store.exportArticlesJs();
+  /* data.js 는 내보내면 안 된다 — store.exportDataJs 는 FOODS_ALL 선언과
+     status·srcState·funcStrength·price.buyUrl 을 모르는 옛 형태로 쓴다.
+     그 파일로 덮으면 구매 링크가 전부 사라지고 사이트가 깨진다.
+     사료는 foods.html 이 고치고 커밋한다. */
+  if(name==='data.js'){ toast('사료는 사료 관리(GitHub) 화면에서 고쳐주세요'); return; }
+  const text = store.exportArticlesJs();
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([text],{type:'text/javascript'}));
   a.download=name; a.click(); URL.revokeObjectURL(a.href);

@@ -26,6 +26,9 @@ jobs:
       - name: data.js 검사 — 병합 충돌·문법 오류가 배포되지 않도록
         run: node scripts/verify-data.mjs
 
+      - name: 화면 간 연동 검사 — 한쪽에서 고친 값이 다른 쪽에서 사라지지 않도록
+        run: node scripts/verify-surfaces.mjs
+
       - name: 게이트 1 · 기계 검사 (URL 실접속 포함)
         id: g1
         run: node scripts/gate1-validate.mjs --live | tee /tmp/g1.txt
