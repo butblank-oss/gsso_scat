@@ -115,9 +115,14 @@ td.num{font-variant-numeric:tabular-nums;text-align:right}
 #sheet .sh-h{padding:15px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
 #sheet .sh-h b{flex:1;font-size:15px}
 #sheet .sh-b{flex:1;overflow-y:auto;padding:16px}
+
+/* 어드민 안에 끼워 넣었을 때는 이 화면의 이동 링크를 감춘다.
+   왼쪽에 이미 메뉴가 있어서 두 벌이 되면 헷갈린다. */
+@media all { .embedded .top a { display:none !important } }
 </style>
 </head>
 <body>
+<script>if(window.top!==window.self)document.documentElement.classList.add('embedded');</script>
 
 <div class="top">
   <h1>사료 관리</h1>

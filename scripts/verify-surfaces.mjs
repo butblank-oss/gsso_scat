@@ -55,22 +55,16 @@ for (const key of ['ratings', 'concerns', 'func']) {
   if (missing.length) problems.push(`${key} 없는 사료 ${missing.length}종: ${missing.slice(0, 3).join(', ')}`);
 }
 
-/* ── 3. 예전 어드민이 data.js 를 다시 쓰려 들지 않는지 ──
-   store.exportDataJs 는 지금 형태를 모른다. 그 출력으로 data.js 를 덮으면
-   FOODS_ALL 선언과 status·srcState·funcStrength·price.buyUrl 이 사라진다.
-   그래서 화면에서 그 경로를 막아뒀다. 다시 열리면 여기서 잡는다. */
+/* ── 3. 어드민이 사료를 제 손으로 고치려 들지 않는지 ──
+   어드민 안의 사료·가격·심사는 진짜 편집기(foods.html·review.html)를 그대로 띄운다.
+   예전처럼 자체 편집기를 두면 데이터 형태가 갈라져 구매 링크 같은 값이 사라진다. */
 const adminSrc = read('balsatang/admin/app.js');
-const dlFn = adminSrc.slice(adminSrc.indexOf('function dl(name)'), adminSrc.indexOf('function resetDraft'));
-if (!/name\s*===\s*'data\.js'\s*\)\s*\{\s*toast/.test(dlFn))
-  problems.push('예전 어드민의 data.js 내보내기가 다시 열렸습니다 — 그 출력은 구매 링크를 버립니다');
+if (/function pgFoodsList|function pgWizard|function pgPriceList/.test(adminSrc))
+  problems.push('어드민에 자체 사료 편집기가 다시 생겼습니다 — foods.html 한 곳만 써야 합니다');
+if (!/const EMBED\s*=/.test(adminSrc))
+  problems.push('어드민이 사료 관리·심사 화면을 띄우지 않습니다');
 if (/onclick="dl\('data\.js'\)"/.test(adminSrc))
-  problems.push("예전 어드민에 data.js 받기 버튼이 다시 생겼습니다");
-/* 그 화면의 사료 편집은 지금 아무 데도 도달하지 않는다. 사람이 10분 채우고
-   잃어버리지 않도록 위저드 안에 그 사실이 적혀 있어야 한다. */
-/* 문장을 통째로 비교하면 말만 다듬어도 깨진다. 뜻이 남아 있는지만 본다. */
-const wizardWarn = adminSrc.slice(adminSrc.indexOf('function renderWizard'), adminSrc.indexOf('function wGo'));
-if (!/반영되지 않아/.test(wizardWarn) || !/사료 관리/.test(wizardWarn))
-  problems.push('사료 위저드에 "여기 편집은 반영되지 않는다 · 사료 관리를 쓰라" 는 안내가 없습니다');
+  problems.push('어드민에 data.js 받기 버튼이 다시 생겼습니다');
 
 /* ── 4. 심사 화면이 보는 스테이징이 발행본과 겹치지 않는지 ── */
 const stagingDir = 'data/staging';

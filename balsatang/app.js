@@ -586,7 +586,9 @@ function renderDetail() {
         ? `<button class="btn pri press" data-dtab="feeding">급여량 · 가격 보기</button>`
         : buyUrlOf(f)
           ? `<button class="btn pri press" data-buy="${esc(buyUrlOf(f))}">구매하러 가기</button>`
-          : `<button class="btn pri press" data-request="price" disabled style="opacity:.55">구매 링크 준비 중</button>`}
+          /* 비활성이라도 읽혀야 한다. opacity 로 흐리면 대비가 1.9:1 까지 떨어진다. */
+          : `<button class="btn press" data-request="price" disabled
+              style="background:var(--surface);color:var(--ink50);box-shadow:var(--outline)">구매 링크 준비 중</button>`}
   </div>`}`;
 }
 

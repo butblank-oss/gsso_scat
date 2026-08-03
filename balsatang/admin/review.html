@@ -143,9 +143,14 @@ tr.diff td:first-child{color:var(--bad);font-weight:600}
 .bar .in .go{background:var(--good);color:#06210f;font-weight:700}
 .bar .in .go:hover:not(:disabled){filter:brightness(1.08)}
 .bar .in .go:disabled{opacity:.4;cursor:not-allowed}
+
+/* 어드민 안에 끼워 넣었을 때는 이 화면의 이동 링크를 감춘다.
+   왼쪽에 이미 메뉴가 있어서 두 벌이 되면 헷갈린다. */
+@media all { .embedded .top a { display:none !important } }
 </style>
 </head>
 <body>
+<script>if(window.top!==window.self)document.documentElement.classList.add('embedded');</script>
 
 <div class="top">
   <h1>발행 심사</h1>
