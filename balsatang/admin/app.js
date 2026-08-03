@@ -23,23 +23,13 @@ function markDirty(){ el('dirtyDot').innerHTML = store.dirty ? '<span class="dir
 
 /* ═══ 한글 입력 ═══
    한글은 한 글자를 만드는 동안 IME 가 그 입력칸을 붙잡고 있다. 목록을 다시
-   그리면서 innerHTML 로 갈아치우면 붙잡고 있던 칸이 사라지면서 조합이 끊기고
-   'ㅇ오오ㄹ리리' 같은 찌꺼기가 남는다. 조합이 끝난 뒤에만 그리는 것으로는
-   부족하다 — 한 글자를 확정하는 순간 다음 조합이 곧바로 시작되므로 그 틈에도
-   칸이 사라지면 안 된다. 그래서 살아있는 입력칸을 그대로 옮겨 심는다. */
-function ime(fn){
-  const live = document.activeElement;
-  const keep = live && live.tagName === 'INPUT' ? live : null;
-  const ph = keep && keep.getAttribute('placeholder');
-  const at = keep && keep.selectionStart;
-  fn();
-  if(!keep) return;
-  const fresh = [...document.querySelectorAll('input')].find(i=>i.getAttribute('placeholder')===ph);
-  if(!fresh || fresh === keep) return;
-  fresh.replaceWith(keep);
-  keep.focus();
-  try{ keep.setSelectionRange(at, at); }catch{}
-}
+   그리면서 그 칸이 문서에서 잠깐이라도 떨어져 나가면 조합이 취소되어
+   'ㅈㅣㅇㅜㅍㅣㄱ' 처럼 자모가 흩어진다. 노드를 붙잡았다가 도로 꽂아도
+   소용없다 — 떨어지는 순간 이미 취소된다.
+
+   그래서 검색칸이 든 껍데기(…Shell)와 조건에 따라 바뀌는 목록(…List)을
+   나눴다. 검색할 때는 목록만 갈아끼우고 입력칸은 손대지 않는다.
+   새 목록 화면을 만들 때도 이 규칙을 지켜야 한다. */
 
 /* ═══ NAV ═══ */
 const NAV = [
@@ -137,7 +127,43 @@ function pgDash(){
 
 /* ═══ 사료 관리 ═══ */
 let fQ='', fType='', fStatus='', fPage=1;
+/* 검색 입력칸이 있는 껍데기와, 조건에 따라 바뀌는 목록을 나눈다.
+
+   한 덩어리로 다시 그리면 입력칸이 문서에서 잠깐 떨어져 나간다. 노드를
+   붙잡았다가 도로 꽂아도 소용없다 — 떨어지는 순간 브라우저가 한글 조합을
+   취소해서 'ㅈㅣㅇㅜㅍㅣㄱ' 처럼 자모가 흩어진다.
+   그래서 입력칸이 든 껍데기는 그대로 두고 목록만 갈아끼운다. */
 function pgFoods(){
+  el('wrap').innerHTML = foodsShell();
+  pgFoodsList();
+}
+function foodsShell(){
+  return `
+  <div style="background:#16233D;border:1px solid #23386b;border-radius:8px;padding:12px 14px;
+              margin-bottom:14px;font-size:12.5px;color:#9DBBF5;line-height:1.65;
+              display:flex;align-items:center;gap:12px">
+    <div style="flex:1"><b>사료는 여기서 고치지 마세요.</b> 이 목록은 화면을 처음 열 때 받아온
+      사본이라, 사료 관리에서 커밋한 내용이 여기엔 안 보여요. 여기서 고친 것도 사이트에 반영되지 않아요.
+      사료를 고치거나 등록하려면 <b>사료 관리</b>를 쓰세요. 이 화면은 성분 사전·콘텐츠·태그·리콜용이에요.</div>
+    <button class="btn" onclick="reloadFromFile()" style="flex-shrink:0">최신 데이터 불러오기</button>
+    <a href="foods.html" style="flex-shrink:0;height:32px;padding:0 13px;border-radius:8px;background:#2F6FED;
+       color:#fff;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center">사료 관리 열기</a>
+  </div>
+  <div class="filters">
+    <input class="inp fw" style="width:220px" placeholder="브랜드·사료명 검색" value="${at(fQ)}"
+           oninput="fQ=this.value;fPage=1;pgFoodsList()">
+    <select class="inp fw" onchange="fType=this.value;fPage=1;pgFoodsList()">
+      <option value="">전체 형태</option>${opts(TYPE_KO,fType)}</select>
+    <select class="inp fw" onchange="fStatus=this.value;fPage=1;pgFoodsList()">
+      <option value="">전체 상태</option>
+      <option value="published"${fStatus==='published'?' selected':''}>발행</option>
+      <option value="draft"${fStatus==='draft'?' selected':''}>임시저장</option></select>
+    <div style="flex:1"></div>
+    <button class="btn pri" onclick="newFood()">+ 사료 등록</button>
+  </div>
+  <div id="foodList"></div>`;
+}
+function pgFoodsList(){
   let list = store.foods;
   if(fQ) list = list.filter(f=>(f.brand+f.name).includes(fQ));
   if(fType) list = list.filter(f=>f.type===fType);
@@ -146,29 +172,7 @@ function pgFoods(){
   fPage = Math.min(fPage, pages);
   const rows = list.slice((fPage-1)*per, fPage*per);
 
-  el('wrap').innerHTML = `
-  <div style="background:#16233D;border:1px solid #23386b;border-radius:8px;padding:12px 14px;
-              margin-bottom:14px;font-size:12.5px;color:#9DBBF5;line-height:1.65;
-              display:flex;align-items:center;gap:12px">
-    <div style="flex:1">이 화면은 처음 열었을 때의 데이터를 브라우저에 복사해두고 그것만 보여줘요.
-      그래서 <b>사료 관리(GitHub)에서 커밋한 내용이 여기엔 안 보여요.</b>
-      여기서 고친 것도 브라우저에만 남고, 파일로 내려받아 직접 올려야 반영돼요.</div>
-    <button class="btn" onclick="reloadFromFile()" style="flex-shrink:0">최신 데이터 불러오기</button>
-    <a href="foods.html" style="flex-shrink:0;height:32px;padding:0 13px;border-radius:8px;background:#2F6FED;
-       color:#fff;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center">사료 관리 열기</a>
-  </div>
-  <div class="filters">
-    <input class="inp fw" style="width:220px" placeholder="브랜드·사료명 검색" value="${at(fQ)}"
-           oninput="fQ=this.value;fPage=1;ime(pgFoods)">
-    <select class="inp fw" onchange="fType=this.value;fPage=1;pgFoods()">
-      <option value="">전체 형태</option>${opts(TYPE_KO,fType)}</select>
-    <select class="inp fw" onchange="fStatus=this.value;fPage=1;pgFoods()">
-      <option value="">전체 상태</option>
-      <option value="published"${fStatus==='published'?' selected':''}>발행</option>
-      <option value="draft"${fStatus==='draft'?' selected':''}>임시저장</option></select>
-    <div style="flex:1"></div>
-    <button class="btn pri" onclick="newFood()">+ 사료 등록</button>
-  </div>
+  el('foodList').innerHTML = `
   <div class="card" style="padding:0">
     ${rows.length ? `<table><thead><tr>
       <th style="width:34px"></th><th>사료명</th><th>형태</th><th>점수</th>
@@ -190,7 +194,7 @@ function pgFoods(){
       </tr>`}).join('')}
     </tbody></table>` : `<div class="empty">조건에 맞는 사료가 없어요</div>`}
   </div>
-  ${pages>1?pager(fPage,pages,'fPage',list.length,'pgFoods'):''}`;
+  ${pages>1?pager(fPage,pages,'fPage',list.length,'pgFoodsList'):''}`;
 }
 function pager(cur,pages,varName,total,fn){
   const btn=(p,l,d)=>`<button ${d?'disabled':''} class="${p===cur?'on':''}" onclick="${varName}=${p};${fn}()">${l||p}</button>`;
@@ -221,9 +225,9 @@ function renderWizard(){
   <div style="background:#2A2010;border:1px solid #4a3a16;border-radius:8px;padding:12px 14px;
               margin-bottom:14px;font-size:12.5px;color:#FCD34D;line-height:1.65;
               display:flex;align-items:center;gap:12px">
-    <div style="flex:1">여기서 고친 내용은 <b>이 브라우저에만 남고 사이트에는 반영되지 않아요.</b>
-      사료를 실제로 고치려면 사료 관리(GitHub) 화면을 쓰세요 — 거기서 고치면 저장소에 바로 커밋돼요.
-      이 화면은 원료·판정 같은 값을 정리해 두는 용도로만 쓰세요.</div>
+    <div style="flex:1">여기서 고친 내용은 <b>사이트에 반영되지 않아요.</b> 이 화면은 지금 데이터 형태가
+      생기기 전에 만든 거라, 내보내면 구매 링크 같은 값이 빠져요.
+      원료·성분표·판정 카드·맞춤 태그는 이제 <b>사료 관리</b>에서 전부 고칠 수 있어요.</div>
     <a href="foods.html" style="flex-shrink:0;height:32px;padding:0 13px;border-radius:8px;background:#2F6FED;
        color:#fff;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center">사료 관리 열기</a>
   </div>
@@ -568,17 +572,14 @@ function recalcPKg(i){
 
 /* ═══ 성분 관리 ═══ */
 let iQ='', iSafe='', iCat='', iPage=1;
+/* 사료 관리와 같은 이유로 껍데기와 목록을 나눈다 — 입력칸을 건드리지 않는다 */
 function pgIngr(){
-  let list = store.ingredients;
-  if(iQ) list = list.filter(i=>(i.name+i.nameEn).toLowerCase().includes(iQ.toLowerCase()));
-  if(iSafe) list = list.filter(i=>i.safe===iSafe);
-  if(iCat) list = list.filter(i=>i.cat===iCat);
-  const per=12, pages=Math.max(1,Math.ceil(list.length/per));
-  iPage=Math.min(iPage,pages);
-  const rows=list.slice((iPage-1)*per, iPage*per);
+  el('wrap').innerHTML = ingrShell();
+  pgIngrList();
+}
+function ingrShell(){
   const unknown = store.unknownIngredients();
-
-  el('wrap').innerHTML = `
+  return `
   ${unknown.length?`<div class="card" style="margin-bottom:14px;border-color:#4A3A12;background:#17130A">
     <div style="display:flex;align-items:center;gap:9px">
       ${ico('alert',16)}<b style="font-size:12.5px">성분 사전에 없는 원료 ${unknown.length}종</b>
@@ -589,14 +590,26 @@ function pgIngr(){
       ${unknown.length>14?` 외 ${unknown.length-14}종`:''}</div></div>`:''}
   <div class="filters">
     <input class="inp fw" style="width:220px" placeholder="성분명 검색" value="${at(iQ)}"
-           oninput="iQ=this.value;iPage=1;ime(pgIngr)">
-    <select class="inp fw" onchange="iSafe=this.value;iPage=1;pgIngr()">
+           oninput="iQ=this.value;iPage=1;pgIngrList()">
+    <select class="inp fw" onchange="iSafe=this.value;iPage=1;pgIngrList()">
       <option value="">전체 등급</option>${opts(SAFE_KO,iSafe)}</select>
-    <select class="inp fw" onchange="iCat=this.value;iPage=1;pgIngr()">
+    <select class="inp fw" onchange="iCat=this.value;iPage=1;pgIngrList()">
       <option value="">전체 카테고리</option>${opts(CATEGORY_KO,iCat)}</select>
     <div style="flex:1"></div>
     <button class="btn pri" onclick="openIngr()">+ 성분 등록</button>
   </div>
+  <div id="ingrList"></div>`;
+}
+function pgIngrList(){
+  let list = store.ingredients;
+  if(iQ) list = list.filter(i=>(i.name+i.nameEn).toLowerCase().includes(iQ.toLowerCase()));
+  if(iSafe) list = list.filter(i=>i.safe===iSafe);
+  if(iCat) list = list.filter(i=>i.cat===iCat);
+  const per=12, pages=Math.max(1,Math.ceil(list.length/per));
+  iPage=Math.min(iPage,pages);
+  const rows=list.slice((iPage-1)*per, iPage*per);
+
+  el('ingrList').innerHTML = `
   <div class="card" style="padding:0">
     ${rows.length?`<table><thead><tr>
       <th>성분명</th><th>카테고리</th><th>안전 등급</th><th>알러젠</th><th>기능</th>
@@ -613,7 +626,7 @@ function pgIngr(){
           <button class="btn sm dan" onclick="delIngr('${i.id}')">삭제</button></td>
     </tr>`).join('')}</tbody></table>`:`<div class="empty">조건에 맞는 성분이 없어요</div>`}
   </div>
-  ${pages>1?pager(iPage,pages,'iPage',list.length,'pgIngr'):''}`;
+  ${pages>1?pager(iPage,pages,'iPage',list.length,'pgIngrList'):''}`;
 }
 function addAllUnknown(){
   for(const u of store.unknownIngredients())
@@ -701,14 +714,15 @@ function delRecall(i){
 
 /* ═══ 가격 관리 ═══ */
 let pQ='', pOnly=false;
+/* 사료 관리와 같은 이유로 껍데기와 목록을 나눈다 — 입력칸을 건드리지 않는다 */
 function pgPrice(){
-  let list = store.foods;
-  if(pQ) list = list.filter(f=>(f.brand+f.name).includes(pQ));
-  if(pOnly) list = list.filter(f=>!f.prices.length);
+  el('wrap').innerHTML = priceShell();
+  pgPriceList();
+}
+function priceShell(){
   const noPrice = store.foods.filter(f=>!f.prices.length).length;
   const noLink  = store.foods.reduce((a,f)=>a+f.prices.filter(p=>!p.url).length,0);
-
-  el('wrap').innerHTML = `
+  return `
   <div class="kpis">
     <div class="kpi"><div class="kpi-l">${ico('coins',14)}가격 레코드</div>
       <div class="kpi-v">${store.foods.reduce((a,f)=>a+f.prices.length,0)}</div>
@@ -722,9 +736,17 @@ function pgPrice(){
   </div>
   <div class="filters">
     <input class="inp fw" style="width:220px" placeholder="브랜드·사료명 검색" value="${at(pQ)}"
-           oninput="pQ=this.value;ime(pgPrice)">
+           oninput="pQ=this.value;pgPriceList()">
     <button class="btn${pOnly?' pri':''}" onclick="pOnly=!pOnly;pgPrice()">미등록만 보기</button>
   </div>
+  <div id="priceList"></div>`;
+}
+function pgPriceList(){
+  let list = store.foods;
+  if(pQ) list = list.filter(f=>(f.brand+f.name).includes(pQ));
+  if(pOnly) list = list.filter(f=>!f.prices.length);
+
+  el('priceList').innerHTML = `
   <div class="card" style="padding:0">
     ${list.length?`<table><thead><tr><th>사료</th><th>판매처</th><th>용량</th>
       <th>가격</th><th>kg당</th><th>링크</th><th style="width:70px"></th></tr></thead><tbody>

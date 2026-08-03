@@ -33,22 +33,8 @@ const COUNTRY_KO = {
   DE: '독일', IT: '이탈리아', NL: '네덜란드', BE: '벨기에', GB: '영국', JP: '일본', TH: '태국'
 };
 
-/* 루브릭 — scripts/lib/rubric.mjs 의 rateValue 와 같은 구간이어야 한다.
-   여기서 쓰는 건 가격을 고쳤을 때 가성비 별점이 달라지는지 보여주기 위해서다. */
-function rateValue(pKg) {
-  if (pKg == null) return null;
-  if (pKg <= 10000) return 5;
-  if (pKg <= 16000) return 4;
-  if (pKg <= 32000) return 3;
-  if (pKg <= 45000) return 2;
-  return 1;
-}
-const SCORE_WEIGHT = { quality: 0.45, additive: 0.28, carb: 0.20, value: 0.07 };
-function computeScore(r) {
-  const w = SCORE_WEIGHT;
-  return Math.round(2 * (w.quality * r.quality + w.additive * r.additive +
-    w.carb * r.carb + w.value * r.value) * 10) / 10;
-}
+/* 채점은 engine.js 한 곳에서만 한다. 여기 옮겨 적으면 두 벌이 되어 어긋난다.
+   (engine.js 가 전역에 rateValue 를 두므로 같은 이름을 다시 선언하면 안 된다.) */
 const PRICE_KG = { min: 1000, max: 200000 };
 
 /* ── 상태 ── */
@@ -157,59 +143,50 @@ function visible() {
   });
 }
 
-/* 다시 그릴 때 검색 입력칸만은 살려서 옮겨 심는다.
-   한글은 한 글자를 만드는 동안 IME 가 그 칸을 붙잡고 있어서, innerHTML 로
-   갈아치우면 조합이 끊기고 'ㅇ오오ㄹ리리' 같은 찌꺼기가 남는다.
-   조합이 끝난 뒤에만 그리는 것으로는 부족하다 — 한 글자를 확정하는 순간
-   다음 조합이 곧바로 시작되므로 그 틈에도 칸이 사라지면 안 된다. */
-function keepInput(paint) {
-  const wrap = $('#wrap');
-  const live = $('#q');
-  const keep = live && (document.activeElement === live || live.dataset.composing === '1');
-  const at = keep ? live.selectionStart : 0;
-  paint(wrap);
-  if (!keep) return;
-  const fresh = $('#q');
-  if (!fresh) return;
-  fresh.replaceWith(live);
-  live.focus();
-  try { live.setSelectionRange(at, at); } catch { }
+/* 검색칸이 든 바와, 조건에 따라 바뀌는 목록을 나눈다.
+
+   한 덩어리로 다시 그리면 입력칸이 문서에서 잠깐 떨어져 나간다. 노드를
+   붙잡았다가 도로 꽂아도 소용없다 — 떨어지는 순간 브라우저가 한글 조합을
+   취소해서 자모가 흩어진다. 그래서 바는 한 번만 그리고 목록만 갈아끼운다. */
+function render() {
+  if (!$('#bar')) {
+    $('#wrap').innerHTML = `
+      <div class="note">사료를 고치는 곳이에요. <b>커밋하면 몇 분 뒤 사이트에 그대로 반영돼요.</b>
+        내려받거나 따로 올릴 필요 없어요.<br>
+        별점·총점만 직접 못 고쳐요 — 원료와 성분표를 고치면 루브릭이 다시 계산한 값을 보여주고,
+        누르면 반영돼요.</div>
+      <div class="bar" id="bar">
+        <input class="search" id="q" placeholder="브랜드 · 제품명 검색" value="${esc(S.q)}">
+        <span id="chips" style="display:flex;gap:8px;flex-wrap:wrap"></span>
+      </div>
+      <div id="list"></div>`;
+    const qi = $('#q');
+    const apply = () => { S.q = qi.value; renderList(); };
+    qi.addEventListener('input', apply);
+    qi.addEventListener('compositionend', apply);
+  }
+  renderList();
 }
 
-function render() {
+function renderList() {
   const rows = visible();
   const counts = {};
   for (const x of FILTERS) counts[x.k] = x.test ? S.foods.filter(x.test).length : S.foods.length;
 
-  keepInput(wrap => { wrap.innerHTML = `
-    <div class="note">발행된 데이터를 직접 고쳐 GitHub 에 커밋합니다. 커밋하면 CI 가 검증을 돌리고,
-      통과하면 몇 분 뒤 사이트에 반영돼요. 별점·총점·원료·영양 수치는 여기서 고칠 수 없어요 —
-      그건 근거가 같이 바뀌어야 하는 값이라 심사 화면의 몫이에요.</div>
-    <div class="bar">
-      <input class="search" id="q" placeholder="브랜드 · 제품명 검색" value="${esc(S.q)}">
-      ${FILTERS.map(x => `<button class="chip ${S.filter === x.k ? 'on' : ''}" data-filter="${x.k}">${x.label} ${counts[x.k]}</button>`).join('')}
-    </div>
-    ${rows.length ? `<table>
+  $('#chips').innerHTML = FILTERS.map(x =>
+    `<button class="chip ${S.filter === x.k ? 'on' : ''}" data-filter="${x.k}">${x.label} ${counts[x.k]}</button>`).join('');
+
+  $('#list').innerHTML = rows.length ? `<table>
       <thead><tr>
         <th style="width:52px"></th><th>사료</th><th style="width:76px">제형</th>
         <th style="width:130px" class="num">가격</th><th style="width:96px" class="num">kg당</th>
         <th style="width:210px">상태</th>
       </tr></thead>
       <tbody>${rows.map(rowHtml).join('')}</tbody>
-    </table>` : `<div class="empty"><b>해당하는 사료가 없어요</b>다른 조건으로 찾아보세요</div>`}
-  `; });
+    </table>` : `<div class="empty"><b>해당하는 사료가 없어요</b>다른 조건으로 찾아보세요</div>`;
 
-  const qi = $('#q');
-  if (!qi.dataset.bound) {
-    /* 이 노드는 render 를 거쳐도 살아남는다(keepInput). 그래서 한 번만 건다. */
-    qi.dataset.bound = '1';
-    const apply = () => { S.q = qi.value; render(); };
-    qi.addEventListener('compositionstart', () => { qi.dataset.composing = '1'; });
-    qi.addEventListener('compositionend', () => { qi.dataset.composing = '0'; apply(); });
-    qi.addEventListener('input', apply);
-  }
   for (const b of document.querySelectorAll('[data-filter]'))
-    b.onclick = () => { S.filter = b.dataset.filter; render(); };
+    b.onclick = () => { S.filter = b.dataset.filter; renderList(); };
   for (const tr of document.querySelectorAll('[data-id]'))
     tr.onclick = () => openPanel(tr.dataset.id);
 
@@ -283,6 +260,8 @@ function panelHtml(f) {
       <div class="was">${changed ? `원래: ${esc(fmt(ov))}` : (spec.hint || '')}</div></div>`;
   };
 
+  const nut = (k, label) => nutField(f, k, label);
+
   const multi = (k, dict) => {
     const cur = f[k] || [];
     const changed = JSON.stringify(cur) !== JSON.stringify(o[k] || []);
@@ -320,13 +299,72 @@ function panelHtml(f) {
   <div id="prices">${prices.map(priceRow).join('') || '<div class="was" style="color:var(--muted)">등록된 행이 없어요. 대표 가격이 대신 보여요.</div>'}</div>
   <button class="btn" data-addprice style="margin-top:8px">행 추가</button>
 
-  <div class="sect">분석 데이터 <span style="font-weight:500;color:var(--muted)">— 읽기 전용</span></div>
-  <div class="derived">
-    ${d.ingr?.length
-      ? `주원료 <b>${d.ingr.length}종</b> · 안전 ${d.dist?.safe ?? 0} / 주의 ${d.dist?.caution ?? 0} / 위험 ${d.dist?.danger ?? 0} / 미상 ${d.dist?.unknown ?? 0}<br>
-         조단백 <b>${d.nutrient?.protein ?? '—'}%</b> · 조지방 <b>${d.nutrient?.fat ?? '—'}%</b> · 건물기준 탄수 <b>${d.nutrient?.dmCarb ?? '—'}%</b>`
-      : '아직 분석 전이에요. 성분표를 확보하면 심사 화면에서 등록해요.'}
-    <br>별점 원료 ${f.ratings?.quality ?? '—'} · 첨가물 ${f.ratings?.additive ?? '—'} · 탄수 ${f.ratings?.carb ?? '—'} · 가성비 ${f.ratings?.value ?? '—'}
+  <div class="sect">보장성분표 <span style="font-weight:500;color:var(--muted)">— 봉지에 적힌 값 그대로</span></div>
+  <div class="grid2">
+    ${nut('protein', '조단백 (%)')}${nut('fat', '조지방 (%)')}
+    ${nut('fiber', '조섬유 (%)')}${nut('moisture', '수분 (%)')}
+    ${nut('ash', '조회분 (%)')}${nut('meat', '생육 함량 (%)')}
+  </div>
+  <div class="derived" id="nutOut"></div>
+
+  <div class="sect">원료 <span style="font-weight:500;color:var(--muted)">— 표기 순서 그대로, 한 줄에 하나</span></div>
+  <textarea id="ingrText" style="width:100%;min-height:130px;padding:9px 11px;border-radius:var(--r);
+    background:var(--panel2);border:1px solid var(--line);font-size:13px;line-height:1.7;resize:vertical"
+    placeholder="닭고기\n현미\n닭기름\n…">${esc((d.ingr || []).map(i => i.name).join('\n'))}</textarea>
+  <div class="derived" id="ingrOut" style="margin-top:8px"></div>
+
+  <div class="sect">소비자 요약 카드
+    <span style="font-weight:500;color:var(--muted)">— 앱 상세에 그대로 보이는 문장</span></div>
+  <div style="display:flex;gap:6px;margin-bottom:9px;flex-wrap:wrap">
+    <button class="btn" data-vauto>사실에서 자동 생성</button>
+    <button class="btn" data-vadd>템플릿에서 고르기</button>
+  </div>
+  <div id="verdictList"></div>
+
+  <div class="sect">맞춤 태그
+    <span style="font-weight:500;color:var(--muted)">— 고르면 문장이 채워져요. 그 자리에서 고칠 수 있어요</span></div>
+  <div style="font-size:11.5px;font-weight:700;color:var(--good);margin-bottom:7px">이런 아이에게 잘 맞아요</div>
+  <div id="fitChips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px"></div>
+  <div id="fitRows"></div>
+  <div style="font-size:11.5px;font-weight:700;color:var(--warn);margin:16px 0 7px">이런 경우 주의해요</div>
+  <div id="cauChips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px"></div>
+  <div id="cauRows"></div>
+
+  <div class="sect">별점 <span style="font-weight:500;color:var(--muted)">— 루브릭이 계산해요. 직접 못 고쳐요</span></div>
+  <div class="derived" id="rateOut"></div>`;
+}
+
+/* 보장성분표 한 칸. 값은 DETAIL.nutrient 에 바로 들어간다. */
+function nutField(f, k, label) {
+  const d = S.detail[f.id] || {};
+  const o = S.origDetail.get(f.id) ? JSON.parse(S.origDetail.get(f.id)) : {};
+  const v = d.nutrient?.[k], ov = o.nutrient?.[k];
+  const changed = (v ?? null) !== (ov ?? null);
+  return `<div class="f ${changed ? 'ch' : ''}"><label>${label}</label>
+    <input data-nut="${k}" value="${esc(v ?? '')}" inputmode="decimal">
+    <div class="was">${changed ? `원래: ${ov ?? '없음'}` : ''}</div></div>`;
+}
+
+/* 판정 카드 한 장 */
+function verdictRow(kind, i, c) {
+  const KIND = { pos: ['✅ 좋은 점', 'var(--good)'], cau: ['⚠️ 주의할 점', 'var(--warn)'], dan: ['🚨 위험', 'var(--warn)'] };
+  const [label, color] = KIND[kind] || KIND.cau;
+  return `<div style="border:1px solid var(--line);border-radius:var(--r);padding:11px;margin-bottom:8px"
+       data-vrow="${kind}:${i}">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+      <select data-vkind style="width:auto;padding:4px 8px;border-radius:6px;background:var(--panel2);
+        border:1px solid var(--line);font-size:11.5px;font-weight:700;color:${color}">
+        ${Object.entries(KIND).map(([k, [l]]) =>
+          `<option value="${k}"${k === kind ? ' selected' : ''}>${l}</option>`).join('')}</select>
+      <div style="flex:1"></div>
+      <button class="btn" data-vdel style="padding:0 9px;height:26px">삭제</button>
+    </div>
+    <input data-vtitle value="${esc(c.title ?? '')}" placeholder="한 줄 제목"
+      style="width:100%;padding:8px 10px;border-radius:var(--r);background:var(--panel2);
+             border:1px solid var(--line);font-size:13px;font-weight:600;margin-bottom:6px">
+    <textarea data-vbody placeholder="왜 그런지 한두 문장"
+      style="width:100%;min-height:56px;padding:8px 10px;border-radius:var(--r);background:var(--panel2);
+             border:1px solid var(--line);font-size:12.5px;line-height:1.6;resize:vertical">${esc(c.body ?? '')}</textarea>
   </div>`;
 }
 
@@ -347,6 +385,122 @@ function fmt(v) {
   return String(v);
 }
 
+
+/* ═══ 분석 데이터 ═══
+   원료와 보장성분표를 고치면 그로부터 나오는 값(영양·분포·기능성·별점)을
+   엔진이 다시 계산한다. 어드민이 따로 계산하지 않는다 — 두 벌이 되면 어긋난다. */
+
+function detailOf(f) { return (S.detail[f.id] ??= {}); }
+
+/* 원료 글상자 → DETAIL.ingr / dist / funcIngr */
+function applyIngredients(f, text) {
+  const list = String(text).split(/[\n,]/).map(x => x.trim()).filter(Boolean);
+  const d = detailOf(f);
+  d.ingr = ENGINE.deriveIngredients(list);
+  d.dist = ENGINE.deriveDist(d.ingr);
+  d.funcIngr = ENGINE.deriveFuncIngr(list);
+  f.func = Object.keys(d.funcIngr);
+  f.warnN = d.dist.caution + d.dist.danger;
+}
+
+/* 원료 판정 미리보기 — 사전에 없는 원료를 반드시 보여준다.
+   모르는 걸 조용히 '안전' 으로 넘기면 그게 제일 위험하다. */
+function renderIngrOut(f) {
+  const box = $('#ingrOut'); if (!box) return;
+  const d = detailOf(f), ingr = d.ingr || [];
+  if (!ingr.length) { box.innerHTML = '원료를 넣으면 여기서 판정을 보여줘요.'; return; }
+  const COLOR = { safe: 'var(--good)', caution: 'var(--warn)', danger: '#FCA5A5', unknown: 'var(--sub)' };
+  const KO = { safe: '양호', caution: '논쟁중', danger: '주의', unknown: '사전에 없음' };
+  const unknown = ingr.filter(i => i.safe === 'unknown');
+  box.innerHTML = `
+    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">
+      ${ingr.map((i, n) => `<span title="${esc(KO[i.safe])}" style="display:inline-flex;align-items:center;gap:4px;
+        height:22px;padding:0 8px;border-radius:99px;font-size:11px;font-weight:600;
+        border:1px solid ${COLOR[i.safe]};color:${COLOR[i.safe]}">${n < 5 ? '★' : ''}${esc(i.name)}</span>`).join('')}
+    </div>
+    안전 <b>${d.dist.safe}</b> · 논쟁중 <b>${d.dist.caution}</b> · 주의 <b>${d.dist.danger}</b> · 사전에 없음 <b>${d.dist.unknown}</b>
+    ${unknown.length ? `<br><span style="color:var(--warn)">사전에 없는 원료 ${unknown.length}종 — ${esc(unknown.map(i => i.name).join(', '))}.
+      판정을 미룬 상태라 안전하다고 보지 않아요.</span>` : ''}
+    <br><span style="color:var(--muted)">★ 은 주원료(상위 5개)예요. 기능성: ${
+      Object.keys(d.funcIngr || {}).length ? Object.entries(d.funcIngr).map(([k, v]) =>
+        `${ENGINE.FUNC_LABEL[k] || k} ${v.length}`).join(' · ') : '없음'}</span>`;
+}
+
+/* 보장성분표 → DETAIL.nutrient */
+function renderNutOut(f) {
+  const box = $('#nutOut'); if (!box) return;
+  const d = detailOf(f), n = d.nutrient || {};
+  const out = [];
+  if (n.dmCarb != null) out.push(`건물기준 탄수 <b>${n.dmCarb}%</b> (조회분은 빼지 않아요)`);
+  else out.push('조단백·조지방·조섬유·수분을 다 넣으면 탄수화물이 계산돼요');
+  const sum = ['protein', 'fat', 'fiber', 'moisture', 'ash'].reduce((a, k) => a + (Number(n[k]) || 0), 0);
+  if (sum > 100) out.push(`<span style="color:var(--warn)">합이 ${Math.round(sum * 10) / 10}% 예요 — 100%를 넘습니다. 옮겨 적은 값을 확인해 주세요</span>`);
+  box.innerHTML = out.join('<br>');
+}
+
+/* 판정 카드 목록 */
+function renderVerdict(f) {
+  const box = $('#verdictList'); if (!box) return;
+  const v = detailOf(f).verdict ??= { pos: [], cau: [], dan: [] };
+  const rows = [];
+  for (const kind of ['pos', 'cau', 'dan'])
+    (v[kind] || []).forEach((c, i) => rows.push(verdictRow(kind, i, c)));
+  box.innerHTML = rows.join('') ||
+    '<div class="was" style="color:var(--muted)">카드가 없어요. 자동 생성하거나 템플릿에서 고르세요.</div>';
+  bindVerdict(f);
+}
+
+/* 맞춤 태그 — 고른 태그마다 한 줄. 문구는 템플릿에서 채우고 사람이 고친다. */
+function renderFit(f) {
+  const d = detailOf(f);
+  d.fit ??= []; d.fitCaution ??= [];
+  for (const [key, list, chipId, rowId] of
+    [['fit', d.fit, '#fitChips', '#fitRows'], ['fitCaution', d.fitCaution, '#cauChips', '#cauRows']]) {
+    const chips = $(chipId), rows = $(rowId);
+    if (!chips) continue;
+    const on = new Set(list.map(x => x.concernType));
+    chips.innerHTML = Object.entries(PHRASES.concerns).map(([k, c]) =>
+      `<button class="chip ${on.has(k) ? 'on' : ''}" data-fit="${key}" data-c="${k}">${esc(c.label)}</button>`).join('');
+    rows.innerHTML = list.map((x, i) => `
+      <div style="display:grid;grid-template-columns:110px 1fr;gap:8px;align-items:center;margin-bottom:6px">
+        <div style="font-size:11.5px;font-weight:600;color:var(--sub)">${esc(PHRASES.concerns[x.concernType]?.label || x.concernType)}</div>
+        <input data-fitrow="${key}:${i}" value="${esc(x.label ?? '')}"
+          placeholder="이 아이에게 왜 맞는지 한 줄로"
+          style="width:100%;padding:8px 10px;border-radius:var(--r);background:var(--panel2);
+                 border:1px solid var(--line);font-size:12.5px">
+      </div>`).join('');
+  }
+  bindFit(f);
+}
+
+/* 별점 — 사실에서 다시 계산해 지금 값과 견준다. 사람이 눌러야 반영한다. */
+function renderRate(f) {
+  const box = $('#rateOut'); if (!box) return;
+  const d = detailOf(f), n = d.nutrient || {}, dist = d.dist || {};
+  const next = ENGINE.rateAll({
+    dmCarb: n.dmCarb, protein: n.protein,
+    firstIngrCat: (d.ingr || [])[0]?.cat ?? null,
+    cautionN: dist.caution, dangerN: dist.danger, pKg: f.price?.pKg ?? null
+  });
+  const cur = f.ratings || {};
+  const KO = { quality: '원료', additive: '첨가물', carb: '탄수', value: '가성비' };
+  const diff = Object.keys(KO).filter(k => next[k] != null && next[k] !== cur[k]);
+  box.innerHTML = `
+    ${Object.entries(KO).map(([k, l]) =>
+      `${l} <b>${cur[k] ?? '—'}</b>${next[k] != null && next[k] !== cur[k] ? ` → <span style="color:var(--warn)">${next[k]}</span>` : ''}`).join(' · ')}
+    · 총점 <b>${f.score ?? '—'}</b>
+    ${diff.length ? `<br><label style="display:inline-flex;gap:6px;align-items:center;margin-top:6px;color:var(--warn)">
+      <input type="checkbox" id="reScore" style="width:auto" ${f.__reScore ? 'checked' : ''}>
+      바뀐 사실대로 별점·총점 다시 계산</label>`
+      : '<br><span style="color:var(--muted)">지금 사실과 별점이 맞아요.</span>'}`;
+  const cb = $('#reScore');
+  if (cb) cb.onchange = () => { if (cb.checked) f.__reScore = true; else delete f.__reScore; };
+}
+
+function renderAnalysis(f) {
+  renderNutOut(f); renderIngrOut(f); renderVerdict(f); renderFit(f); renderRate(f);
+}
+
 /* 대표 가격에서 파생되는 값 — kg당 가격과, 그로 인해 달라지는 가성비 별점 */
 function refreshDerived() {
   const f = S.cur;
@@ -356,7 +510,7 @@ function refreshDerived() {
   const p = Number(f.price?.p) || null, wg = Number(f.price?.wg) || null;
   const pKg = (p && wg) ? Math.round(p / wg * 1000) : null;
   const cur = f.ratings?.value ?? null;
-  const next = rateValue(pKg);
+  const next = ENGINE.rateValue(pKg);
   const out = [];
   out.push(pKg ? `kg당 <b>${won(pKg)}원</b>` : 'kg당 가격 — 가격과 용량을 둘 다 넣어야 계산돼요');
   if (pKg && (pKg < PRICE_KG.min || pKg > PRICE_KG.max))
@@ -418,6 +572,47 @@ function bindPanel(f) {
       $('#panelBody').innerHTML = panelHtml(f); bindPanel(f);
     };
   }
+  /* 보장성분표 */
+  for (const el of body.querySelectorAll('[data-nut]')) {
+    el.oninput = () => {
+      const dd = detailOf(f);
+      const ga = { ...(dd.nutrient || {}) };
+      ga[el.dataset.nut] = el.value.trim() === '' ? null : Number(el.value);
+      const n = ENGINE.deriveNutrient(ga, { meatRatio: ga.meat ?? null, src: dd.nutrient?.src });
+      /* 생육 함량은 보장성분표에 없는 값이라 엔진이 계산하지 않는다. 그대로 살린다. */
+      n.meat = ga.meat ?? null;
+      dd.nutrient = n;
+      renderNutOut(f); renderRate(f);
+    };
+  }
+
+  /* 원료 */
+  const ing = body.querySelector('#ingrText');
+  if (ing) {
+    let t;
+    ing.oninput = () => {
+      clearTimeout(t);
+      t = setTimeout(() => { applyIngredients(f, ing.value); renderIngrOut(f); renderRate(f); }, 250);
+    };
+  }
+
+  /* 판정 카드 — 사실에서 자동 생성 / 템플릿에서 고르기 */
+  const vauto = body.querySelector('[data-vauto]');
+  if (vauto) vauto.onclick = () => {
+    const dd = detailOf(f);
+    if (!(dd.ingr || []).length) { toast('원료를 먼저 넣어주세요', true); return; }
+    if ((dd.verdict?.pos?.length || dd.verdict?.cau?.length || dd.verdict?.dan?.length)
+      && !confirm('지금 카드를 지우고 사실에서 다시 만들까요?')) return;
+    dd.verdict = ENGINE.deriveVerdict({
+      nutrient: dd.nutrient || {}, ingr: dd.ingr, dist: dd.dist,
+      funcIngr: dd.funcIngr || {}, price: f.price || {}, facts: {}
+    });
+    renderVerdict(f);
+    toast('사실에서 다시 만들었어요');
+  };
+  const vadd = body.querySelector('[data-vadd]');
+  if (vadd) vadd.onclick = () => openTemplatePicker(f);
+
   const add = body.querySelector('[data-addprice]');
   if (add) add.onclick = () => {
     const dd = S.detail[f.id] = S.detail[f.id] || {};
@@ -425,7 +620,105 @@ function bindPanel(f) {
     $('#panelBody').innerHTML = panelHtml(f); bindPanel(f);
   };
   refreshDerived();
+  renderAnalysis(f);      /* 원료·성분표·판정·맞춤 태그 구역을 채운다 */
 }
+
+
+/* ── 판정 카드 조작 ── */
+function bindVerdict(f) {
+  const v = detailOf(f).verdict;
+  const pick = el => {
+    const [kind, i] = el.closest('[data-vrow]').dataset.vrow.split(':');
+    return { kind, i: +i, card: v[kind][+i] };
+  };
+  for (const el of document.querySelectorAll('[data-vtitle]'))
+    el.oninput = () => { pick(el).card.title = el.value; };
+  for (const el of document.querySelectorAll('[data-vbody]'))
+    el.oninput = () => { pick(el).card.body = el.value; };
+  for (const el of document.querySelectorAll('[data-vkind]'))
+    el.onchange = () => {
+      const { kind, i, card } = pick(el);
+      v[kind].splice(i, 1);
+      (v[el.value] ??= []).push(card);
+      renderVerdict(f);
+    };
+  for (const el of document.querySelectorAll('[data-vdel]'))
+    el.onclick = () => { const { kind, i } = pick(el); v[kind].splice(i, 1); renderVerdict(f); };
+}
+
+/* ── 맞춤 태그 조작 ──
+   태그를 켜면 템플릿 문장이 채워진다. 이미 쓴 문장은 덮어쓰지 않는다.
+   같은 태그라도 '잘 맞아요' 와 '주의해요' 는 다른 문장이 온다. */
+function bindFit(f) {
+  const d = detailOf(f);
+  for (const el of document.querySelectorAll('[data-fit]')) {
+    el.onclick = () => {
+      const key = el.dataset.fit, c = el.dataset.c;
+      const list = d[key];
+      const at = list.findIndex(x => x.concernType === c);
+      if (at >= 0) list.splice(at, 1);
+      else {
+        const tpl = PHRASES.concerns[c]?.[key === 'fit' ? 'fit' : 'caution'] ?? '';
+        list.push({ concernType: c, label: ENGINE.fillPhrase(tpl, ENGINE.phraseVars({
+          nutrient: d.nutrient, ingr: d.ingr, price: f.price
+        })) });
+      }
+      f.concerns = [...new Set(d.fit.map(x => x.concernType))].sort();
+      renderFit(f);
+    };
+  }
+  for (const el of document.querySelectorAll('[data-fitrow]')) {
+    el.oninput = () => {
+      const [key, i] = el.dataset.fitrow.split(':');
+      d[key][+i].label = el.value;
+    };
+  }
+}
+
+/* ── 템플릿에서 판정 카드 고르기 ── */
+function openTemplatePicker(f) {
+  const d = detailOf(f);
+  const vars = ENGINE.phraseVars({ nutrient: d.nutrient, ingr: d.ingr, price: f.price });
+  const KIND = { pos: '좋은 점', cau: '주의할 점', dan: '위험' };
+  const html = PHRASES.verdict.map((t, i) => `
+    <button data-tpl="${i}" style="display:block;width:100%;text-align:left;padding:10px 12px;
+      border-radius:var(--r);border:1px solid var(--line);background:var(--panel2);margin-bottom:6px">
+      <div style="font-size:11px;font-weight:700;color:var(--sub)">${t.icon} ${KIND[t.kind]}</div>
+      <div style="font-size:13px;font-weight:700;margin-top:3px">${esc(t.title)}</div>
+      <div style="font-size:11.5px;color:var(--sub);margin-top:3px;line-height:1.5">${esc(ENGINE.fillPhrase(t.body, vars))}</div>
+    </button>`).join('');
+  showSheet('템플릿에서 고르기', html, el => {
+    for (const b of el.querySelectorAll('[data-tpl]')) b.onclick = () => {
+      const t = PHRASES.verdict[+b.dataset.tpl];
+      const v = d.verdict ??= { pos: [], cau: [], dan: [] };
+      (v[t.kind] ??= []).push({
+        icon: t.icon, category: t.id,
+        title: ENGINE.fillPhrase(t.title, vars),
+        body: ENGINE.fillPhrase(t.body, vars)
+      });
+      closeSheet();
+      renderVerdict(f);
+    };
+  });
+}
+
+/* 가벼운 시트 — 템플릿 고르기용 */
+function showSheet(title, html, wire) {
+  let sh = $('#sheet');
+  if (!sh) {
+    sh = document.createElement('div');
+    sh.id = 'sheet';
+    sh.innerHTML = `<div class="sh-in"><div class="sh-h"><b></b>
+      <button class="btn" data-shclose>닫기</button></div><div class="sh-b"></div></div>`;
+    document.body.appendChild(sh);
+  }
+  sh.querySelector('.sh-h b').textContent = title;
+  sh.querySelector('.sh-b').innerHTML = html;
+  sh.classList.add('on');
+  sh.querySelector('[data-shclose]').onclick = closeSheet;
+  wire?.(sh.querySelector('.sh-b'));
+}
+function closeSheet() { $('#sheet')?.classList.remove('on'); }
 
 /* ── 검증 ── 커밋 전에 기계가 잡을 수 있는 건 여기서 잡는다. */
 function validate() {
@@ -461,9 +754,18 @@ function serialize() {
   const foods = S.foods.map(f => {
     const c = { ...f };
     delete c.__reScore;
-    if (f.__reScore && c.ratings && c.price?.pKg != null) {
-      c.ratings = { ...c.ratings, value: rateValue(c.price.pKg) };
-      if (Object.values(c.ratings).every(v => v != null)) c.score = computeScore(c.ratings);
+    if (f.__reScore) {
+      const d = S.detail[f.id] || {}, n = d.nutrient || {}, dist = d.dist || {};
+      const next = ENGINE.rateAll({
+        dmCarb: n.dmCarb, protein: n.protein,
+        firstIngrCat: (d.ingr || [])[0]?.cat ?? null,
+        cautionN: dist.caution, dangerN: dist.danger, pKg: c.price?.pKg ?? null
+      });
+      /* 계산이 안 되는 항목(사실이 비었을 때)은 원래 값을 지킨다 */
+      c.ratings = { ...c.ratings };
+      for (const k of ['quality', 'carb', 'additive', 'value'])
+        if (next[k] != null) c.ratings[k] = next[k];
+      if (Object.values(c.ratings).every(v => v != null)) c.score = ENGINE.computeScore(c.ratings);
     }
     return c;
   });
@@ -533,6 +835,7 @@ async function askToken() {
 }
 
 async function boot() {
+  $('#wrap').innerHTML = '';
   if (!GH.token) {
     $('#meta').textContent = '토큰이 필요해요';
     $('#wrap').innerHTML = `<div class="empty"><b>먼저 토큰을 넣어주세요</b>

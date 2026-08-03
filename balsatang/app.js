@@ -451,7 +451,29 @@ function renderSearch() {
       `<button class="chip press${state.filters.has(k) ? ' on' : ''}" data-filter="${k}">${v.label}</button>`)
   ].join('');
 
-  const body = list.length ? list.map(f => `
+  return `
+  <div class="top icons">
+    <button class="iconbtn press" data-back>${icon('chevronRight', 24, 'ui')}</button>
+    <div class="searchbox sm" style="flex:1">
+      ${icon('search', 18)}
+      <input id="q" value="${esc(state.query)}" placeholder="사료 이름을 검색해보세요" autocomplete="off">
+    </div>
+  </div>
+  <div id="s-body">${searchBodyHtml()}</div>
+  `;
+}
+
+/* 검색어·필터에 따라 바뀌는 부분. 입력칸은 여기 들어있지 않다. */
+function searchBodyHtml() {
+  const list = searchResults();
+  const allCount = FOODS.filter(f => matchQuery(f, state.query)).length;
+  const picked = state.compare.length;
+  const chips = [
+    `<button class="chip press${state.filters.size === 0 ? ' on' : ''}" data-filter="">전체<em>${allCount}</em></button>`,
+    ...Object.entries(FILTERS).map(([k, v]) =>
+      `<button class="chip press${state.filters.has(k) ? ' on' : ''}" data-filter="${k}">${v.label}</button>`)
+  ].join('');
+  const rows = list.length ? list.map(f => `
     <button class="row press" data-go-detail="${f.id}" style="align-items:flex-start">
       ${well(f, 82)}
       <span class="row-b">
@@ -463,13 +485,6 @@ function renderSearch() {
     </button>`).join('') : renderEmptySearch();
 
   return `
-  <div class="top icons">
-    <button class="iconbtn press" data-back>${icon('chevronRight', 24, 'ui')}</button>
-    <div class="searchbox sm" style="flex:1">
-      ${icon('search', 18)}
-      <input id="q" value="${esc(state.query)}" placeholder="사료 이름을 검색해보세요" autocomplete="off">
-    </div>
-  </div>
   <div class="chiprow" style="margin-top:14px">${chips}</div>
   <div style="display:flex;align-items:center;justify-content:space-between;padding:20px var(--screenX) 6px">
     <div class="t-caption c-sub"><b style="color:var(--ink);font-size:15px;font-weight:800">${list.length}개</b>의 사료</div>
@@ -477,9 +492,8 @@ function renderSearch() {
       ${SORT_LABEL[state.sort]} ${icon('chevronRight', 14)}
     </button>
   </div>
-  <div style="padding:0 var(--screenX)">${body}</div>
-  ${picked ? `<div class="dock"><button class="btn dark press" data-go="compare">선택한 ${picked}개 비교하기</button></div>` : ''}
-  `;
+  <div style="padding:0 var(--screenX)">${rows}</div>
+  ${picked ? `<div class="dock"><button class="btn dark press" data-go="compare">선택한 ${picked}개 비교하기</button></div>` : ''}`;
 }
 
 /* 사실 서술만. 판단하지 않는다. */
@@ -599,7 +613,9 @@ function renderNutritionTab(f, d) {
   const cards = [
     ...(v.pos || []).map(x => ['pos', x]),
     ...(v.cau || []).map(x => ['cau', x]),
-    ...(v.dan || []).map(x => ['cau', x])   /* 빨강 금지 — 위험도 앰버로 */
+    /* 위험 카드는 dan 에 담는다. 예전 데이터가 bad 로 쓰던 시절이 있어 둘 다 받는다 —
+       한쪽만 읽던 탓에 '출처가 불투명한 고기 가루' 같은 경고가 화면에서 통째로 빠졌었다. */
+    ...(v.dan || v.bad || []).map(x => ['cau', x])   /* 빨강 금지 — 위험도 앰버로 */
   ].slice(0, 5);
   const n = d.nutrient || {};
   const NUT = [['protein', '조단백', 45], ['fat', '조지방', 30], ['fiber', '조섬유', 12], ['moisture', '수분', 20]];
@@ -809,11 +825,11 @@ function slotView(f, side) {
 
 /* 상황별 판단 — 사실 서술만. 우열을 단정하지 않는다. */
 const CASES = [
-  { key: 'eye_tear', label: '눈물이 많은 아이라면', fn: 'eye_tear' },
+  { key: 'tear', label: '눈물이 많은 아이라면', fn: 'eye_tear' },
   { key: 'joint', label: '관절이 걱정된다면', fn: 'joint' },
   { key: 'weight', label: '체중 관리 중이라면', metric: f => (DETAIL[f.id]?.nutrient?.dmCarb ?? 99), lower: true,
     say: (w, l) => `${w.n}가 탄수화물이 ${Math.abs(Math.round((l.v - w.v) * 10) / 10)}%p 낮아요.` },
-  { key: 'allergy', label: '알러지가 의심된다면', metric: f => (DETAIL[f.id]?.ingr || []).filter(i => i.allergen).length, lower: true,
+  { key: 'skin', label: '알러지가 의심된다면', metric: f => (DETAIL[f.id]?.ingr || []).filter(i => i.allergen).length, lower: true,
     say: (w, l) => `${w.n} 쪽에 알러지 유발 가능 원료가 ${l.v - w.v}개 적어요.` },
   { key: 'gut', label: '장이 약하다면', fn: 'digestive' }
 ];
@@ -823,19 +839,19 @@ function compareCases(A, B, la, lb) {
     let win = null, body = '';
     if (c.fn) {
       const na = (DETAIL[A.id]?.funcIngr?.[c.fn] || []).length, nb = (DETAIL[B.id]?.funcIngr?.[c.fn] || []).length;
-      if (na === nb) { out.push({ label: c.label, win: null, body: '두 사료 모두 이 기준으론 차이가 없어요.' }); continue; }
+      if (na === nb) { out.push({ key: c.key, label: c.label, win: null, body: '두 사료 모두 이 기준으론 차이가 없어요.' }); continue; }
       win = na > nb ? 'A' : 'B';
       const w = win === 'A' ? A : B, items = (DETAIL[w.id]?.funcIngr?.[c.fn] || []).map(x => x.n).join(', ');
       body = `${win === 'A' ? la : lb}에 ${items} 원료가 들어있어요.`;
     } else {
       const va = c.metric(A), vb = c.metric(B);
-      if (va === vb || va == null || vb == null) { out.push({ label: c.label, win: null, body: '두 사료 모두 이 기준으론 차이가 없어요.' }); continue; }
+      if (va === vb || va == null || vb == null) { out.push({ key: c.key, label: c.label, win: null, body: '두 사료 모두 이 기준으론 차이가 없어요.' }); continue; }
       win = (c.lower ? va < vb : va > vb) ? 'A' : 'B';
       const w = win === 'A' ? { n: la, v: va } : { n: lb, v: vb };
       const l = win === 'A' ? { n: lb, v: vb } : { n: la, v: va };
       body = c.say(w, l);
     }
-    out.push({ label: c.label, win, body });
+    out.push({ key: c.key, label: c.label, win, body });
   }
   return out;
 }
@@ -876,7 +892,7 @@ function renderCompare() {
     <h2 class="t-section">상황별로 보면 이래요</h2>
     <div style="margin-top:13px;display:flex;flex-direction:column;gap:9px">
       ${cases.map(c => `<div class="card soft" style="padding:15px 16px">
-        <div class="t-caption" style="color:var(--ink50);display:flex;align-items:center;gap:6px">${cicon(c.key === 'digestive' ? 'gut' : c.key === 'eye_tear' ? 'tear' : c.key === 'allergy' ? 'skin' : c.key, 17)}${c.label}</div>
+        <div class="t-caption" style="color:var(--ink50);display:flex;align-items:center;gap:6px">${cicon(c.key, 17)}${c.label}</div>
         <div style="display:flex;align-items:center;gap:7px;margin-top:8px;flex-wrap:wrap">
           ${c.win
       ? `<span style="height:24px;padding:0 9px;border-radius:999px;background:${c.win === 'A' ? 'var(--purple700)' : 'var(--blue700)'};color:#fff;font-size:11px;font-weight:800;display:inline-flex;align-items:center">${c.win} · ${esc(c.win === 'A' ? la : lb)}</span>
@@ -1255,31 +1271,43 @@ const VIEW = {
 };
 const TAB_META = [['home', '홈', 'house'], ['compare', '비교', 'compare'], ['content', '콘텐츠', 'book'], ['custom', '맞춤', 'paw']];
 
-/* 다시 그릴 때 검색 입력칸만은 살려서 옮겨 심는다.
 
-   한글은 한 글자를 만드는 동안 IME 가 그 입력칸을 붙잡고 있다. innerHTML 로
-   갈아치우면 붙잡고 있던 칸이 사라지면서 조합이 끊기고, 'ㅇ오오ㄹ리리' 같은
-   찌꺼기가 남는다. 조합이 끝난 뒤에만 그리는 것으로는 부족했다 — 한 글자를
-   확정하는 순간 다음 글자 조합이 곧바로 시작되기 때문에 그 틈에도 칸이
-   사라지면 안 된다. 그래서 아예 같은 DOM 노드를 계속 쓴다.
-   (같은 노드라 이벤트도 그대로 붙어 있다. wire 가 두 번 걸지 않게 표시해 둔다.) */
-function keepInput(view, paint) {
-  const live = $('#q', view);
-  const keep = live && (document.activeElement === live || live.dataset.composing === '1');
-  const at = keep ? live.selectionStart : 0;
-  paint();
-  if (!keep) return;
-  const fresh = $('#q', view);
-  if (!fresh) return;
-  fresh.replaceWith(live);
-  live.focus();
-  try { live.setSelectionRange(at, at); } catch { }
+/* 검색 결과 영역만 다시 그렸을 때 그 안의 버튼을 다시 잇는다.
+   검색 입력칸은 이 영역 밖에 있어서 건드리지 않는다 — 한글 조합이 끊기면 안 된다. */
+function wireSearchResults() {
+  const b = $('#s-body');
+  if (!b) return;
+  const on = (sel, fn) => $$(sel, b).forEach(el => el.addEventListener('click', fn));
+  on('[data-go-detail]', e => go('detail', { id: e.currentTarget.dataset.goDetail }));
+  on('[data-filter]', e => {
+    const k = e.currentTarget.dataset.filter;
+    if (!k) state.filters.clear();
+    else state.filters.has(k) ? state.filters.delete(k) : state.filters.add(k);
+    repaintSearchResults();
+  });
+  on('[data-sort]', () => openSortSheet());
+  on('[data-request]', e => submitRequest(e.currentTarget.dataset.request, { query: state.query, id: state.detailId }));
+  on('[data-clear-search]', () => { state.query = ''; state.filters.clear(); const q = $('#q'); if (q) q.value = ''; repaintSearchResults(); q?.focus(); });
+  on('[data-go]', e => go(e.currentTarget.dataset.go));
+}
+
+/* 검색 화면은 결과만 갈아끼운다.
+
+   #view 를 통째로 다시 그리면 입력칸이 문서에서 잠깐 떨어져 나간다. 노드를
+   붙잡았다가 도로 꽂아도 소용없다 — 떨어지는 순간 브라우저가 한글 조합을
+   취소해서 'ㅈㅣㅇㅜㅍㅣㄱ' 처럼 자모가 흩어진다.
+   그래서 검색어가 바뀔 때는 결과 영역만 새로 그린다. */
+function repaintSearchResults() {
+  const body = $('#s-body');
+  if (!body) { render(); return; }
+  body.innerHTML = searchBodyHtml();
+  wireSearchResults();
 }
 
 function render() {
   const s = state.screen || 'home';
   const view = $('#view');
-  keepInput(view, () => { view.innerHTML = (VIEW[s] || renderHome)(); });
+  view.innerHTML = (VIEW[s] || renderHome)();
   const bar = $('#tabbar');
   const showTabs = ['home', 'compare', 'content', 'custom'].includes(s);
   bar.hidden = !showTabs;
@@ -1316,9 +1344,10 @@ function wire() {
     const k = e.currentTarget.dataset.filter;
     if (!k) state.filters.clear();
     else state.filters.has(k) ? state.filters.delete(k) : state.filters.add(k);
-    render();
+    state.screen === 'search' ? repaintSearchResults() : render();
   });
   on('[data-sort]', 'click', () => openSortSheet());
+  if (state.screen === 'search') wireSearchResults();
   on('[data-clear-search]', 'click', () => { state.query = ''; state.filters.clear(); render(); $('#q')?.focus(); });
   on('[data-add-compare]', 'click', e => addCompare(e.currentTarget.dataset.addCompare));
   on('[data-drop]', 'click', e => { state.compare = state.compare.filter(x => x !== e.currentTarget.dataset.drop); save(); render(); });
@@ -1336,20 +1365,16 @@ function wire() {
   });
 
   const q = $('#q', v);
-  if (q && !q.dataset.bound) {
-    /* 이 노드는 render 를 거쳐도 살아남는다(keepInput). 그래서 한 번만 건다. */
-    q.dataset.bound = '1';
+  if (q) {
     let t;
     const apply = () => {
       clearTimeout(t);
-      t = setTimeout(() => { state.query = q.value; render(); }, 250);
+      t = setTimeout(() => { state.query = q.value; repaintSearchResults(); }, 220);
     };
-    q.addEventListener('compositionstart', () => { q.dataset.composing = '1'; });
-    q.addEventListener('compositionend', () => { q.dataset.composing = '0'; apply(); });
     q.addEventListener('input', apply);
+    q.addEventListener('compositionend', apply);
+    if (state.screen === 'search' && !state.query) setTimeout(() => q.focus(), 60);
   }
-  if (q && state.screen === 'search' && !state.query && document.activeElement !== q)
-    setTimeout(() => q.focus(), 60);
 
   /* 급여량 계산기 */
   const fw = $('#fw', v), fwr = $('#fwr', v);
@@ -1418,7 +1443,7 @@ function closeSheet() {
 function openSortSheet() {
   sheet('정렬', Object.entries(SORT_LABEL).map(([k, l]) =>
     `<button class="press" data-s="${k}" style="display:flex;align-items:center;justify-content:space-between;width:100%;height:54px;font-size:15px;font-weight:${state.sort === k ? 800 : 500};color:${state.sort === k ? 'var(--purple700)' : 'var(--ink70)'};border-bottom:var(--divider)">${l}${state.sort === k ? icon('check', 18) : ''}</button>`).join(''),
-    el => $$('[data-s]', el).forEach(b => b.onclick = () => { state.sort = b.dataset.s; closeSheet(); render(); }));
+    el => $$('[data-s]', el).forEach(b => b.onclick = () => { state.sort = b.dataset.s; closeSheet(); state.screen === 'search' ? repaintSearchResults() : render(); }));
 }
 function openIngrSheet() {
   const d = DETAIL[state.detailId] || {};

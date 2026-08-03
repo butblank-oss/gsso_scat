@@ -93,6 +93,13 @@ const deadThumb = FOODS_ALL.filter(f => f.thumb && !/^https:\/\//.test(f.thumb))
 if (deadThumb.length)
   problems.push(`https 가 아닌 썸네일 주소 ${deadThumb.length}건: ${deadThumb.map(f => f.name).slice(0, 3).join(', ')}`);
 
+/* ── 4-2. 판정 카드 키 ──
+   엔진은 위험 카드를 verdict.dan 에 담는데 예전 데이터는 bad 를 썼다.
+   화면이 dan 만 읽던 탓에 위험 경고가 통째로 안 보였다. 다시 갈리면 여기서 잡는다. */
+const badKey = Object.entries(DETAIL).filter(([, d]) => d?.verdict && 'bad' in d.verdict);
+if (badKey.length)
+  problems.push(`verdict.bad 를 쓰는 항목 ${badKey.length}건 — 화면은 dan 을 읽습니다`);
+
 /* ── 5. 썸네일·상세 연결 ── */
 const orphan = Object.keys(DETAIL).filter(id => !FOODS_ALL.some(f => f.id === id));
 if (orphan.length) problems.push(`DETAIL 에만 있고 사료 목록엔 없는 항목 ${orphan.length}건`);
