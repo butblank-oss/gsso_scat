@@ -399,11 +399,8 @@ function renderHome() {
 
   <div class="sec">
     <div class="sec-h"><h2 class="t-section">고민별로 찾기</h2></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      ${CONCERNS.map(c => `<button class="press" data-concern="${c.key}" style="display:flex;align-items:center;gap:10px;height:62px;padding:0 13px;border-radius:var(--rInput);background:var(--surface);text-align:left">
-        <span style="width:34px;height:34px;border-radius:11px;background:#fff;display:grid;place-items:center;color:var(--purple700);flex-shrink:0">${cicon(c.key, 21)}</span>
-        <span style="font-size:15px;font-weight:700;letter-spacing:-.03em">${c.label}</span>
-      </button>`).join('')}
+    <div class="concerns">
+      ${CONCERNS.map(c => `<button class="chip press" data-concern="${c.key}">${c.label}</button>`).join('')}
     </div>
   </div>
 
@@ -679,8 +676,27 @@ function renderFeedingTab(f, d) {
   const prices = (d.prices && d.prices.length) ? d.prices
     : (f.price?.p ? [{ wg: f.price.wg, shop: f.price.shop, price: f.price.p, pKg: f.price.pKg, url: buyUrlOf(f) }] : []);
 
+  /* 이 탭에 들어온 사람은 대개 '얼마인지'와 '어디서 사는지'를 먼저 본다.
+     그래서 최저가·구매 링크를 맨 위에 둔다. */
+  const priceBlock = `
+    <h2 class="t-section">최저가 비교</h2>
+    <div style="margin-top:13px">
+      ${prices.length ? prices.map((p, i) => `
+        <div class="card" style="display:flex;align-items:center;gap:12px;padding:14px 16px;margin-bottom:9px">
+          <div style="flex:1;min-width:0">
+            <div class="t-micro c-mute">${esc(SHOP_KO[p.shop] || p.shop || '판매처')} · ${gLabel(p.wg)}</div>
+            <div style="margin-top:3px"><b style="font-size:18px;font-weight:800;letter-spacing:-.04em">${won(p.price)}원</b>
+              <span class="t-caption c-sub" style="margin-left:5px">(kg당 ${won(p.pKg)}원)</span></div>
+          </div>
+          ${p.url ? `<button class="press" data-buy="${esc(p.url)}" style="height:40px;padding:0 18px;border-radius:var(--rSegment);font-size:14px;font-weight:700;${i === 0 ? 'background:var(--purple700);color:#fff' : 'box-shadow:var(--outline);color:var(--ink70)'}">구매</button>`
+        : `<span class="t-caption c-cap">링크 준비 중</span>`}
+        </div>`).join('') : `<p class="t-bodySm c-sub">등록된 판매처 가격이 없어요.</p>`}
+    </div>
+    <p class="partners">이 페이지의 구매 링크는 쿠팡 파트너스 활동의 일환으로, 이에 따라 일정액의 수수료를 제공받습니다. 수수료는 발사탕의 성분 분석에 영향을 주지 않아요.</p>`;
+
   return `<div style="padding:22px var(--screenX) 40px">
-    <h2 class="t-section">기본 정보</h2>
+    ${priceBlock}
+    <h2 class="t-section" style="margin-top:30px">기본 정보</h2>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px">
       ${[['분류', (f.rx ? '처방식' : '일반식') + ' · ' + (f.type === 'dry' ? '건식' : f.type)],
          ['원산지', COUNTRY_KO[f.country] || f.country],
@@ -738,20 +754,6 @@ function renderFeedingTab(f, d) {
       ${icon('chevronRight', 18)}
     </button>
 
-    <h2 class="t-section" style="margin-top:30px">최저가 비교</h2>
-    <div style="margin-top:13px">
-      ${prices.length ? prices.map((p, i) => `
-        <div class="card" style="display:flex;align-items:center;gap:12px;padding:14px 16px;margin-bottom:9px">
-          <div style="flex:1;min-width:0">
-            <div class="t-micro c-mute">${esc(SHOP_KO[p.shop] || p.shop || '판매처')} · ${gLabel(p.wg)}</div>
-            <div style="margin-top:3px"><b style="font-size:18px;font-weight:800;letter-spacing:-.04em">${won(p.price)}원</b>
-              <span class="t-caption c-sub" style="margin-left:5px">(kg당 ${won(p.pKg)}원)</span></div>
-          </div>
-          ${p.url ? `<button class="press" data-buy="${esc(p.url)}" style="height:40px;padding:0 18px;border-radius:var(--rSegment);font-size:14px;font-weight:700;${i === 0 ? 'background:var(--purple700);color:#fff' : 'box-shadow:var(--outline);color:var(--ink70)'}">구매</button>`
-        : `<span class="t-caption c-cap">링크 준비 중</span>`}
-        </div>`).join('') : `<p class="t-bodySm c-sub">등록된 판매처 가격이 없어요.</p>`}
-    </div>
-    <p class="partners">이 페이지의 구매 링크는 쿠팡 파트너스 활동의 일환으로, 이에 따라 일정액의 수수료를 제공받습니다. 수수료는 발사탕의 성분 분석에 영향을 주지 않아요.</p>
   </div>`;
 }
 
@@ -941,62 +943,70 @@ function renderCompareEmpty(one) {
 }
 
 /* ═══════════════════════════════════════════════════════
-   05 맞춤 추천 입력 (5스텝)
+   05 맞춤 추천 입력 — 한 화면
    ═══════════════════════════════════════════════════════
-   입력은 다섯 가지를 다 받되, 추천 계산에는 지금 근거가 있는 것부터 쓴다.
-   견종·활동량·중성화는 급여량 보정에 먼저 쓰고, 추천 가중치는 단계적으로 넓힌다. */
-const WIZ = [
-  { key: 'basic', q: p => '우리 아이를\n뭐라고 부르나요?', sub: '이름과 견종을 알려주세요', type: 'basic' },
-  { key: 'body', q: p => `${p.name || '우리 아이'}는 지금\n몇 살이고 몇 kg인가요?`, sub: '급여량 계산에 써요', type: 'body' },
-  {
-    key: 'concerns', q: p => `${p.name || '우리 아이'}가 요즘\n가장 신경 쓰이는 건\n무엇인가요?`, sub: '여러 개 골라도 괜찮아요.',
-    type: 'multi', opts: [['skin', '피부가 자주 붉어져요'], ['eye_tear', '눈물자국이 심해요'], ['digestive', '변이 무르고 잦아요'],
-    ['weight', '체중이 늘고 있어요'], ['joint', '관절이 약해요'], ['none', '딱히 없어요']]
-  },
-  {
-    key: 'activity', q: p => `${p.name || '우리 아이'}는\n얼마나 활동적인가요?`, sub: '급여량 계산에 반영해요', type: 'single',
-    opts: [['low', '거의 실내에 있어요'], ['mid', '하루 30분~1시간 산책'], ['high', '한 시간 이상 뛰어놀아요'], ['neutered', '중성화했어요']]
-  },
-  {
-    key: 'allergens', q: p => `피해야 할 원료가\n있나요?`, sub: '고른 원료가 든 사료는 빼드려요', type: 'multi',
-    opts: [['닭', '닭'], ['소', '소고기'], ['양', '양고기'], ['연어', '연어'], ['옥수수', '옥수수'], ['밀', '밀'], ['대두', '대두'], ['none', '없어요']]
-  }
+   5스텝으로 나눴더니 뎁스가 깊어 되돌아가기가 번거로웠다.
+   입력 항목이 일곱 개뿐이라 한 화면에 다 놓고 스크롤로 훑게 한다.
+   값은 바꿀 때마다 draft 에 들어가고, '추천 받기' 를 눌러야 확정된다. */
+const CONCERN_OPTS = [
+  ['skin', '피부가 자주 붉어져요'], ['eye_tear', '눈물자국이 심해요'], ['digestive', '변이 무르고 잦아요'],
+  ['weight', '체중이 늘고 있어요'], ['joint', '관절이 약해요'], ['senior', '나이가 많아요'],
+  ['picky_eater', '잘 안 먹어요'], ['none', '딱히 없어요']
 ];
+const ALLERGEN_OPTS = ['닭', '소고기', '양고기', '연어', '오리', '옥수수', '밀', '대두', '유제품'];
+const ACTIVITY_OPTS = [['low', '거의 실내'], ['mid', '하루 30분~1시간'], ['high', '한 시간 이상']];
+const AGE_OPTS = [['puppy', '퍼피 ~1세'], ['adult', '성견 1~7세'], ['senior', '시니어 7세+']];
 
 function renderWizard() {
-  const i = state.wizard.step, w = WIZ[i], d = state.wizard.data;
-  const val = d[w.key];
-  let body = '';
-  if (w.type === 'basic') {
-    body = `<input class="wz-in" id="wz-name" placeholder="이름" value="${esc(d.name || '')}">
-            <input class="wz-in" id="wz-breed" placeholder="견종 (선택)" value="${esc(d.breed || '')}" style="margin-top:10px">`;
-  } else if (w.type === 'body') {
-    body = `<div style="display:flex;gap:10px">
-      <input class="wz-in" id="wz-age" type="number" inputmode="numeric" placeholder="나이 (살)" value="${esc(d.age ?? '')}">
-      <input class="wz-in" id="wz-kg" type="number" inputmode="decimal" step="0.1" placeholder="몸무게 (kg)" value="${esc(d.kg ?? '')}"></div>
-      <p class="t-caption c-cap" style="margin-top:10px">0.5kg에서 90kg 사이로 입력해주세요</p>`;
-  } else {
-    const sel = new Set(Array.isArray(val) ? val : val ? [val] : []);
-    body = w.opts.map(([k, label]) => {
-      const on = sel.has(k);
-      return `<button class="press wz-opt${on ? ' on' : ''}" data-wz-opt="${k}">
-        <span class="mark">${on ? icon('check', 13) : ''}</span><span>${label}</span></button>`;
-    }).join('');
-  }
+  const d = state.wizard.data;
+  const chips = (opts, key, multi) => {
+    const cur = multi ? new Set(d[key] || []) : new Set(d[key] ? [d[key]] : []);
+    return `<div class="concerns">${opts.map(o => {
+      const [k, label] = Array.isArray(o) ? o : [o, o];
+      return `<button class="chip press${cur.has(k) ? ' on' : ''}" data-wz-set="${key}" data-wz-val="${esc(k)}" data-wz-multi="${multi ? 1 : ''}">${esc(label)}</button>`;
+    }).join('')}</div>`;
+  };
+  const label = (t, sub) => `<div style="margin-top:26px">
+    <div class="t-sub">${t}${sub ? ` <span class="t-caption c-cap" style="font-weight:600">${sub}</span>` : ''}</div></div>`;
+
   return `
-  <div class="top icons" style="align-items:center;gap:12px">
-    <button class="iconbtn press" data-wz-back>${icon('chevronRight', 24, 'ui')}</button>
-    <div style="flex:1;height:4px;border-radius:2px;background:var(--lineSoft);overflow:hidden">
-      <div style="height:100%;background:var(--purple700);width:${(i + 1) / WIZ.length * 100}%;transition:width .3s ease-out"></div></div>
-    <div class="t-caption c-sub">${i + 1}/${WIZ.length}</div>
+  <div class="top icons" style="align-items:center">
+    <button class="iconbtn press" data-back>${icon('chevronRight', 24, 'ui')}</button>
+    <h1 class="t-page" style="flex:1">우리 아이를 알려주세요</h1>
   </div>
-  <div style="padding:30px var(--screenX) 0">
-    <h1 class="t-question" style="white-space:pre-line">${esc(w.q(d))}</h1>
-    <p class="t-body c-sub" style="margin-top:10px">${esc(w.sub)}</p>
-    <div style="margin-top:26px;display:flex;flex-direction:column;gap:10px">${body}</div>
+  <div style="padding:8px var(--screenX) 0">
+    <p class="t-bodySm c-sub">몇 가지만 알려주시면 맞는 사료를 골라드려요. 회원가입 없이도 돼요.</p>
+
+    ${label('아이 이름', '선택')}
+    <input class="wz-in" id="wz-name" style="margin-top:9px" placeholder="이름 (선택)" value="${esc(d.name || '')}">
+
+    ${label('견종', '선택')}
+    <input class="wz-in" id="wz-breed" style="margin-top:9px" placeholder="예) 말티즈 (선택)" value="${esc(d.breed || '')}">
+
+    ${label('나이')}
+    <div style="margin-top:9px">${chips(AGE_OPTS, 'ageGroup', false)}</div>
+
+    ${label('몸무게')}
+    <div style="display:flex;align-items:center;gap:10px;margin-top:9px">
+      <div style="width:110px;height:52px;border-radius:14px;background:var(--surfaceInput);display:grid;place-items:center">
+        <input id="wz-kg" type="number" inputmode="decimal" step="0.1" min="0.5" max="90" value="${esc(d.kg ?? '')}"
+          placeholder="5.0" style="width:100%;text-align:center;font-size:20px;font-weight:800;letter-spacing:-.04em">
+      </div>
+      <span class="t-caption c-sub">kg</span>
+      <span class="t-caption c-cap" id="wz-kg-msg" style="flex:1">0.5~90kg 사이로 적어주세요</span>
+    </div>
+
+    ${label('지금 고민', '여러 개 선택 가능')}
+    <div style="margin-top:9px">${chips(CONCERN_OPTS, 'concerns', true)}</div>
+
+    ${label('활동량', '급여량 계산에 써요')}
+    <div style="margin-top:9px">${chips(ACTIVITY_OPTS, 'activity', false)}</div>
+
+    ${label('피해야 할 원료', '고른 원료가 든 사료는 빼드려요')}
+    <div style="margin-top:9px">${chips(ALLERGEN_OPTS, 'allergens', true)}</div>
   </div>
   <div class="dock" style="flex-direction:column;gap:8px">
-    <button class="btn dark press" data-wz-next>${i === WIZ.length - 1 ? '추천 받기' : '다음'}</button>
+    <button class="btn dark press" data-wz-submit>${state.pet ? '다시 분석하기' : '맞춤 사료 추천받기'}</button>
     <p class="t-caption c-cap" style="text-align:center">입력한 정보는 맞춤 추천에만 사용해요</p>
   </div>`;
 }
@@ -1031,7 +1041,7 @@ function renderResult() {
       <div class="t-item">${esc(pet.name || '우리 아이')}</div>
       <div class="t-micro c-mute" style="font-weight:600">${[pet.breed, pet.age ? pet.age + '살' : null, pet.kg ? pet.kg + 'kg' : null].filter(Boolean).join(' · ')}</div>
     </div>
-    <button class="chip press" data-go="custom" data-wz-reset>정보 수정</button>
+    <button class="chip press" data-edit-pet>다시 분석하기</button>
   </div>
 
   <div style="padding:24px var(--screenX) 0">
@@ -1105,7 +1115,7 @@ function renderProfileEmpty() {
     <p>몸무게·나이·고민 다섯 가지만 알려주시면
 맞는 사료를 골라드릴게요. 1분이면 돼요.</p>
     <div class="acts">
-      <button class="btn pri press" data-go="wizard">우리 아이 등록하기</button>
+      <button class="btn pri press" data-edit-pet>우리 아이 등록하기</button>
       <button class="btn ghost press" data-go="search">등록 없이 둘러보기</button>
     </div>
   </div>`;
@@ -1141,10 +1151,14 @@ const TAB_META = [['home', '홈', 'house'], ['compare', '비교', 'compare'], ['
 
 function render() {
   const s = state.screen || 'home';
-  $('#view').innerHTML = (VIEW[s] || renderHome)();
+  const view = $('#view');
+  view.innerHTML = (VIEW[s] || renderHome)();
   const bar = $('#tabbar');
   const showTabs = ['home', 'compare', 'content', 'custom'].includes(s);
   bar.hidden = !showTabs;
+  /* 본문 끝이 고정 바 아래로 숨지 않게 그만큼 여백을 준다 */
+  view.classList.toggle('has-tabbar', showTabs);
+  view.classList.toggle('has-dock', !showTabs && !!$('.dock', view));
   bar.innerHTML = TAB_META.map(([k, l, ic]) =>
     `<button data-tab="${k}" class="${state.tab === k ? 'on' : ''}">${icon(ic, 22, 'ui')}<span>${l}</span></button>`).join('');
   wire();
@@ -1161,6 +1175,7 @@ function wire() {
     go(t);
   });
   on('[data-go-detail]', 'click', e => go('detail', { id: e.currentTarget.dataset.goDetail }));
+  on('[data-edit-pet]', 'click', () => { state.wizard = { step: 0, data: { ...(state.pet || {}) } }; go('wizard'); });
   on('[data-back]', 'click', () => history.back());
   on('[data-search]', 'click', e => { state.query = e.currentTarget.dataset.search; go('search'); });
   on('[data-concern]', 'click', e => {
@@ -1209,32 +1224,39 @@ function wire() {
   on('[data-meals]', 'click', e => { state.feeding.meals = +e.currentTarget.dataset.meals; save(); render(); });
   on('[data-bag]', 'click', e => { state.feeding.bagG = +e.currentTarget.dataset.bag; save(); render(); });
 
-  /* 위저드 */
-  on('[data-wz-opt]', 'click', e => {
-    const w = WIZ[state.wizard.step], k = e.currentTarget.dataset.wzOpt, d = state.wizard.data;
-    if (w.type === 'multi') {
-      const cur = new Set(d[w.key] || []);
-      if (k === 'none') { d[w.key] = cur.has('none') ? [] : ['none']; }
-      else { cur.delete('none'); cur.has(k) ? cur.delete(k) : cur.add(k); d[w.key] = [...cur]; }
-    } else d[w.key] = d[w.key] === k ? null : k;
-    render();
+  /* 맞춤 입력 — 한 화면이라 값이 바뀔 때마다 draft 에 담고, 제출할 때 확정한다 */
+  const keepText = () => {
+    const d = state.wizard.data;
+    d.name = $('#wz-name')?.value.trim() ?? d.name;
+    d.breed = $('#wz-breed')?.value.trim() ?? d.breed;
+    const kg = $('#wz-kg')?.value;
+    if (kg !== undefined && kg !== '') d.kg = Number(kg);
+  };
+  on('[data-wz-set]', 'click', e => {
+    keepText();
+    const { wzSet: key, wzVal: val, wzMulti: multi } = e.currentTarget.dataset;
+    const d = state.wizard.data;
+    if (multi) {
+      const cur = new Set(d[key] || []);
+      if (val === 'none') d[key] = cur.has('none') ? [] : ['none'];
+      else { cur.delete('none'); cur.has(val) ? cur.delete(val) : cur.add(val); d[key] = [...cur]; }
+    } else d[key] = d[key] === val ? null : val;
+    const y = window.scrollY; render(); window.scrollTo(0, y);
   });
-  on('[data-wz-next]', 'click', () => {
-    const w = WIZ[state.wizard.step], d = state.wizard.data;
-    if (w.type === 'basic') { d.name = $('#wz-name')?.value.trim(); d.breed = $('#wz-breed')?.value.trim(); }
-    if (w.type === 'body') {
-      d.age = $('#wz-age')?.value; const kg = Number($('#wz-kg')?.value);
-      if (!(kg >= 0.5 && kg <= 90)) { toast('0.5kg에서 90kg 사이로 입력해주세요'); return; }
-      d.kg = kg; state.feeding.weightKg = kg;
+  on('[data-wz-submit]', 'click', () => {
+    keepText();
+    const d = state.wizard.data;
+    const kg = Number(d.kg);
+    if (!(kg >= 0.5 && kg <= 90)) {
+      toast('몸무게를 0.5kg에서 90kg 사이로 적어주세요');
+      $('#wz-kg')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      $('#wz-kg')?.focus();
+      return;
     }
-    if (state.wizard.step < WIZ.length - 1) { state.wizard.step++; render(); window.scrollTo(0, 0); }
-    else { state.pet = { ...d }; save(); state.wizard.step = 0; go('custom'); }
+    state.pet = { ...d, kg };
+    state.feeding.weightKg = kg;
+    save(); go('custom');
   });
-  on('[data-wz-back]', 'click', () => {
-    if (state.wizard.step > 0) { state.wizard.step--; render(); }
-    else history.back();
-  });
-  on('[data-wz-reset]', 'click', () => { state.wizard = { step: 0, data: { ...(state.pet || {}) } }; });
 
   $$('#tabbar button').forEach(b => b.onclick = () => {
     const k = b.dataset.tab;
