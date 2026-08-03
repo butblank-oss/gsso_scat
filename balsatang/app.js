@@ -1005,8 +1005,10 @@ function renderWizard() {
     ${label('피해야 할 원료', '고른 원료가 든 사료는 빼드려요')}
     <div style="margin-top:9px">${chips(ALLERGEN_OPTS, 'allergens', true)}</div>
   </div>
-  <div class="dock" style="flex-direction:column;gap:8px">
-    <button class="btn dark press" data-wz-submit>${state.pet ? '다시 분석하기' : '맞춤 사료 추천받기'}</button>
+  <div class="dock col">
+    <!-- 결과 화면의 '다시 분석하기' 와 같은 말을 쓰면 이 버튼이 초기화처럼 읽힌다.
+         이건 입력을 확정하고 결과로 가는 버튼이라 그렇게 말해야 한다. -->
+    <button class="btn dark press" data-wz-submit>${state.pet ? '이 조건으로 다시 찾기' : '맞춤 사료 추천받기'}</button>
     <p class="t-caption c-cap" style="text-align:center">입력한 정보는 맞춤 추천에만 사용해요</p>
   </div>`;
 }
@@ -1089,13 +1091,21 @@ function headline(pet) {
   const cs = (pet.concerns || []).filter(c => c !== 'none');
   const KO = { skin: '피부', eye_tear: '눈물', digestive: '소화', weight: '체중', joint: '관절' };
   if (!cs.length) return '주의성분이 적고\n영양이 고른 사료예요';
-  return `${cs.slice(0, 2).map(c => KO[c] || c).join('와 ')}를 함께 보면\n이 사료가 가장 맞아요`;
+  /* '눈물와 관절를' 처럼 조사가 어긋나면 문장이 대번에 어색해진다 */
+  const words = cs.slice(0, 2).map(c => KO[c] || c);
+  const joined = words.length === 2
+    ? `${words[0]}${josa(words[0], '과', '와')} ${words[1]}`
+    : words[0];
+  return `${joined}${josa(joined, '을', '를')} 함께 보면\n이 사료가 가장 맞아요`;
 }
 function matchReasons(f, pet) {
   const d = DETAIL[f.id] || {}, out = [];
   for (const c of (pet.concerns || [])) {
     const items = d.funcIngr?.[c] || [];
-    if (items.length) out.push(`${items.map(x => x.n).join('·')}가 들어 있어 도움될 수 있어요`);
+    if (items.length) {
+      const names = items.map(x => x.n).join('·');
+      out.push(`${names}${josa(names, '이', '가')} 들어 있어 도움될 수 있어요`);
+    }
   }
   if (cautionState(f).k === 'none') out.push('주의성분으로 볼 원료가 없어요');
   if (f.price?.pKg) out.push(`100g당 ${won(per100g(f))}원 · 하루 약 ${feedingNumbers(f).daily}g`);
