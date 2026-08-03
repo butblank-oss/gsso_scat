@@ -253,6 +253,21 @@ window.addEventListener('popstate', e => {
 /* ═══════════════════════════════════════════════════════
    01 홈
    ═══════════════════════════════════════════════════════ */
+/* 고민 아이콘 8종 — 디자인 원본(design_handoff 3a)의 SVG 를 그대로 옮긴 것이다.
+   색만 currentColor 로 바꿔 어느 배경에서든 쓰게 했다. */
+const CONCERN_ICON = {
+  skin: `<path d="M12 3.4c3.3 3.6 5.1 6.1 5.1 8.4a5.1 5.1 0 01-10.2 0c0-2.3 1.8-4.8 5.1-8.4z"></path><circle cx="9.9" cy="12.3" r=".95" fill="currentColor" stroke="none"></circle><circle cx="13.6" cy="13.9" r=".95" fill="currentColor" stroke="none"></circle><circle cx="10.8" cy="15.8" r=".95" fill="currentColor" stroke="none"></circle>`,
+  weight: `<path d="M12 5.6V19M8.4 19h7.2M4.2 8.2h15.6"></path><circle cx="12" cy="4.2" r="1.4"></circle><path d="M4.2 8.2L1.9 13.4M4.2 8.2l2.3 5.2M1.9 13.4a2.3 2.3 0 004.6 0M19.8 8.2l-2.3 5.2M19.8 8.2l2.3 5.2M17.5 13.4a2.3 2.3 0 004.6 0"></path>`,
+  joint: `<path d="M9.2 3.6v4.9a3.3 3.3 0 003.3 3.3M14.8 20.4v-4.9a3.3 3.3 0 00-3.3-3.3"></path><path d="M6.1 13.4a6.2 6.2 0 01.5-3.1M17.9 10.6a6.2 6.2 0 01-.5 3.1"></path><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"></circle>`,
+  gut: `<circle cx="12" cy="12" r="8.6"></circle><path d="M6.6 10.6q1.35-1.7 2.7 0t2.7 0 2.7 0"></path><path d="M6.6 14.4q1.35-1.7 2.7 0t2.7 0 2.7 0"></path>`,
+  tear: `<path d="M3.9 11.8c2.3-3.1 5-4.7 8.1-4.7s5.8 1.6 8.1 4.7"></path><circle cx="12" cy="10.6" r="2.2"></circle><path d="M12 15.6c1.15 1.3 1.75 2.1 1.75 2.8a1.75 1.75 0 01-3.5 0c0-.7.6-1.5 1.75-2.8z"></path>`,
+  picky: `<path d="M3.4 13h17.2a8.6 8.6 0 01-17.2 0z"></path><path d="M6.8 20.4h10.4"></path><path d="M12 9.9S9.1 8.3 9.1 6.5A1.75 1.75 0 0112 5.3a1.75 1.75 0 012.9 1.2c0 1.8-2.9 3.4-2.9 3.4z"></path>`,
+  senior: `<path d="M12 20.2S3.6 15.1 3.6 9.6A4.5 4.5 0 0112 7.3a4.5 4.5 0 018.4 2.3c0 5.5-8.4 10.6-8.4 10.6z"></path><path d="M6.9 11.4h2.7l1.4-2.5 1.9 4.5 1.4-2h2.8"></path>`,
+  rx: `<rect x="3.6" y="3.6" width="16.8" height="16.8" rx="5"></rect><path d="M12 8.3v7.4M8.3 12h7.4"></path>`,
+};
+const cicon = (k, size) =>
+  `<span class="i" style="width:${size}px;height:${size}px"><svg viewBox="0 0 24 24">${CONCERN_ICON[k] || ''}</svg></span>`;
+
 const CONCERNS = [
   { key: 'skin', label: '피부·알러지', ico: 'droplet', tags: ['skin', 'allergy', 'eye_tear'] },
   { key: 'weight', label: '체중 관리', ico: 'scale', tags: ['weight'] },
@@ -317,7 +332,7 @@ function renderHome() {
     <div class="sec-h"><h2 class="t-section">고민별로 찾기</h2></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       ${CONCERNS.map(c => `<button class="press" data-concern="${c.key}" style="display:flex;align-items:center;gap:10px;height:62px;padding:0 13px;border-radius:var(--rInput);background:var(--surface);text-align:left">
-        <span style="width:34px;height:34px;border-radius:11px;background:#fff;display:grid;place-items:center;color:var(--purple700);flex-shrink:0">${icon(c.ico, 21)}</span>
+        <span style="width:34px;height:34px;border-radius:11px;background:#fff;display:grid;place-items:center;color:var(--purple700);flex-shrink:0">${cicon(c.key, 21)}</span>
         <span style="font-size:15px;font-weight:700;letter-spacing:-.03em">${c.label}</span>
       </button>`).join('')}
     </div>
@@ -782,7 +797,7 @@ function renderCompare() {
     <h2 class="t-section">상황별로 보면 이래요</h2>
     <div style="margin-top:13px;display:flex;flex-direction:column;gap:9px">
       ${cases.map(c => `<div class="card soft" style="padding:15px 16px">
-        <div class="t-caption" style="color:var(--ink50)">${c.label}</div>
+        <div class="t-caption" style="color:var(--ink50);display:flex;align-items:center;gap:6px">${cicon(c.key === 'digestive' ? 'gut' : c.key === 'eye_tear' ? 'tear' : c.key === 'allergy' ? 'skin' : c.key, 17)}${c.label}</div>
         <div style="display:flex;align-items:center;gap:7px;margin-top:8px;flex-wrap:wrap">
           ${c.win
       ? `<span style="height:24px;padding:0 9px;border-radius:999px;background:${c.win === 'A' ? 'var(--purple700)' : 'var(--blue700)'};color:#fff;font-size:11px;font-weight:800;display:inline-flex;align-items:center">${c.win} · ${esc(c.win === 'A' ? la : lb)}</span>
