@@ -1,5 +1,5 @@
 // Bump this on every deploy that must invalidate old caches.
-const CACHE = "prompter-v3";
+const CACHE = "prompter-v4";
 const ASSETS = [
   "./",
   "./index.html",
